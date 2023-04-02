@@ -6,7 +6,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of spatialCCC is to …
+The goal of spatialCCC is to investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
 
 ## Installation
 
