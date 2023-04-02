@@ -38,6 +38,8 @@ library(spatialCCC)
 ## basic example code
 ```
 
+**spatialCCC** examples would come here; see what happens.
+
 What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
 
 ```{r cars}

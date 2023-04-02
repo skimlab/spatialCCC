@@ -6,7 +6,8 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of spatialCCC is to investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
+The goal of spatialCCC is to investigate cell-cell signaling, by
+analyzing ligand-receptor interactions in spatial transcriptomic data.
 
 ## Installation
 
@@ -26,6 +27,8 @@ This is a basic example which shows you how to solve a common problem:
 library(spatialCCC)
 ## basic example code
 ```
+
+**spatialCCC** examples would come here; see what happens.
 
 What is special about using `README.Rmd` instead of just `README.md`?
 You can include R chunks like so:
