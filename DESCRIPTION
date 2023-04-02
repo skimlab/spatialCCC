@@ -1,5 +1,5 @@
 Package: spatialCCC
-Title: What the Package Does (One Line, Title Case)
+Title: Spatial Transcriptomic cell-cell communication analysis
 Version: 0.0.0.9000
 Authors@R: 
     person("Seungchan", "Kim", , "dolchan@gmail.com", role = c("aut", "cre"),
@@ -11,3 +11,6 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 URL: https://github.com/dolchan/spatialCCC
 BugReports: https://github.com/dolchan/spatialCCC/issues
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
