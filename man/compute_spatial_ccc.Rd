@@ -24,7 +24,7 @@ compute_spatial_ccc(
 with non-zero expression value (default: 0.05)}
 
 \item{spot_dist_cutoff}{cutoff value for norm.d in spot
-distances (\code{\link[=see calc_spot_dist]{see calc_spot_dist()}})}
+distances (see \code{\link[=calc_spot_dist]{calc_spot_dist()}})}
 
 \item{LRscore_cutoff}{minimum LRscore to keep}
 }

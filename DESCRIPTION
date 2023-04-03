@@ -24,4 +24,5 @@ Imports:
     SingleCellExperiment,
     SpatialExperiment,
     tibble,
+    tidygraph,
     tidyr

@@ -61,7 +61,9 @@ spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data 
 
 ## Ligand-Receptor Database: built-in
 ```{r}
-LRdb_mouse <- get_LRdb("mouse")
+LRdb_mouse <- 
+  get_LRdb("mouse") %>%
+  dplyr::slice_sample(n = 50)
 ```
 
 ## Log-Normalize
@@ -71,13 +73,17 @@ spe <- logNormCounts(spe)
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
 ```{r}
-future::plan(future::multisession, workers = 6)
+# For full LRdb analysis, future::plan can be used 
+#   for parallelization
+# future::plan(future::multisession, workers = 4)
 
+tictoc::tic()
 ccc_tbl <- compute_spatial_ccc(spe = spe, 
                                assay_name = "logcounts",
                                LRdb = LRdb_mouse)
+tictoc::toc()
 
-future::plan(future::sequential)
+# future::plan(future::sequential)
 ```
 
 
@@ -86,3 +92,44 @@ ccc_tbl %>%
   dplyr::arrange(desc(LRscore))
 ```
 
+
+```{r}
+tictoc::tic("to_spatical_ccc_graph ...")
+
+sp_col_data <- get_spatial_coords(spe)
+
+ccc_graph_list <-
+  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 4)
+
+tictoc::toc()
+```
+
+
+```{r}
+tictoc::tic()
+
+ccc_graph_metrics_summary_df <-
+  summarize_ccc_graph_metrics(ccc_graph_list)
+
+tictoc::toc()
+```
+
+
+```{r}
+ccc_graph_metrics_summary_df 
+```
+
+
+```{r}
+tictoc::tic()
+
+ccc_graph_group_metrics_summary_df <-
+  summarize_ccc_graph_metrics(ccc_graph_list, level = "group")
+
+tictoc::toc()
+```
+
+
+```{r}
+ccc_graph_group_metrics_summary_df 
+```
