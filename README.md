@@ -24,35 +24,71 @@ devtools::install_github("dolchan/spatialCCC")
 This is a basic example which shows you how to solve a common problem:
 
 ``` r
+library(SpatialExperiment)
+library(scater)
+library(dplyr)
+library(tidyr)
+library(magrittr)
+library(purrr)
+library(ggplot2)
+library(patchwork)
+
+library(ggraph)
+library(tidygraph)
+library(RColorBrewer)
+```
+
+``` r
 library(spatialCCC)
 ## basic example code
 ```
 
-**spatialCCC** examples would come here; see what happens.
-
-What is special about using `README.Rmd` instead of just `README.md`?
-You can include R chunks like so:
+## Example: Visium Spatial Transcriptomic Data
 
 ``` r
-summary(cars)
-#>      speed           dist       
-#>  Min.   : 4.0   Min.   :  2.00  
-#>  1st Qu.:12.0   1st Qu.: 26.00  
-#>  Median :15.0   Median : 36.00  
-#>  Mean   :15.4   Mean   : 42.98  
-#>  3rd Qu.:19.0   3rd Qu.: 56.00  
-#>  Max.   :25.0   Max.   :120.00
+data_dir <- file.path("example", "visium_tutorial")
+spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
 ```
 
-You’ll still need to render `README.Rmd` regularly, to keep `README.md`
-up-to-date. `devtools::build_readme()` is handy for this. You could also
-use GitHub Actions to re-render `README.Rmd` every time you push. An
-example workflow can be found here:
-<https://github.com/r-lib/actions/tree/v1/examples>.
+## Ligand-Receptor Database: built-in
 
-You can also embed plots, for example:
+``` r
+LRdb_mouse <- get_LRdb("mouse")
+```
 
-<img src="man/figures/README-pressure-1.png" width="100%" />
+## Log-Normalize
 
-In that case, don’t forget to commit and push the resulting figure
-files, so they display on GitHub and CRAN.
+``` r
+spe <- logNormCounts(spe)
+```
+
+## Compute Cell-Cell Communications over ligand-receptor pairs
+
+``` r
+future::plan(future::multisession, workers = 6)
+
+ccc_tbl <- compute_spatial_ccc(spe = spe, 
+                               assay_name = "logcounts",
+                               LRdb = LRdb_mouse)
+
+future::plan(future::sequential)
+```
+
+``` r
+ccc_tbl %>% 
+  dplyr::arrange(desc(LRscore))
+#> # A tibble: 2,089,252 × 10
+#>    src          dst       d norm.d LR    ligand receptor LRscore weight WLRscore
+#>    <chr>        <chr> <dbl>  <dbl> <chr> <chr>  <chr>      <dbl>  <dbl>    <dbl>
+#>  1 ACCGCGGTGGA… TCTT…  138.   1.00 Apoe… Apoe   Lrp1       0.880  0.992    0.873
+#>  2 GCAACAGCAGT… TCTT…  138.   1.01 Apoe… Apoe   Lrp1       0.879  0.980    0.861
+#>  3 TGCTGGTTGGA… TTGT…  138.   1.01 Apoe… Apoe   Lrp1       0.878  0.980    0.860
+#>  4 TCGTCCGCTGG… TTGT…  137    1    Apoe… Apoe   Lrp1       0.877  1        0.877
+#>  5 CCATGCTCTGC… TTGT…  138.   1.01 Apoe… Apoe   Lrp1       0.876  0.980    0.858
+#>  6 ATCGCCAGTCA… TCTT…  138    1.01 Apoe… Apoe   Lrp1       0.875  0.986    0.863
+#>  7 TTCGCTATCTG… GGCT…  138.   1.01 Apoe… Apoe   Lrp1       0.875  0.980    0.857
+#>  8 TTCTAGGCCAA… TTGT…  138    1.01 Apoe… Apoe   Lrp1       0.873  0.986    0.861
+#>  9 TAACAAAGGGA… GCTT…  138.   1.01 Apoe… Apoe   Lrp1       0.873  0.987    0.861
+#> 10 TTCTTGTAACC… GCTT…  138.   1.01 Apoe… Apoe   Lrp1       0.873  0.987    0.861
+#> # ℹ 2,089,242 more rows
+```

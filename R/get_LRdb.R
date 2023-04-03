@@ -22,6 +22,9 @@ get_LRdb <- function(species = c("human", "mouse")) {
 
   species <- species_option[pmatch(species, species_option)]
 
-
-  ifelse (species[1] == "human", LRdb_human, LRdb_mouse)
+  if (species == "human") {
+    LRdb_human
+  } else {
+    LRdb_mouse
+  }
 }
