@@ -61,9 +61,21 @@ spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data 
 
 ## Ligand-Receptor Database: built-in
 ```{r}
-LRdb_mouse <- 
-  get_LRdb("mouse") %>%
-  dplyr::slice_sample(n = 50)
+LRdb_m <- 
+  get_LRdb("mouse") 
+
+LR_pair_list <- c(
+  "Apoe_Sdc1",
+  "App_Dcc",
+  "Cxcl12_Ackr3",
+  "Jam3_Itgam",
+  "Cx3cl1_Itga4")
+
+LRdb_m <-
+  dplyr::filter(LRdb_m, LR %in% LR_pair_list)
+
+LRdb_m %>% 
+  arrange(ligand_gene_symbol, receptor_gene_symbol)
 ```
 
 ## Log-Normalize
@@ -80,7 +92,7 @@ spe <- logNormCounts(spe)
 tictoc::tic()
 ccc_tbl <- compute_spatial_ccc(spe = spe, 
                                assay_name = "logcounts",
-                               LRdb = LRdb_mouse)
+                               LRdb = LRdb_m)
 tictoc::toc()
 
 # future::plan(future::sequential)
@@ -116,7 +128,8 @@ tictoc::toc()
 
 
 ```{r}
-ccc_graph_metrics_summary_df 
+ccc_graph_metrics_summary_df %>%
+  arrange(graph_component_count)
 ```
 
 
@@ -133,3 +146,42 @@ tictoc::toc()
 ```{r}
 ccc_graph_group_metrics_summary_df 
 ```
+
+
+```{r, fig.width=8}
+LR_of_interest <- "App_Dcc"
+```
+
+
+```{r, fig.width=8}
+plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
+                       tissue_img = imgRaster(spe),
+                       node_color = "group_diameter",
+                       node_size = 1,
+                       edge_color = "group_diameter",
+                       which_on_top = "edge")
+```
+
+
+```{r, fig.width=6, fig.asp=1}
+plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
+                       # tissue_img = imgRaster(spe),
+                       node_color = "group",
+                       node_size = 0.1,
+                       edge_color = "group_diameter",
+                       edge_width = 0.1,
+                       which_on_top = "edge")
+```
+
+
+
+```{r, fig.width=8, fig.asp=1}
+plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
+                       # tissue_img = imgRaster(spe),
+                       graph_layout = "stress",
+                       node_color = "group",
+                       edge_color = "group_diameter",
+                       edge_width = 0.25,
+                       which_on_top = "edge")
+```
+
