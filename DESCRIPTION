@@ -20,9 +20,13 @@ LazyData: true
 Imports: 
     cli,
     dplyr,
+    ggraph,
+    grDevices,
     magrittr,
     SingleCellExperiment,
     SpatialExperiment,
+    stats,
     tibble,
     tidygraph,
-    tidyr
+    tidyr,
+    utils

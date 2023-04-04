@@ -147,7 +147,7 @@ compute_spatial_ccc <-
 
     # make sure to process only LR pairs present in gene expression data
     LRdb %<>%
-      filter(
+      dplyr::filter(
         ligand_gene_symbol %in% rowAnnots$symbol,
         receptor_gene_symbol %in% rowAnnots$symbol
       )
@@ -186,11 +186,11 @@ compute_spatial_ccc <-
                             # Weighted LR score to account for
                             #   the attenuation of cell signaling due to
                             #   traveling distance
-                            mutate(weight = 1 / norm.d ^ 2) %>%
-                            mutate(WLRscore = LRscore * weight) %>%
+                            dplyr::mutate(weight = 1 / norm.d ^ 2) %>%
+                            dplyr::mutate(WLRscore = LRscore * weight) %>%
 
-                            filter(LRscore > LRscore_cutoff) %>%
-                            mutate(ligand = lig, receptor = rec)
+                            dplyr::filter(LRscore > LRscore_cutoff) %>%
+                            dplyr::mutate(ligand = lig, receptor = rec)
                         })
 
     bind_rows(ccc_list,

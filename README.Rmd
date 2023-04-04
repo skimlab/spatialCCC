@@ -31,8 +31,9 @@ devtools::install_github("dolchan/spatialCCC")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is a basic example which shows you a basic workflow of the package:
 
+### Load necessary packages
 ```{r message = FALSE}
 library(SpatialExperiment)
 library(scater)
@@ -46,23 +47,26 @@ library(patchwork)
 library(ggraph)
 library(tidygraph)
 library(RColorBrewer)
+
+library(ggtree)
 ```
 
+### Load spatialCCC package
 ```{r example}
 library(spatialCCC)
 ## basic example code
 ```
 
-## Example: Visium Spatial Transcriptomic Data
-```{r}
-data_dir <- file.path("example", "visium_tutorial")
-spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
-```
+## Ligand-Receptor Database
 
-## Ligand-Receptor Database: built-in
+### Load built-in LRdb 
 ```{r}
-LRdb_m <- 
-  get_LRdb("mouse") 
+LRdb_mm <- 
+  get_LRdb("mouse")
+
+LRdb_m <-
+  LRdb_mm %>%
+  slice_sample(n = 100)
 
 LR_pair_list <- c(
   "Apoe_Sdc1",
@@ -72,13 +76,21 @@ LR_pair_list <- c(
   "Cx3cl1_Itga4")
 
 LRdb_m <-
-  dplyr::filter(LRdb_m, LR %in% LR_pair_list)
+  rbind(LRdb_m,
+        dplyr::filter(LRdb_mm, LR %in% LR_pair_list)) %>%
+  distinct()
 
 LRdb_m %>% 
   arrange(ligand_gene_symbol, receptor_gene_symbol)
 ```
 
-## Log-Normalize
+## Load Visium spatial transcriptomic data
+```{r}
+data_dir <- file.path("example", "visium_tutorial")
+spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
+```
+
+### Log-Normalize
 ```{r}
 spe <- logNormCounts(spe)
 ```
@@ -104,7 +116,9 @@ ccc_tbl %>%
   dplyr::arrange(desc(LRscore))
 ```
 
+### Convert CCC table to CCC graph
 
+The conversion also adds various graph metrics to each CCC graph.
 ```{r}
 tictoc::tic("to_spatical_ccc_graph ...")
 
@@ -116,7 +130,7 @@ ccc_graph_list <-
 tictoc::toc()
 ```
 
-
+summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
 ```{r}
 tictoc::tic()
 
@@ -132,7 +146,7 @@ ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
 
-
+summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
 ```{r}
 tictoc::tic()
 
@@ -147,13 +161,13 @@ tictoc::toc()
 ccc_graph_group_metrics_summary_df 
 ```
 
-
+## Visualization
 ```{r, fig.width=8}
 LR_of_interest <- "App_Dcc"
 ```
 
-
-```{r, fig.width=8}
+### spatial CCC graph plot with tissue image
+```{r}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        tissue_img = imgRaster(spe),
                        node_color = "group_diameter",
@@ -162,8 +176,9 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        which_on_top = "edge")
 ```
 
-
-```{r, fig.width=6, fig.asp=1}
+### spatial CCC graph plot without tissue image
+In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package.  Below uses "auto" layout ("kk" spring layout)
+```{r}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        node_color = "group",
@@ -174,8 +189,8 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 ```
 
 
-
-```{r, fig.width=8, fig.asp=1}
+In this case, below is "stress" layout.
+```{r}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        graph_layout = "stress",
@@ -183,5 +198,111 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        edge_color = "group_diameter",
                        edge_width = 0.25,
                        which_on_top = "edge")
+```
+
+
+```{r}
+tictoc::tic()
+
+cell_overlap_dist <-
+  dist_cell_overlap_ccc_tbl(ccc_tbl)
+
+tictoc::toc()
+```
+
+
+```{r}
+tictoc::tic()
+
+cell_overlap_lf <-
+  lf_cell_overlap_ccc_tbl(ccc_tbl)
+
+tictoc::toc()
+```
+
+
+```{r}
+tictoc::tic()
+
+LRs_high_cell_overlap <-
+  cell_overlap_lf %>% 
+  filter(d < 1) %>%
+  select(lr1, lr2) %>%
+  unlist() %>% unique()
+
+tictoc::toc()
+```
+
+
+```{r}
+tictoc::tic()
+
+high_cell_overlap_dist <-
+  cell_overlap_dist[LRs_high_cell_overlap, LRs_high_cell_overlap]
+
+tictoc::toc()
+```
+
+
+
+```{r}
+tictoc::tic()
+
+high_cell_overlap_dist2 <-
+  cell_overlap_lf %>%
+  filter(d < 1) %>%
+  select(lr1, lr2, d) %>%
+  lf_to_dist()
+
+tictoc::toc()
+```
+
+
+```{r}
+LR_ccc_summary_tbl <-
+  ccc_tbl %>% 
+  pull(LR) %>%
+  table() %>%
+  as_tibble() %>%
+  rename("LR" = ".") %>%
+  arrange(desc(n)) %>%
+  left_join(
+    ccc_tbl %>% 
+      select(LR, ligand, receptor) %>%
+      distinct(),
+    by = "LR"
+  )
+```
+
+
+```{r}
+hclus.res <- fastcluster::hclust(as.dist(high_cell_overlap_dist),
+                                 method = "complete")
+```
+
+
+
+```{r, fig.width=8, fig.height=2}
+#| warning: false
+ape::as.phylo(hclus.res) %>%
+  ggtree(layout="dendrogram") %<+% LR_ccc_summary_tbl +
+  aes(color=receptor) +
+  theme(legend.position = "none") +
+  geom_tippoint(aes(size=n), alpha=0.5) +
+  geom_tiplab(size=2, offset=-0.15) +
+  xlim_tree(3)
+```
+
+
+
+```{r, fig.width=5, fig.height=5}
+#| warning: false
+ape::as.phylo(hclus.res) %>%
+  ggtree(layout = "circular") %<+% LR_ccc_summary_tbl +
+  aes(color=receptor) +
+  # aes(color=ligand) +
+  theme(legend.position = "none") +
+  geom_tippoint(aes(size=n), alpha=0.5) +
+  geom_tiplab(size=2, offset=0.05)
 ```
 
