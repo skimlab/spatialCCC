@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# spatialCCC
+# spatialCCC <img src="man/figures/logo.png" align="right" height="139" />
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/dolchan/spatialCCC/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dolchan/spatialCCC/actions/workflows/R-CMD-check.yaml)
@@ -168,7 +168,7 @@ LR_of_interest <- "App_Dcc"
 ```
 
 ### spatial CCC graph plot with tissue image
-```{r}
+```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        tissue_img = imgRaster(spe),
                        node_color = "group_diameter",
@@ -179,7 +179,7 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 
 ### spatial CCC graph plot without tissue image
 In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package.  Below uses "auto" layout ("kk" spring layout)
-```{r}
+```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        node_color = "group",
@@ -191,7 +191,7 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 
 
 In this case, below is "stress" layout.
-```{r}
+```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        graph_layout = "stress",
@@ -305,5 +305,38 @@ ape::as.phylo(hclus.res) %>%
   theme(legend.position = "none") +
   geom_tippoint(aes(size=n), alpha=0.5) +
   geom_tiplab(size=2, offset=0.05)
+```
+
+```{r}
+gp_hex <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  plot_spatial_ccc_graph(
+    tissue_img = imgRaster(spe),
+    clip = TRUE,
+    node_color = "group",
+    node_size = 1,
+    edge_color = "group",
+    ghost_img = TRUE,
+    which_on_top = "edge"
+  ) +
+  theme(legend.position = "none")
+
+gp_hex
+```
+
+
+
+```{r}
+library(hexSticker)
+gp_hex_sticker <- sticker(
+  gp_hex,
+  package = "spatialCCC",
+  p_size = 20,
+  s_x = 1.5,
+  s_y = 0.5,
+  s_width = 4,
+  s_height = 4,
+  filename = "spatialCCC.png"
+)
 ```
 

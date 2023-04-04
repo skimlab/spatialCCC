@@ -6,6 +6,8 @@
 \alias{spatialCCC-package}
 \title{spatialCCC: Spatial Transcriptomic cell-cell communication analysis}
 \description{
+\if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
+
 Investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data
 }
 \seealso{
