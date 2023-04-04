@@ -19,6 +19,7 @@ plot_spatial_ccc_graph(
   node_alpha = 1,
   clip = FALSE,
   tissue_img = NULL,
+  ghost_img = FALSE,
   which_on_top = "edge",
   show_arrow = FALSE
 )
@@ -52,6 +53,9 @@ default values do not work well.  Might need some manual adjustments.}
 communications}
 
 \item{tissue_img}{Raster image, like imgRaster(spe)}
+
+\item{ghost_img}{if TRUE, tissue_img is not displayed, only used for
+placing spots.}
 
 \item{which_on_top}{either "edge" or "node"}
 

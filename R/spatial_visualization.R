@@ -31,6 +31,8 @@
 #' @param clip if TRUE, tissue_img will be cliped to show only active cell-cell
 #'   communications
 #' @param tissue_img Raster image, like imgRaster(spe)
+#' @param ghost_img if TRUE, tissue_img is not displayed, only used for
+#'   placing spots.
 #' @param which_on_top either "edge" or "node"
 #' @param show_arrow if TRUE, arrow is added to edge.  Default is FALSE.
 #'
@@ -74,6 +76,7 @@ plot_spatial_ccc_graph <-
            node_alpha = 1,
            clip = FALSE,
            tissue_img = NULL,
+           ghost_img = FALSE,
            which_on_top = "edge",
            show_arrow = FALSE) {
 
@@ -239,16 +242,18 @@ plot_spatial_ccc_graph <-
         ) %>%
         ggraph()
 
-      # add tissue image
-      ggraph_ccc <-
-        ggraph_ccc +
-        geom_spatial(
-          data = tibble::tibble_row(sample = "sample",
-                                    grob = spatial_image_grob),
-          aes(grob = grob),
-          x = 0.5,
-          y = 0.5
-        )
+      if (!ghost_img) {
+        # add tissue image
+        ggraph_ccc <-
+          ggraph_ccc +
+          geom_spatial(
+            data = tibble::tibble_row(sample = "sample",
+                                      grob = spatial_image_grob),
+            aes(grob = grob),
+            x = 0.5,
+            y = 0.5
+          )
+      }
     } else {
       #
       # create ggraph object
@@ -387,13 +392,28 @@ plot_spatial_ccc_graph <-
   ggraph_ccc
 }
 
-#
-# Internal functions =====
-#
-
-#' Geom Spatial to visualize tissue image
+#' A ggplot2 layer for visualizing the Visium histology
 #'
-#' internal function
+#' This function defines a [ggplot2::layer()] for visualizing the histology
+#' image from Visium. It can be combined with other ggplot2 functions for
+#' visualizing the clusters as in [vis_clus_p()] or gene-level information
+#' as in [vis_gene_p()].
+#'
+#' @param mapping Passed to `ggplot2::layer(mapping)` where `grob`, `x` and `y`
+#' are required.
+#' @param data Passed to `ggplot2::layer(data)`.
+#' @param stat Passed to `ggplot2::layer(stat)`.
+#' @param position Passed to `ggplot2::layer(position)`.
+#' @param na.rm Passed to `ggplot2::layer(params = list(na.rm))`.
+#' @param show.legend Passed to `ggplot2::layer(show.legend)`.
+#' @param inherit.aes Passed to `ggplot2::layer(inherit.aes)`.
+#' @param ... Other arguments passed to `ggplot2::layer(params = list(...))`.
+#'
+#' @return A [ggplot2::layer()] for the histology information.
+#' @author 10x Genomics
+#' @export
+#' @importFrom tibble tibble
+#'
 geom_spatial <- function(mapping = NULL,
                          data = NULL,
                          stat = "identity",

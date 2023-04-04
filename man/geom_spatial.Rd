@@ -2,7 +2,7 @@
 % Please edit documentation in R/spatial_visualization.R
 \name{geom_spatial}
 \alias{geom_spatial}
-\title{Geom Spatial to visualize tissue image}
+\title{A ggplot2 layer for visualizing the Visium histology}
 \usage{
 geom_spatial(
   mapping = NULL,
@@ -15,6 +15,33 @@ geom_spatial(
   ...
 )
 }
+\arguments{
+\item{mapping}{Passed to \code{ggplot2::layer(mapping)} where \code{grob}, \code{x} and \code{y}
+are required.}
+
+\item{data}{Passed to \code{ggplot2::layer(data)}.}
+
+\item{stat}{Passed to \code{ggplot2::layer(stat)}.}
+
+\item{position}{Passed to \code{ggplot2::layer(position)}.}
+
+\item{na.rm}{Passed to \code{ggplot2::layer(params = list(na.rm))}.}
+
+\item{show.legend}{Passed to \code{ggplot2::layer(show.legend)}.}
+
+\item{inherit.aes}{Passed to \code{ggplot2::layer(inherit.aes)}.}
+
+\item{...}{Other arguments passed to \code{ggplot2::layer(params = list(...))}.}
+}
+\value{
+A \code{\link[ggplot2:layer]{ggplot2::layer()}} for the histology information.
+}
 \description{
-internal function
+This function defines a \code{\link[ggplot2:layer]{ggplot2::layer()}} for visualizing the histology
+image from Visium. It can be combined with other ggplot2 functions for
+visualizing the clusters as in \code{\link[=vis_clus_p]{vis_clus_p()}} or gene-level information
+as in \code{\link[=vis_gene_p]{vis_gene_p()}}.
+}
+\author{
+10x Genomics
 }
