@@ -14,6 +14,9 @@ spots/cells in spatial transcriptomic data.  if spatial_coords
 includes cell_id, spot_x, spot_y, they will be used as is;
 Otherwise, use the first three columns as if they are
 cell_id, spot_x, spot_y}
+
+\item{workers}{the number of processes to be used for parallel
+processing}
 }
 \description{
 Convert a list of CCC tables to a list of spatial CCC graphs

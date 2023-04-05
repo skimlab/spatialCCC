@@ -93,7 +93,7 @@ spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data 
 
 ### Log-Normalize
 ```{r}
-spe <- logNormCounts(spe)
+spe <- logNormCounts(spe) 
 ```
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs

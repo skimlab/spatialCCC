@@ -73,7 +73,7 @@ spatial relations.
 \item CCC graph without tissue image. In this format,
 the spots are placed using user-specified graph layout
 algorithm.  Default is ("kk")\code{\link[igraph:layout_with_kk]{igraph::layout_with_kk()}} algorithm.
-See \code{\link[ggraph:ggraph]{ggraph::create_layout()}} for available algorithms.
+See \code{\link[=create_layout]{create_layout()}} for available algorithms.
 }
 }
 \examples{

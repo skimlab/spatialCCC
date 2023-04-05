@@ -264,13 +264,14 @@ to_spatial_ccc_graph <-
 #' Convert a list of CCC tables to a list of spatial CCC graphs
 #'
 #' @inheritParams to_spatial_ccc_graph
+#' @param workers the number of processes to be used for parallel
+#'   processing
 #'
 #' @export
 to_spatial_ccc_graph_list <-
   function(ccc_tbl,
            spatial_coords,
            workers = 1) {
-
     # staging list of LR pairs to process
     LR_list <-
       ccc_tbl$LR %>%
@@ -337,12 +338,12 @@ add_spatial_ccc_graph_metrics <-
     if (from_scratch) {
       sp_ccc_graph %<>%
         # clean up nodes
-        activate(nodes) %>%
-        select(-starts_with("graph"), -starts_with("group")) %>%
+        tidygraph::activate(nodes) %>%
+        dplyr::select(-starts_with("graph"), -starts_with("group")) %>%
 
         # clean up edges
-        activate(edges) %>%
-        select(-starts_with("graph"), -starts_with("group"))
+        tidygraph::activate(edges) %>%
+        dplyr::select(-starts_with("graph"), -starts_with("group"))
     }
 
     #
@@ -354,51 +355,51 @@ add_spatial_ccc_graph_metrics <-
       activate(nodes) %>%
       ## overall graph
       mutate(
-        graph_n_nodes = graph_order(),
-        graph_n_edges = graph_size(),
+        graph_n_nodes = tidygraph::graph_order(),
+        graph_n_edges = tidygraph::graph_size(),
 
-        graph_component_count = graph_component_count(),
-        graph_motif_count = graph_motif_count(),
-        graph_diameter = graph_diameter(directed = TRUE),
-        graph_un_diameter = graph_diameter(directed = FALSE),
+        graph_component_count = tidygraph::graph_component_count(),
+        graph_motif_count = tidygraph::graph_motif_count(),
+        graph_diameter = tidygraph::graph_diameter(directed = TRUE),
+        graph_un_diameter = tidygraph::graph_diameter(directed = FALSE),
 
         # maybe not useful for differentiating
-        graph_mean_dist = graph_mean_dist(),
+        graph_mean_dist = tidygraph::graph_mean_dist(),
 
         graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count,
-        graph_reciprocity = graph_reciprocity()
+        graph_reciprocity = tidygraph::graph_reciprocity()
       ) %>%
-      morph(to_undirected) %>%
-      mutate(graph_clique_num = graph_clique_num(),
-             graph_clique_count = graph_clique_count()) %>%
-      unmorph() %>%
+      tidygraph::morph(to_undirected) %>%
+      mutate(graph_clique_num = tidygraph::graph_clique_num(),
+             graph_clique_count = tidygraph::graph_clique_count()) %>%
+      tidygraph::unmorph() %>%
 
       ## find subgraphs
-      mutate(group = group_components()) %>%
-      morph(to_components) %>%
+      mutate(group = tidygraph::group_components()) %>%
+      tidygraph::morph(tidygraph::to_components()) %>%
 
       ### for each subgraph
       mutate(
-        group_n_nodes = graph_order(),
-        group_n_edges = graph_size(),
+        group_n_nodes = tidygraph::graph_order(),
+        group_n_edges = tidygraph::graph_size(),
 
-        group_adhesion = graph_adhesion(),
+        group_adhesion = tidygraph::graph_adhesion(),
 
-        group_motif_count = graph_motif_count(),
-        group_diameter = graph_diameter(directed = TRUE),
-        group_un_diameter = graph_diameter(directed = FALSE),
+        group_motif_count = tidygraph::graph_motif_count(),
+        group_diameter = tidygraph::graph_diameter(directed = TRUE),
+        group_un_diameter = tidygraph::graph_diameter(directed = FALSE),
 
         # maybe not useful for differentiating
-        group_mean_dist = graph_mean_dist(),
+        group_mean_dist = tidygraph::graph_mean_dist(),
 
         # probably not informative
-        group_girth = graph_girth(),
+        group_girth = tidygraph::graph_girth(),
 
         group_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count,
-        group_reciprocity = graph_reciprocity()
+        group_reciprocity = tidygraph::graph_reciprocity()
 
       ) %>%
-      unmorph()
+      tidygraph::unmorph()
 
     sp_ccc_graph %>%
       add_spatial_ccc_graph_metrics_to_edges()
@@ -408,6 +409,8 @@ add_spatial_ccc_graph_metrics <-
 #' Extract spatial CCC graph metrics
 #'
 #' @param ccc_graph an output by [to_spatial_ccc_graph()]
+#' @param level extract graph metrics from either overall graph ("graph") or
+#'   subgraph ("group")
 #'
 #' @return one row data.frame with graph metrics
 #'
@@ -430,16 +433,16 @@ extract_ccc_graph_metrics <- function(ccc_graph,
 
   if (level == "graph") {
     ccc_graph %>%
-      activate(nodes) %>%
-      as_tibble() %>%
-      select(starts_with("graph_")) %>%
-      slice_head(n = 1)
+      tidygraph::activate(nodes) %>%
+      tibble::as_tibble() %>%
+      dplyr::select(starts_with("graph_")) %>%
+      dplyr::slice_head(n = 1)
   } else {
     ccc_graph %>%
-      activate(nodes) %>%
-      as_tibble() %>%
-      select(group, starts_with("group_")) %>%
-      distinct()
+      tidygraph::activate(nodes) %>%
+      tibble::as_tibble() %>%
+      dplyr::select(group, starts_with("group_")) %>%
+      dplyr::distinct()
   }
 }
 
@@ -447,6 +450,7 @@ extract_ccc_graph_metrics <- function(ccc_graph,
 #'
 #' @param ccc_graph_list list of spatial CCC graph,
 #'   each of which is an output of to_spatial_ccc_graph.
+#' @inheritParams extract_ccc_graph_metrics
 #'
 #' @return graph metrics table summarized for each LR pair
 #'
@@ -454,11 +458,11 @@ extract_ccc_graph_metrics <- function(ccc_graph,
 summarize_ccc_graph_metrics <- function(ccc_graph_list,
                                         level = c("graph", "group")) {
   ccc_graph_list %>%
-    map(function(ccc_graph) {
+    purrr::map(function(ccc_graph) {
       ccc_graph %>%
         extract_ccc_graph_metrics(level)
     }) %>%
-    bind_rows(.id = "LR")
+    dplyr::bind_rows(.id = "LR")
 }
 
 #
@@ -468,70 +472,73 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
 #' Add spatial coordinates to CCC table
 #'
 #' internal function
+#' @param df CCC table. see [compute_spatial_ccc()].
+#' @param spatial_coords spatial coordinates: cell_id, spot_x, spot_y;
+#'   the name does not matter, but only the order as they will be renamed.
 add_spatial_coords <-
   function(df,
-           # spatial coordinates: cell_id, spot_x, spot_y;
-           #    the name does not matter, but only the order
-           #    as they will be renamed
            spatial_coords) {
 
     # adjust colnames to make them consistent
     colnames(spatial_coords) <- c("cell_id", "spot_x", "spot_y")
 
-    left_join(df,
-              spatial_coords %>%
-                select(cell_id, spot_x, spot_y),
-              by = "cell_id")
+    dplyr::left_join(df,
+                     spatial_coords %>%
+                       select(cell_id, spot_x, spot_y),
+                     by = "cell_id")
   }
 
 #' Summarize CCC table by (cell, LR)
 #'
 #' internal function
+#'
+#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc()].
 summarise_ccc_by_cell_lr <-
   function(ccc_tbl) {
     src_summary <-
       ccc_tbl %>%
-      group_by(src, LR) %>%
+      dplyr::group_by(src, LR) %>%
       summarise(
         src.n = n(),
         src.WLR_total = sum(WLRscore),
         .groups = "drop"
       ) %>%
-      rename(cell_id = src) %>%
-      mutate(src = TRUE)
+      dplyr::rename(cell_id = src) %>%
+      dplyr::mutate(src = TRUE)
 
     dst_summary <-
       ccc_tbl %>%
-      group_by(dst, LR) %>%
-      summarise(
+      dplyr::group_by(dst, LR) %>%
+      dplyr::summarise(
         dst.n = n(),
         dst.WLR_total = sum(WLRscore),
         .groups = "drop"
       ) %>%
-      rename(cell_id = dst) %>%
-      mutate(dst = TRUE)
+      dplyr::rename(cell_id = dst) %>%
+      dplyr::mutate(dst = TRUE)
 
     cell_lr_summary <-
-      full_join(src_summary,
-                dst_summary,
-                by = c("cell_id", "LR"))
+      dplyr::full_join(src_summary,
+                       dst_summary,
+                       by = c("cell_id", "LR"))
 
     # replace all NAs with 0
     cell_lr_summary[is.na(cell_lr_summary)] <- 0
 
     cell_lr_summary %>%
-      relocate(src, dst, .after = last_col()) %>%
-      mutate(inflow.n = dst.n - src.n,
-             inflow.WLR_total = dst.WLR_total - src.WLR_total)
+      dplyr::relocate(src, dst, .after = last_col()) %>%
+      dplyr::mutate(inflow.n = dst.n - src.n,
+                    inflow.WLR_total = dst.WLR_total - src.WLR_total)
   }
 
 #' Aggregate ccc_by_cell_lr to cells
 #'
 #' Internal function
+#' @param ccc_by_cell_lr see [summarise_ccc_by_cell_lr()]
 collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
   ccc_by_cell_lr %>%
-    group_by(cell_id) %>%
-    summarise(
+    dplyr::group_by(cell_id) %>%
+    dplyr::summarise(
       n = n(),
       LR = paste(LR, collapse = ";"),
       src.n = mean(src.n),
@@ -548,23 +555,26 @@ collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
 #' Copy graph metrics from nodes to edges
 #'
 #' Internal function
+#' @inheritParams add_spatial_ccc_graph_metrics
 add_spatial_ccc_graph_metrics_to_edges <-
   function(sp_ccc_graph, from_scratch = TRUE) {
     sp_ccc_graph_nodes_df <-
       sp_ccc_graph %>%
-      activate(nodes) %>%
-      as_tibble()
+      tidygraph::activate(nodes) %>%
+      dplyr::as_tibble()
 
     if (from_scratch) {
       sp_ccc_graph %<>%
-        activate(edges) %>%
+        tidygraph::activate(edges) %>%
         # clean up previous metrics
-        select(-starts_with("graph"), -starts_with("group"))
+        dplyr::select(-starts_with("graph"),-starts_with("group"))
     }
 
     sp_ccc_graph %>%
-      left_join(sp_ccc_graph_nodes_df %>%
-                  select(name, starts_with("graph_"), group, starts_with("group_")),
-                by = c("src" = "name"))
+      dplyr::left_join(
+        sp_ccc_graph_nodes_df %>%
+          dplyr::select(name, starts_with("graph_"), group, starts_with("group_")),
+        by = c("src" = "name")
+      )
   }
 

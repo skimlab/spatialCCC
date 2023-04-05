@@ -8,6 +8,9 @@ extract_ccc_graph_metrics(ccc_graph, level = c("graph", "group"))
 }
 \arguments{
 \item{ccc_graph}{an output by \code{\link[=to_spatial_ccc_graph]{to_spatial_ccc_graph()}}}
+
+\item{level}{extract graph metrics from either overall graph ("graph") or
+subgraph ("group")}
 }
 \value{
 one row data.frame with graph metrics

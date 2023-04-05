@@ -9,6 +9,9 @@ summarize_ccc_graph_metrics(ccc_graph_list, level = c("graph", "group"))
 \arguments{
 \item{ccc_graph_list}{list of spatial CCC graph,
 each of which is an output of to_spatial_ccc_graph.}
+
+\item{level}{extract graph metrics from either overall graph ("graph") or
+subgraph ("group")}
 }
 \value{
 graph metrics table summarized for each LR pair

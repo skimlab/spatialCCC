@@ -39,8 +39,7 @@ A \code{\link[ggplot2:layer]{ggplot2::layer()}} for the histology information.
 \description{
 This function defines a \code{\link[ggplot2:layer]{ggplot2::layer()}} for visualizing the histology
 image from Visium. It can be combined with other ggplot2 functions for
-visualizing the clusters as in \code{\link[=vis_clus_p]{vis_clus_p()}} or gene-level information
-as in \code{\link[=vis_gene_p]{vis_gene_p()}}.
+visualizing the clusters as in \code{\link[=plot_spatial_ccc_graph]{plot_spatial_ccc_graph()}}.
 }
 \author{
 10x Genomics

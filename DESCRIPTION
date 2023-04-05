@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Seungchan", "Kim", , "dolchan@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4183-4338"))
-Description: Investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data
+Description: Investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -20,9 +20,13 @@ LazyData: true
 Imports: 
     cli,
     dplyr,
+    furrr,
+    future,
+    ggplot2,
     ggraph,
     grDevices,
     magrittr,
+    purrr,
     SingleCellExperiment,
     SpatialExperiment,
     stats,

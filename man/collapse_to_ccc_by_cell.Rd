@@ -6,6 +6,9 @@
 \usage{
 collapse_to_ccc_by_cell(ccc_by_cell_lr)
 }
+\arguments{
+\item{ccc_by_cell_lr}{see \code{\link[=summarise_ccc_by_cell_lr]{summarise_ccc_by_cell_lr()}}}
+}
 \description{
 Internal function
 }

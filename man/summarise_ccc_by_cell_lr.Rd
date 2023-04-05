@@ -6,6 +6,9 @@
 \usage{
 summarise_ccc_by_cell_lr(ccc_tbl)
 }
+\arguments{
+\item{ccc_tbl}{CCC graph table.  see \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}.}
+}
 \description{
 internal function
 }

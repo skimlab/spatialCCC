@@ -6,6 +6,12 @@
 \usage{
 add_spatial_coords(df, spatial_coords)
 }
+\arguments{
+\item{df}{CCC table. see \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}.}
+
+\item{spatial_coords}{spatial coordinates: cell_id, spot_x, spot_y;
+the name does not matter, but only the order as they will be renamed.}
+}
 \description{
 internal function
 }

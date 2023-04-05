@@ -10,7 +10,7 @@
 #'   * CCC graph without tissue image. In this format,
 #'    the spots are placed using user-specified graph layout
 #'    algorithm.  Default is ("kk")[igraph::layout_with_kk()] algorithm.
-#'    See [ggraph::create_layout()] for available algorithms.
+#'    See [create_layout()] for available algorithms.
 #'
 #' @param ccc_graph spatial CCC graph for a LR pair
 #' @param graph_layout string for graph layout algorithm. Default is "auto";
@@ -79,7 +79,6 @@ plot_spatial_ccc_graph <-
            ghost_img = FALSE,
            which_on_top = "edge",
            show_arrow = FALSE) {
-
     cells_of_interest_given <- !is.null(cells_of_interest)
 
     if (cells_of_interest_given) {
@@ -89,7 +88,7 @@ plot_spatial_ccc_graph <-
         tidygraph::mutate(InFocus = InCOI) %>%
         tidygraph::activate(edges) %>%
         tidygraph::mutate(InCOI = src %in% cells_of_interest |
-                 dst %in% cells_of_interest) %>%
+                            dst %in% cells_of_interest) %>%
         tidygraph::mutate(InFocus = InCOI)
 
       if (edges_expanded_to_group) {
@@ -110,7 +109,7 @@ plot_spatial_ccc_graph <-
         ccc_graph %<>%
           tidygraph::activate(edges) %>%
           tidygraph::mutate(InGOI = src %in% cells_in_GOI |
-                            dst %in% cells_in_GOI) %>%
+                              dst %in% cells_in_GOI) %>%
           tidygraph::mutate(InFocus = InGOI)
       }
     } else {
@@ -132,7 +131,7 @@ plot_spatial_ccc_graph <-
 
     ccc_edge_palette <-
       # RdYlBu is an alternative to Spectral
-      colorRampPalette(rev(brewer.pal(n = 7, name = "Spectral")))
+      grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "Spectral")))
 
     if (is.null(edge_range)) {
       edge_color_values <-
@@ -151,7 +150,7 @@ plot_spatial_ccc_graph <-
     }
 
     ccc_node_palette <-
-      colorRampPalette(rev(RColorBrewer::brewer.pal(7, "Spectral")))
+      grDevices::colorRampPalette(rev(brewer.pal(7, "Spectral")))
 
     # check if node_color is discrete
     node_color_values <-
@@ -212,9 +211,11 @@ plot_spatial_ccc_graph <-
 
       if (clip) {
         x_min <- max(x_min, floor(min(ccc_graph_nodes$spot_x)) - 1)
-        x_max <- min(x_max, ceiling(max(ccc_graph_nodes$spot_x)) + 1)
+        x_max <-
+          min(x_max, ceiling(max(ccc_graph_nodes$spot_x)) + 1)
         y_min <- max(y_min, floor(min(ccc_graph_nodes$spot_y)) - 1)
-        y_max <- min(y_max, ceiling(max(ccc_graph_nodes$spot_y)) + 1)
+        y_max <-
+          min(y_max, ceiling(max(ccc_graph_nodes$spot_y)) + 1)
 
         margin <- round(0.05 * min(x_max - x_min, y_max - y_min))
         x_min <- max(x_min - margin, 0)
@@ -233,14 +234,14 @@ plot_spatial_ccc_graph <-
       #
       graph_layout <- "manual"
       ggraph_ccc <-
-        create_layout(
+        ggraph::create_layout(
           graph = ccc_graph,
           layout = "manual",
           ## ignore graph_layout option
           x = spot_x,
           y = spot_y
         ) %>%
-        ggraph()
+        ggraph::ggraph()
 
       if (!ghost_img) {
         # add tissue image
@@ -260,14 +261,14 @@ plot_spatial_ccc_graph <-
       #
       if (graph_layout == "spatial") {
         ggraph_ccc <-
-          create_layout(
+          ggraph::create_layout(
             graph = ccc_graph,
             layout = "manual",
             ## ignore graph_layout option
             x = spot_x,
             y = spot_y
           ) %>%
-          ggraph()
+          ggraph::ggraph()
       } else {
         # some layout alg. does not work
         # so, default back to stress
@@ -276,8 +277,8 @@ plot_spatial_ccc_graph <-
           graph_layout <- "kk"
 
         ggraph_ccc <-
-          ggraph(graph = ccc_graph,
-                 layout = graph_layout)
+          ggraph::ggraph(graph = ccc_graph,
+                         layout = graph_layout)
       }
     }
 
@@ -289,7 +290,7 @@ plot_spatial_ccc_graph <-
         names(node_color_discrete) <- unique_node_color_values
 
         gg +
-          geom_node_point(
+          ggraph::geom_node_point(
             aes(# color = factor(get(node_color)),
               fill = factor(get(node_color)),
               alpha = as.numeric(InFocus)),
@@ -304,7 +305,7 @@ plot_spatial_ccc_graph <-
           scale_size(guide = FALSE)
       } else {
         gg +
-          geom_node_point(
+          ggraph::geom_node_point(
             aes(
               # color = get(node_color),
               fill = get(node_color),
@@ -334,70 +335,69 @@ plot_spatial_ccc_graph <-
       }
     }
 
-  add_ggraph_edges <- function(gg) {
-    gg +
-      geom_edge_link(
-        aes(color = get(edge_color),
-            alpha = as.numeric(InFocus)),
+    add_ggraph_edges <- function(gg) {
+      gg +
+        ggraph::geom_edge_link(
+          aes(color = get(edge_color),
+              alpha = as.numeric(InFocus)),
 
-        # for all edges
-        # alpha = edge_alpha,
-        # width = edge_width,
+          # for all edges
+          # alpha = edge_alpha,
+          # width = edge_width,
 
-        # add arrow
-        arrow = arrow(
-          angle = 15,
-          type = "closed",
-          length = unit(ifelse(show_arrow,
-                               0.01 * edge_width,
-                               0), "npc")
-        )
-      ) +
-      scale_edge_color_gradientn(
-        name = "edge",
-        colours = ccc_edge_palette(n = 15),
-        limits = c(min_edge_color, max_edge_color)
-      ) +
-      scale_edge_alpha(range = edge_alpha_range, guide = FALSE)
+          # add arrow
+          arrow = grid::arrow(
+            angle = 15,
+            type = "closed",
+            length = unit(ifelse(show_arrow,
+                                 0.01 * edge_width,
+                                 0), "npc")
+          )
+        ) +
+        ggraph::scale_edge_color_gradientn(
+          name = "edge",
+          colours = ccc_edge_palette(n = 15),
+          limits = c(min_edge_color, max_edge_color)
+        ) +
+        ggraph::scale_edge_alpha(range = edge_alpha_range, guide = FALSE)
+    }
+
+    if (which_on_top == "edge") {
+      ggraph_ccc %<>%
+        add_ggraph_nodes() %>%
+        add_ggraph_edges
+      # guides(size = FALSE, alpha = FALSE)
+    } else {
+      ggraph_ccc %<>%
+        add_ggraph_edges() %>%
+        add_ggraph_nodes()
+    }
+
+    if (!is.null(tissue_img)) {
+      ggraph_ccc <-
+        ggraph_ccc +
+        # set boundary
+        xlim(x_min, x_max) +
+        ylim(y_max, y_min) +
+        coord_fixed(expand = FALSE) +
+        # remove background
+        ggplot2::theme_void()
+    } else {
+      ggraph_ccc <-
+        ggraph_ccc +
+        # theme_graph()
+        # remove background
+        theme_graph()
+    }
+
+    ggraph_ccc
   }
-
-  if (which_on_top == "edge") {
-    ggraph_ccc %<>%
-      add_ggraph_nodes() %>%
-      add_ggraph_edges
-    # guides(size = FALSE, alpha = FALSE)
-  } else {
-    ggraph_ccc %<>%
-      add_ggraph_edges() %>%
-      add_ggraph_nodes()
-  }
-
-  if (!is.null(tissue_img)) {
-    ggraph_ccc <-
-      ggraph_ccc +
-      # set boundary
-      xlim(x_min, x_max) +
-      ylim(y_max, y_min) +
-      coord_fixed(expand = FALSE) +
-      # remove background
-      ggplot2::theme_void()
-  } else {
-    ggraph_ccc <-
-      ggraph_ccc +
-      # theme_graph()
-      # remove background
-      theme_graph()
-  }
-
-  ggraph_ccc
-}
 
 #' A ggplot2 layer for visualizing the Visium histology
 #'
 #' This function defines a [ggplot2::layer()] for visualizing the histology
 #' image from Visium. It can be combined with other ggplot2 functions for
-#' visualizing the clusters as in [vis_clus_p()] or gene-level information
-#' as in [vis_gene_p()].
+#' visualizing the clusters as in [plot_spatial_ccc_graph()].
 #'
 #' @param mapping Passed to `ggplot2::layer(mapping)` where `grob`, `x` and `y`
 #' are required.
@@ -422,6 +422,12 @@ geom_spatial <- function(mapping = NULL,
                          show.legend = NA,
                          inherit.aes = FALSE,
                          ...) {
+  ## To avoid a NOTE on R CMD check
+  ggname <- function(prefix, grob) {
+    grob$name <- grid::grobName(grob, prefix)
+    grob
+  }
+
   GeomCustom <- ggproto(
     "GeomCustom",
     Geom,
@@ -433,7 +439,7 @@ geom_spatial <- function(mapping = NULL,
     draw_group = function(data, panel_scales, coord) {
       vp <- grid::viewport(x = data$x, y = data$y)
       g <- grid::editGrob(data$grob[[1]], vp = vp)
-      ggplot2:::ggname("geom_spatial", g)
+      ggname("geom_spatial", g)
     },
 
     required_aes = c("grob", "x", "y")

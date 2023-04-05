@@ -6,6 +6,42 @@
 \usage{
 add_spatial_ccc_graph_metrics_to_edges(sp_ccc_graph, from_scratch = TRUE)
 }
+\arguments{
+\item{sp_ccc_graph}{an output of \code{\link[=to_spatial_ccc_graph]{to_spatial_ccc_graph()}}}
+
+\item{from_scratch}{if TRUE, the existing metrics are wiped clean.
+
+Graph metrics include:
+\enumerate{
+\item For overall graph
+\itemize{
+\item graph_n_nodes
+\item graph_n_edges
+\item graph_component_count
+\item graph_motif_count
+\item graph_diameter
+\item graph_un_diameter
+\item graph_mean_dist
+\item graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count
+\item graph_reciprocity
+\item graph_clique_num (sp_ccc_graph assumed as undirected)
+\item graph_clique_count (sp_ccc_graph assumed as undirected)
+}
+\item For each sub-graph (after \code{\link[=group_components]{group_components()}})
+\itemize{
+\item group_n_nodes
+\item group_n_edges
+\item group_adhesion
+\item group_motif_count
+\item group_diameter
+\item group_un_diameter
+\item group_mean_dist
+\item group_girth
+\item group_circuit_rank
+\item group_reciprocity
+}
+}}
+}
 \description{
 Internal function
 }

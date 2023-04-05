@@ -77,20 +77,20 @@ LRdb_m <-
 
 LRdb_m %>% 
   arrange(ligand_gene_symbol, receptor_gene_symbol)
-#> # A tibble: 105 × 10
+#> # A tibble: 104 × 10
 #>    LR    ligand_gene_symbol receptor_gene_symbol ligand_gene_id receptor_gene_id
 #>    <chr> <chr>              <chr>                         <dbl>            <dbl>
-#>  1 Adam… Adam10             Epha3                         11487            13837
-#>  2 Adam… Adam10             Tspan10                       11487           208634
-#>  3 Adam… Adam15             Itgb1                         11490            16412
-#>  4 Adam… Adam17             Ghr                           11491            14600
-#>  5 Adam… Adam17             Itgb6                         11491            16420
-#>  6 Adam… Adam2              Cd9                           11495            12527
-#>  7 Adcy… Adcyap1            Vipr2                         11516            22355
-#>  8 Anxa… Anxa1              Dysf                          16952            26903
-#>  9 Apel… Apela              Aplnr                     100038489            23796
-#> 10 Apob… Apob               Apobr                        238055           171504
-#> # ℹ 95 more rows
+#>  1 Adam… Adam10             Erbb2                         11487            13866
+#>  2 Adam… Adam10             Tspan15                       11487            70423
+#>  3 Adam… Adam17             Cd9                           11491            12527
+#>  4 Adam… Adam17             Rhbdf2                        11491           217344
+#>  5 Adam… Adam2              Cd9                           11495            12527
+#>  6 Adam… Adam2              Itga6                         11495            16403
+#>  7 Adam… Adam9              Itgb1                         11502            16412
+#>  8 Adcy… Adcyap1            Ramp2                         11516            54409
+#>  9 Apoe… Apoe               Lrp6                          11816            16974
+#> 10 Apoe… Apoe               Sdc1                          11816            20969
+#> # ℹ 94 more rows
 #> # ℹ 5 more variables: ligand_ensembl_protein_id <chr>,
 #> #   receptor_ensembl_protein_id <chr>, ligand_ensembl_gene_id <chr>,
 #> #   receptor_ensembl_gene_id <chr>, evidence <chr>
@@ -106,7 +106,7 @@ spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data 
 ### Log-Normalize
 
 ``` r
-spe <- logNormCounts(spe)
+spe <- logNormCounts(spe) 
 ```
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
@@ -121,7 +121,7 @@ ccc_tbl <- compute_spatial_ccc(spe = spe,
                                assay_name = "logcounts",
                                LRdb = LRdb_m)
 tictoc::toc()
-#> 18.206 sec elapsed
+#> 19.051 sec elapsed
 
 # future::plan(future::sequential)
 ```
@@ -129,20 +129,20 @@ tictoc::toc()
 ``` r
 ccc_tbl %>% 
   dplyr::arrange(desc(LRscore))
-#> # A tibble: 138,939 × 10
+#> # A tibble: 119,305 × 10
 #>    src          dst       d norm.d LR    ligand receptor LRscore weight WLRscore
 #>    <chr>        <chr> <dbl>  <dbl> <chr> <chr>  <chr>      <dbl>  <dbl>    <dbl>
-#>  1 GTTATTAACGT… TTGC…  138    1.01 Apoe… Apoe   Abca1      0.862  0.986    0.850
-#>  2 AGAAGTGATTC… AATG…  138    1.01 Calm… Calm1  Kcnq3      0.858  0.986    0.846
-#>  3 CGTGCTGGCCT… GGGT…  137    1    Hsp9… Hsp90… Fgfr3      0.858  1        0.858
-#>  4 TTGCATGCTGA… GTGC…  138.   1.01 Calm… Calm1  Kcnq3      0.858  0.980    0.840
-#>  5 CCCAACATACG… GTGC…  138.   1.00 Calm… Calm1  Kcnq3      0.857  0.992    0.850
-#>  6 CGGTGCAGATA… GTGC…  138    1.01 Calm… Calm1  Kcnq3      0.857  0.986    0.845
-#>  7 GTGGTTTCCGC… GTGC…  138    1.01 Calm… Calm1  Kcnq3      0.857  0.986    0.845
-#>  8 TCTGGGTAGCG… ACAT…  138.   1.01 Calm… Calm1  Kcnq3      0.857  0.987    0.845
-#>  9 TGTCGGCATGG… GGGT…  138    1.01 Hsp9… Hsp90… Fgfr3      0.856  0.986    0.844
-#> 10 AGTTTGGCACG… GCAT…  137.   1.00 Hsp9… Hsp90… Fgfr3      0.856  0.999    0.856
-#> # ℹ 138,929 more rows
+#>  1 GTTCATCGTTT… GCGA…  138    1.01 Apoe… Apoe   Lrp6       0.869  0.986    0.857
+#>  2 ACTTTACCCTC… GCGA…  138.   1.01 Apoe… Apoe   Lrp6       0.868  0.980    0.851
+#>  3 AGATGATGGAG… GCGA…  138.   1.01 Apoe… Apoe   Lrp6       0.867  0.980    0.849
+#>  4 TAACTCCATGG… GACA…  137    1    Apoe… Apoe   Vldlr      0.864  1        0.864
+#>  5 GAGGTCCCAAA… GACA…  138.   1.01 Apoe… Apoe   Vldlr      0.856  0.987    0.845
+#>  6 TAACAAAGGGA… TACG…  138    1.01 Apoe… Apoe   Vldlr      0.856  0.986    0.844
+#>  7 TTCAAAGTCTC… TATT…  138.   1.00 Apoe… Apoe   Vldlr      0.856  0.992    0.849
+#>  8 GTCCCAACGTA… TATT…  138.   1.01 Apoe… Apoe   Vldlr      0.855  0.980    0.837
+#>  9 TTCCGCGTGAG… ATAA…  138.   1.01 Apoe… Apoe   Vldlr      0.854  0.980    0.837
+#> 10 CCATCGCAGTT… AATT…  138.   1.01 Apoe… Apoe   Vldlr      0.854  0.980    0.837
+#> # ℹ 119,295 more rows
 ```
 
 ### Convert CCC table to CCC graph
@@ -158,7 +158,7 @@ ccc_graph_list <-
   to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 4)
 
 tictoc::toc()
-#> to_spatical_ccc_graph ...: 40.503 sec elapsed
+#> to_spatical_ccc_graph ...: 30.46 sec elapsed
 ```
 
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR
@@ -171,26 +171,26 @@ ccc_graph_metrics_summary_df <-
   summarize_ccc_graph_metrics(ccc_graph_list)
 
 tictoc::toc()
-#> 0.191 sec elapsed
+#> 0.187 sec elapsed
 ```
 
 ``` r
 ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
-#> # A tibble: 53 × 12
+#> # A tibble: 41 × 12
 #>    LR        graph_n_nodes graph_n_edges graph_component_count graph_motif_count
 #>    <chr>             <int>         <dbl>                 <dbl>             <int>
-#>  1 Mfge8_It…          2568          8167                     3             18869
-#>  2 Calm1_Kc…          2697         11629                     3             24463
-#>  3 Hsp90aa1…          2695         12051                     3             25363
-#>  4 Nlgn2_Nr…          2636         11910                     4             24385
-#>  5 Adam15_I…          2344          6849                     4             15221
-#>  6 Apoe_Abc…          2548          5733                     5             14085
-#>  7 App_Lrp8           2524          6406                     6             15469
-#>  8 Calm3_Ad…          2396          5839                     7             14043
-#>  9 Efna3_Ep…          2361          8104                     8             17563
-#> 10 Vegfa_Fl…          1972          3998                    13              8407
-#> # ℹ 43 more rows
+#>  1 Apoe_Vld…          2666          9078                     3             20960
+#>  2 Cx3cl1_I…          2617         10002                     4             21978
+#>  3 Mdk_Lrp1           2588          8606                     5             19447
+#>  4 Vegfb_Fl…          2535          7161                     6             16833
+#>  5 Gnai2_Cn…          2527          9723                     6             20558
+#>  6 Pdgfb_Lr…          2429          5599                     7             13253
+#>  7 Efna3_Ep…          2361          8104                     8             17563
+#>  8 Apoe_Lrp6          2497          5640                     9             13761
+#>  9 Sema4d_P…          2078          4840                    13             10292
+#> 10 App_Sorc…          2378          5455                    14             13232
+#> # ℹ 31 more rows
 #> # ℹ 7 more variables: graph_diameter <dbl>, graph_un_diameter <dbl>,
 #> #   graph_mean_dist <dbl>, graph_circuit_rank <dbl>, graph_reciprocity <dbl>,
 #> #   graph_clique_num <int>, graph_clique_count <int>
@@ -206,25 +206,25 @@ ccc_graph_group_metrics_summary_df <-
   summarize_ccc_graph_metrics(ccc_graph_list, level = "group")
 
 tictoc::toc()
-#> 0.169 sec elapsed
+#> 0.152 sec elapsed
 ```
 
 ``` r
 ccc_graph_group_metrics_summary_df 
-#> # A tibble: 3,341 × 12
+#> # A tibble: 2,321 × 12
 #>    LR       group group_n_nodes group_n_edges group_adhesion group_motif_count
 #>    <chr>    <int>         <int>         <dbl>          <dbl>             <int>
-#>  1 Bsg_Cav1     1          1913          3392              0              8432
-#>  2 Bsg_Cav1    19             5             4              0                 6
-#>  3 Bsg_Cav1     2            63           114              0               276
-#>  4 Bsg_Cav1    14             7             6              0                15
-#>  5 Bsg_Cav1     5            23            24              0                65
-#>  6 Bsg_Cav1     7            17            18              0                43
-#>  7 Bsg_Cav1    12             8             9              0                15
-#>  8 Bsg_Cav1     4            24            36              0                87
-#>  9 Bsg_Cav1    11            11            13              0                24
-#> 10 Bsg_Cav1     9            12            19              0                35
-#> # ℹ 3,331 more rows
+#>  1 Mdk_Lrp6     9            14            18              0                19
+#>  2 Mdk_Lrp6     1          1475          2684              0              5352
+#>  3 Mdk_Lrp6    13            10            11              0                15
+#>  4 Mdk_Lrp6    10            11            14              0                21
+#>  5 Mdk_Lrp6    11            11            10              0                11
+#>  6 Mdk_Lrp6     6            18            26              0                45
+#>  7 Mdk_Lrp6     2            32            43              0                73
+#>  8 Mdk_Lrp6    27             2             1              0                 0
+#>  9 Mdk_Lrp6    16             5             4              0                 4
+#> 10 Mdk_Lrp6    19             4             4              0                 3
+#> # ℹ 2,311 more rows
 #> # ℹ 6 more variables: group_diameter <dbl>, group_un_diameter <dbl>,
 #> #   group_mean_dist <dbl>, group_girth <dbl>, group_circuit_rank <dbl>,
 #> #   group_reciprocity <dbl>
@@ -288,7 +288,7 @@ cell_overlap_dist <-
   dist_cell_overlap_ccc_tbl(ccc_tbl)
 
 tictoc::toc()
-#> 1.035 sec elapsed
+#> 0.65 sec elapsed
 ```
 
 ``` r
@@ -298,7 +298,7 @@ cell_overlap_lf <-
   lf_cell_overlap_ccc_tbl(ccc_tbl)
 
 tictoc::toc()
-#> 0.924 sec elapsed
+#> 0.72 sec elapsed
 ```
 
 ``` r
@@ -334,7 +334,7 @@ high_cell_overlap_dist2 <-
   lf_to_dist()
 
 tictoc::toc()
-#> 0.017 sec elapsed
+#> 0.018 sec elapsed
 ```
 
 ``` r
