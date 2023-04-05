@@ -13,13 +13,15 @@ knitr::opts_chunk$set(
 )
 ```
 
-# spatialCCC <img src="man/figures/logo.png" align="right" height="139" />
+# spatialCCC <img src="man/figures/logo.png" align="right" height="139"/>
 
 <!-- badges: start -->
+
 [![R-CMD-check](https://github.com/dolchan/spatialCCC/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/dolchan/spatialCCC/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
-The goal of spatialCCC is to investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
+The goal of **spatialCCC** package is to investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
 
 ## Installation
 
@@ -30,11 +32,12 @@ You can install the development version of spatialCCC from [GitHub](https://gith
 devtools::install_github("dolchan/spatialCCC")
 ```
 
-## Example
+# Example
 
 This is a basic example which shows you a basic workflow of the package:
 
 ### Load necessary packages
+
 ```{r message = FALSE}
 library(SpatialExperiment)
 library(scater)
@@ -53,6 +56,7 @@ library(ggtree)
 ```
 
 ### Load spatialCCC package
+
 ```{r example}
 library(spatialCCC)
 ## basic example code
@@ -60,7 +64,8 @@ library(spatialCCC)
 
 ## Ligand-Receptor Database
 
-### Load built-in LRdb 
+### Load built-in LRdb
+
 ```{r}
 LRdb_mm <- 
   get_LRdb("mouse")
@@ -86,17 +91,20 @@ LRdb_m %>%
 ```
 
 ## Load Visium spatial transcriptomic data
+
 ```{r}
 data_dir <- file.path("example", "visium_tutorial")
 spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
 ```
 
 ### Log-Normalize
+
 ```{r}
 spe <- logNormCounts(spe) 
 ```
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
+
 ```{r}
 # For full LRdb analysis, future::plan can be used 
 #   for parallelization
@@ -111,7 +119,6 @@ tictoc::toc()
 # future::plan(future::sequential)
 ```
 
-
 ```{r}
 ccc_tbl %>% 
   dplyr::arrange(desc(LRscore))
@@ -120,6 +127,7 @@ ccc_tbl %>%
 ### Convert CCC table to CCC graph
 
 The conversion also adds various graph metrics to each CCC graph.
+
 ```{r}
 tictoc::tic("to_spatical_ccc_graph ...")
 
@@ -132,6 +140,7 @@ tictoc::toc()
 ```
 
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
+
 ```{r}
 tictoc::tic()
 
@@ -141,13 +150,13 @@ ccc_graph_metrics_summary_df <-
 tictoc::toc()
 ```
 
-
 ```{r}
 ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
 
 summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
+
 ```{r}
 tictoc::tic()
 
@@ -157,17 +166,18 @@ ccc_graph_group_metrics_summary_df <-
 tictoc::toc()
 ```
 
-
 ```{r}
 ccc_graph_group_metrics_summary_df 
 ```
 
 ## Visualization
+
 ```{r, fig.width=8}
 LR_of_interest <- "App_Dcc"
 ```
 
 ### spatial CCC graph plot with tissue image
+
 ```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        tissue_img = imgRaster(spe),
@@ -178,7 +188,9 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 ```
 
 ### spatial CCC graph plot without tissue image
-In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package.  Below uses "auto" layout ("kk" spring layout)
+
+In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package. Below uses "auto" layout ("kk" spring layout)
+
 ```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
@@ -189,8 +201,8 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        which_on_top = "edge")
 ```
 
-
 In this case, below is "stress" layout.
+
 ```{r, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
@@ -201,7 +213,6 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        which_on_top = "edge")
 ```
 
-
 ```{r}
 tictoc::tic()
 
@@ -211,7 +222,6 @@ cell_overlap_dist <-
 tictoc::toc()
 ```
 
-
 ```{r}
 tictoc::tic()
 
@@ -220,7 +230,6 @@ cell_overlap_lf <-
 
 tictoc::toc()
 ```
-
 
 ```{r}
 tictoc::tic()
@@ -234,7 +243,6 @@ LRs_high_cell_overlap <-
 tictoc::toc()
 ```
 
-
 ```{r}
 tictoc::tic()
 
@@ -243,8 +251,6 @@ high_cell_overlap_dist <-
 
 tictoc::toc()
 ```
-
-
 
 ```{r}
 tictoc::tic()
@@ -257,7 +263,6 @@ high_cell_overlap_dist2 <-
 
 tictoc::toc()
 ```
-
 
 ```{r}
 LR_ccc_summary_tbl <-
@@ -275,13 +280,10 @@ LR_ccc_summary_tbl <-
   )
 ```
 
-
 ```{r}
 hclus.res <- fastcluster::hclust(as.dist(high_cell_overlap_dist),
                                  method = "complete")
 ```
-
-
 
 ```{r, fig.width=8, fig.height=2}
 #| warning: false
@@ -294,8 +296,6 @@ ape::as.phylo(hclus.res) %>%
   xlim_tree(3)
 ```
 
-
-
 ```{r, fig.width=5, fig.height=5}
 #| warning: false
 ape::as.phylo(hclus.res) %>%
@@ -307,7 +307,7 @@ ape::as.phylo(hclus.res) %>%
   geom_tiplab(size=2, offset=0.05)
 ```
 
-```{r}
+```{r, warning = FALSE}
 gp_hex <-
   ccc_graph_list[[LR_of_interest]] %>%
   plot_spatial_ccc_graph(
@@ -315,7 +315,8 @@ gp_hex <-
     clip = TRUE,
     node_color = "group",
     node_size = 1,
-    edge_color = "group",
+    edge_color = "group_n_edges",
+    edge_width = 0.5,
     ghost_img = TRUE,
     which_on_top = "edge"
   ) +
@@ -324,19 +325,33 @@ gp_hex <-
 gp_hex
 ```
 
-
-
 ```{r}
 library(hexSticker)
 gp_hex_sticker <- sticker(
   gp_hex,
   package = "spatialCCC",
-  p_size = 20,
-  s_x = 1.5,
-  s_y = 0.5,
-  s_width = 4,
-  s_height = 4,
-  filename = "spatialCCC.png"
+  # p_color = "#1F1F1F",
+  p_color = "snow",
+  p_family = "sans",
+  p_fontface = "bold",
+  p_y = 1.1,
+  p_size = 40,
+  
+  s_x = 1.0,
+  s_y = 1.2,
+  s_width = 5,
+  s_height = 5*3/4,
+  
+  # h_fill = "purple",
+  h_color = "snow",
+  h_size = 1.5,
+  
+  # spotlight = TRUE,
+  # l_x = 1.0,
+  # l_y = 0.4,
+  # l_alpha = 0.25,
+  
+  filename = "spatialCCC.png",
+  dpi = 600
 )
 ```
-

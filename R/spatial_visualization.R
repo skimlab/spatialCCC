@@ -82,7 +82,8 @@ plot_spatial_ccc_graph <-
     cells_of_interest_given <- !is.null(cells_of_interest)
 
     if (cells_of_interest_given) {
-      ccc_graph %<>%
+      ccc_graph <-
+        ccc_graph %>%
         tidygraph::activate(nodes) %>%
         tidygraph::mutate(InCOI = name %in% cells_of_interest) %>%
         tidygraph::mutate(InFocus = InCOI) %>%
@@ -91,6 +92,8 @@ plot_spatial_ccc_graph <-
                             dst %in% cells_of_interest) %>%
         tidygraph::mutate(InFocus = InCOI)
 
+      # now including all cells that belong to
+      #   the groups that cells_of_interest belong to
       if (edges_expanded_to_group) {
         groups_of_interest <-
           ccc_graph %>%
@@ -106,23 +109,21 @@ plot_spatial_ccc_graph <-
           tidygraph::pull(name) %>%
           unique()
 
-        ccc_graph %<>%
+        ccc_graph <-
+          ccc_graph %>%
           tidygraph::activate(edges) %>%
           tidygraph::mutate(InGOI = src %in% cells_in_GOI |
                               dst %in% cells_in_GOI) %>%
           tidygraph::mutate(InFocus = InGOI)
       }
     } else {
-      ccc_graph %<>%
+      ccc_graph <-
+        ccc_graph %>%
         tidygraph::activate(nodes) %>%
         tidygraph::mutate(InFocus = TRUE) %>%
         tidygraph::activate(edges) %>%
         tidygraph::mutate(InFocus = TRUE)
     }
-
-    # ccc_graph %<>%
-    #   activate(nodes) %>%
-    #   filter(InFocus)
 
     ccc_graph_nodes <-
       ccc_graph %>%
@@ -197,10 +198,6 @@ plot_spatial_ccc_graph <-
 
 
     if (!is.null(tissue_img)) {
-      #
-      # add tissue image
-      #
-      # tissue_img <- imgRaster(spe)
       img_width <- ncol(tissue_img)
       img_height <- nrow(tissue_img)
 
@@ -222,7 +219,6 @@ plot_spatial_ccc_graph <-
         x_max <- min(x_max + margin, img_width)
         y_min <- max(y_min - margin, 0)
         y_max <- min(y_max + margin, img_height)
-
       }
 
       tissue_img <- tissue_img[y_min:y_max, x_min:x_max]
