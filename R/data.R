@@ -1,6 +1,6 @@
-#' Ligand-receptor database (mouse)
+#' Ligand-receptor database (human)
 #'
-#' ligand-receptor database for mouse
+#' ligand-receptor database for human
 #'
 #' @format ## `LRdb_human`
 #' A data frame with 3,398 rows and 10 columns:
@@ -10,9 +10,8 @@
 #'   \item{ligand_gene_id, receptor_gene_id}{ligand & receptor gene ids - Entrez ID}
 #'   ...
 #' }
-#' @source <https://www.who.int/teams/global-tuberculosis-programme/data>
+#' @source <http://tcm.zju.edu.cn/celltalkdb/download.php>
 "LRdb_human"
-
 
 
 #' Ligand-receptor database (mouse)
@@ -27,5 +26,5 @@
 #'   \item{ligand_gene_id, receptor_gene_id}{ligand & receptor gene ids - Entrez ID}
 #'   ...
 #' }
-#' @source <https://www.who.int/teams/global-tuberculosis-programme/data>
+#' @source <http://tcm.zju.edu.cn/celltalkdb/download.php>
 "LRdb_mouse"

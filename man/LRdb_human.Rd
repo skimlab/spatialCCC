@@ -3,7 +3,7 @@
 \docType{data}
 \name{LRdb_human}
 \alias{LRdb_human}
-\title{Ligand-receptor database (mouse)}
+\title{Ligand-receptor database (human)}
 \format{
 \subsection{\code{LRdb_human}}{
 
@@ -17,12 +17,12 @@ A data frame with 3,398 rows and 10 columns:
 }
 }
 \source{
-\url{https://www.who.int/teams/global-tuberculosis-programme/data}
+\url{http://tcm.zju.edu.cn/celltalkdb/download.php}
 }
 \usage{
 LRdb_human
 }
 \description{
-ligand-receptor database for mouse
+ligand-receptor database for human
 }
 \keyword{datasets}

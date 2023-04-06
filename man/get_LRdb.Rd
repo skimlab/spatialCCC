@@ -2,9 +2,12 @@
 % Please edit documentation in R/get_LRdb.R
 \name{get_LRdb}
 \alias{get_LRdb}
+\alias{get_LRdb_small}
 \title{Return LRdb table}
 \usage{
 get_LRdb(species = c("human", "mouse"))
+
+get_LRdb_small(species = c("human", "mouse"))
 }
 \arguments{
 \item{species}{string, either "human" (default) or "mouse"}
@@ -13,7 +16,9 @@ get_LRdb(species = c("human", "mouse"))
 LRdb table in data frame
 }
 \description{
-Return LRdb table
+get_LRdb() returns the full size table while get_LRdb_small()
+returns a smaller table, useful for testing.
+See \link{LRdb_human} and \link{LRdb_mouse} for more detail about the database.
 }
 \examples{
 LRdb <- get_LRdb(species = "human")

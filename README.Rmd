@@ -66,25 +66,18 @@ library(spatialCCC)
 
 ### Load built-in LRdb
 
+This LRdb is downloaded from CellTalkDB: [http://tcm.zju.edu.cn/celltalkdb/download.php].  You can see the detail by:
+
+``` r
+?LRdb_human
+?LRdb_mouse
+```
+
+We also created getter function, get_LRdb(), to retrieve the database.
+
 ```{r LRdb-loading}
-LRdb_mm <- 
-  get_LRdb("mouse")
-
-LRdb_m <-
-  LRdb_mm %>%
-  slice_sample(n = 100)
-
-LR_pair_list <- c(
-  "Apoe_Sdc1",
-  "App_Dcc",
-  "Cxcl12_Ackr3",
-  "Jam3_Itgam",
-  "Cx3cl1_Itga4")
-
-LRdb_m <-
-  rbind(LRdb_m,
-        dplyr::filter(LRdb_mm, LR %in% LR_pair_list)) %>%
-  distinct()
+LRdb_m <- 
+  get_LRdb_small("mouse")
 
 LRdb_m %>% 
   arrange(ligand_gene_symbol, receptor_gene_symbol)
@@ -280,10 +273,12 @@ LR_ccc_summary_tbl <-
   )
 ```
 
+
 ```{r clustering-LR-by-cell-overlap}
 hclus.res <- fastcluster::hclust(as.dist(high_cell_overlap_dist),
                                  method = "complete")
 ```
+
 
 ```{r LR-similarity-flat-dendrogram, fig.width=8, fig.height=2}
 #| warning: false
@@ -296,6 +291,7 @@ ape::as.phylo(hclus.res) %>%
   xlim_tree(3)
 ```
 
+
 ```{r LR-similarity-circular-dendrogram, fig.width=5, fig.height=5}
 #| warning: false
 ape::as.phylo(hclus.res) %>%
@@ -306,6 +302,7 @@ ape::as.phylo(hclus.res) %>%
   geom_tippoint(aes(size=n), alpha=0.5) +
   geom_tiplab(size=2, offset=0.05)
 ```
+
 
 ```{r prep-ccc-graph-for-hex-sticker, warning = FALSE, eval=FALSE, echo=FALSE}
 gp_hex <-
