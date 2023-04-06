@@ -376,7 +376,7 @@ add_spatial_ccc_graph_metrics <-
 
       ## find subgraphs
       mutate(group = tidygraph::group_components()) %>%
-      tidygraph::morph(tidygraph::to_components()) %>%
+      tidygraph::morph(to_components) %>%
 
       ### for each subgraph
       mutate(
