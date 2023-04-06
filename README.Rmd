@@ -325,6 +325,7 @@ gp_hex <-
 gp_hex
 ```
 
+
 ```{r hex-sticker, eval=FALSE, echo=FALSE}
 library(hexSticker)
 gp_hex_sticker <- sticker(
