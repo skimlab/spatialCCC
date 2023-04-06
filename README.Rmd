@@ -66,7 +66,7 @@ library(spatialCCC)
 
 ### Load built-in LRdb
 
-```{r}
+```{r LRdb-loading}
 LRdb_mm <- 
   get_LRdb("mouse")
 
@@ -92,20 +92,20 @@ LRdb_m %>%
 
 ## Load Visium spatial transcriptomic data
 
-```{r}
+```{r visium-data-loading}
 data_dir <- file.path("example", "visium_tutorial")
 spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
 ```
 
 ### Log-Normalize
 
-```{r}
+```{r log-normalize}
 spe <- logNormCounts(spe) 
 ```
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
 
-```{r}
+```{r compute-spatial-ccc}
 # For full LRdb analysis, future::plan can be used 
 #   for parallelization
 # future::plan(future::multisession, workers = 4)
@@ -119,7 +119,7 @@ tictoc::toc()
 # future::plan(future::sequential)
 ```
 
-```{r}
+```{r spatial-ccc-table-inspection}
 ccc_tbl %>% 
   dplyr::arrange(desc(LRscore))
 ```
@@ -128,7 +128,7 @@ ccc_tbl %>%
 
 The conversion also adds various graph metrics to each CCC graph.
 
-```{r}
+```{r to-spatial-ccc-graph}
 tictoc::tic("to_spatical_ccc_graph ...")
 
 sp_col_data <- get_spatial_coords(spe)
@@ -141,7 +141,7 @@ tictoc::toc()
 
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
 
-```{r}
+```{r summarize-ccc-graph-metrics-graph}
 tictoc::tic()
 
 ccc_graph_metrics_summary_df <-
@@ -150,14 +150,14 @@ ccc_graph_metrics_summary_df <-
 tictoc::toc()
 ```
 
-```{r}
+```{r inspect-ccc-graph-metrics-summary}
 ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
 
 summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
 
-```{r}
+```{r summarise-ccc-graph-metrics-group}
 tictoc::tic()
 
 ccc_graph_group_metrics_summary_df <-
@@ -166,19 +166,19 @@ ccc_graph_group_metrics_summary_df <-
 tictoc::toc()
 ```
 
-```{r}
+```{r inspect-ccc-graph-metrics-group-summary}
 ccc_graph_group_metrics_summary_df 
 ```
 
 ## Visualization
 
-```{r, fig.width=8}
+```{r example-LR, fig.width=8}
 LR_of_interest <- "App_Dcc"
 ```
 
 ### spatial CCC graph plot with tissue image
 
-```{r, warning=FALSE}
+```{r plot-spatial-ccc-graph-tissue-image, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        tissue_img = imgRaster(spe),
                        node_color = "group_diameter",
@@ -191,7 +191,7 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 
 In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package. Below uses "auto" layout ("kk" spring layout)
 
-```{r, warning=FALSE}
+```{r plot-spatial-ccc-graph-kk-layout, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        node_color = "group",
@@ -203,7 +203,7 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
 
 In this case, below is "stress" layout.
 
-```{r, warning=FALSE}
+```{r plot-spatial-ccc-graph-stress-layout, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        # tissue_img = imgRaster(spe),
                        graph_layout = "stress",
@@ -213,7 +213,7 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        which_on_top = "edge")
 ```
 
-```{r}
+```{r compute-cell-overlap-distance}
 tictoc::tic()
 
 cell_overlap_dist <-
@@ -222,7 +222,7 @@ cell_overlap_dist <-
 tictoc::toc()
 ```
 
-```{r}
+```{r compute-cell-overlap-distance-long-format}
 tictoc::tic()
 
 cell_overlap_lf <-
@@ -231,19 +231,19 @@ cell_overlap_lf <-
 tictoc::toc()
 ```
 
-```{r}
+```{r select-LR-with-high-cell-overlap}
 tictoc::tic()
 
 LRs_high_cell_overlap <-
   cell_overlap_lf %>% 
-  filter(d < 1) %>%
-  select(lr1, lr2) %>%
+  dplyr::filter(d < 1) %>%
+  dplyr::select(lr1, lr2) %>%
   unlist() %>% unique()
 
 tictoc::toc()
 ```
 
-```{r}
+```{r subset-high-cell-overlap-LR}
 tictoc::tic()
 
 high_cell_overlap_dist <-
@@ -252,19 +252,19 @@ high_cell_overlap_dist <-
 tictoc::toc()
 ```
 
-```{r}
+```{r subset-high-cell-overlap-LR-2}
 tictoc::tic()
 
 high_cell_overlap_dist2 <-
   cell_overlap_lf %>%
-  filter(d < 1) %>%
-  select(lr1, lr2, d) %>%
+  dplyr::filter(d < 1) %>%
+  dplyr::select(lr1, lr2, d) %>%
   lf_to_dist()
 
 tictoc::toc()
 ```
 
-```{r}
+```{r summarize-ccc-table-by-LR}
 LR_ccc_summary_tbl <-
   ccc_tbl %>% 
   pull(LR) %>%
@@ -280,12 +280,12 @@ LR_ccc_summary_tbl <-
   )
 ```
 
-```{r}
+```{r clustering-LR-by-cell-overlap}
 hclus.res <- fastcluster::hclust(as.dist(high_cell_overlap_dist),
                                  method = "complete")
 ```
 
-```{r, fig.width=8, fig.height=2}
+```{r LR-similarity-flat-dendrogram, fig.width=8, fig.height=2}
 #| warning: false
 ape::as.phylo(hclus.res) %>%
   ggtree(layout="dendrogram") %<+% LR_ccc_summary_tbl +
@@ -296,7 +296,7 @@ ape::as.phylo(hclus.res) %>%
   xlim_tree(3)
 ```
 
-```{r, fig.width=5, fig.height=5}
+```{r LR-similarity-circular-dendrogram, fig.width=5, fig.height=5}
 #| warning: false
 ape::as.phylo(hclus.res) %>%
   ggtree(layout = "circular") %<+% LR_ccc_summary_tbl +
@@ -307,7 +307,7 @@ ape::as.phylo(hclus.res) %>%
   geom_tiplab(size=2, offset=0.05)
 ```
 
-```{r, warning = FALSE}
+```{r prep-ccc-graph-for-hex-sticker, warning = FALSE, eval=FALSE, echo=FALSE}
 gp_hex <-
   ccc_graph_list[[LR_of_interest]] %>%
   plot_spatial_ccc_graph(
@@ -325,7 +325,7 @@ gp_hex <-
 gp_hex
 ```
 
-```{r}
+```{r hex-sticker, eval=FALSE, echo=FALSE}
 library(hexSticker)
 gp_hex_sticker <- sticker(
   gp_hex,
