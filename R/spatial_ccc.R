@@ -29,7 +29,12 @@ calc_spot_dist <- function(coords, long_format = TRUE) {
       tidyr::pivot_longer(cols = -src,
                           names_to = "dst",
                           values_to = "d") %>%
-      dplyr::filter(d > 0) %>%
+      # initially not included,
+      #   but now included because spots are not single cells
+      #   maybe, later when spatial transcriptomics become
+      #   single cell resolution, might need to separate this
+      #   into auocrine and paracrine
+      # dplyr::filter(d > 0) %>%
       dplyr::mutate(norm.d = d / x_min)
   } else {
     x
@@ -48,7 +53,7 @@ calc_spot_dist <- function(coords, long_format = TRUE) {
 #'   `spot_x`, `spot_y`.
 #'
 #' @export
-get_spatial_coords <- function(spe) {
+get_spatial_data <- function(spe) {
   spe_col_data <- SingleCellExperiment::colData(spe)
   spe_spatial_coords <- SpatialExperiment::spatialCoords(spe)
 
@@ -82,7 +87,9 @@ get_spatial_coords <- function(spe) {
 #' @param expression_min_prop minimum proportion of samples
 #'    with non-zero expression value (default: 0.05)
 #' @param spot_dist_cutoff cutoff value for norm.d in spot
-#'    distances (see [calc_spot_dist()])
+#'    distances (see [calc_spot_dist()]). Default cutoff is 1.5 and
+#'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
+#'    arranged, so by default, only computing nearest neighbors.
 #' @param LRscore_cutoff minimum LRscore to keep
 #'
 #' @return LRscore table in data.frame
@@ -115,22 +122,18 @@ compute_spatial_ccc <-
   function(spe,
            assay_name = "logcounts",
            LRdb,
-
            expression_min_prop = 0.05,
-
-           # cutoff 1.5 comes from sqrt(3) ~ 1.73
-           # so by default, only computing nearest neighbors
            spot_dist_cutoff = 1.5,
-
            LRscore_cutoff = 0.5) {
 
-    spe_cd <- get_spatial_coords(spe)
+    spe_cd <- get_spatial_data(spe)
 
     spot_dist <-
       calc_spot_dist(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")])
 
-    spot_dist %<>%
-      dplyr::filter(norm.d < spot_dist_cutoff)
+    spot_dist <-
+      dplyr::filter(spot_dist,
+                    norm.d < spot_dist_cutoff)
 
     gexp <- as.matrix(assays(spe)[[assay_name]])
     rowAnnots <- rowData(spe)
@@ -202,8 +205,8 @@ compute_spatial_ccc <-
 #' Convert CCC table to spatial CCC graph
 #'
 #' @param ccc_tbl an output of [compute_spatial_ccc()]
-#' @param spatial_coords a table with spatial coordinates of
-#'   spots/cells in spatial transcriptomic data.  if spatial_coords
+#' @param spatial_data a table with spatial coordinates of
+#'   spots/cells in spatial transcriptomic data.  if spatial_data
 #'   includes cell_id, spot_x, spot_y, they will be used as is;
 #'   Otherwise, use the first three columns as if they are
 #'   cell_id, spot_x, spot_y
@@ -214,40 +217,45 @@ compute_spatial_ccc <-
 #'
 to_spatial_ccc_graph <-
   function(ccc_tbl,
-           spatial_coords,
+           spatial_data,
            LR_of_interest = NULL) {
     if (!is.null(LR_of_interest)) {
       ccc_tbl <-
         dplyr::filter(ccc_tbl, LR == LR_of_interest)
     }
 
-    if (any(is.na(match(
-      c("cell_id", "spot_x", "spot_y"), colnames(spatial_coords)
-    )))) {
-      colnames(spatial_coords) <- c("cell_id", "spot_x", "spot_y")
+    # check if we have these three columns
+    cell_spot_columns <-
+      match(c("cell_id", "spot_x", "spot_y"),
+            colnames(spatial_data))
+
+    if (any(is.na(cell_spot_columns))) {
+      cli::cli_abort(message = "{.var spatial_data} should include: 'cell_id', 'spot_x', 'spot_y'")
     } else {
-      spatial_coords <-
-        dplyr::select(spatial_coords,
-                      cell_id, spot_x, spot_y)
+      spatial_data <-
+        dplyr::relocate(spatial_data,
+                        cell_id, spot_x, spot_y)
     }
 
     ccc_by_cell <-
       summarise_ccc_by_cell_lr(ccc_tbl) %>%
       collapse_to_ccc_by_cell() %>%
-      add_spatial_coords(spatial_coords)
+      add_spatial_data(spatial_data)
 
     ccc_tbl %>%
-      # collapse when there are multiple ligand-receptor pairs included
-      dplyr::group_by(src, dst, d, norm.d) %>%
-      dplyr::summarise(
-        LR = paste(LR, collapse = ";"),
-        ligand = paste(ligand, collapse = ";"),
-        receptor = paste(receptor, collapse = "l"),
-        LRscore = mean(LRscore),
-        weight = mean(weight),
-        WLRscore = mean(WLRscore),
-        .groups = "drop"
-      ) %>%
+      ## collapse when there are multiple ligand-receptor pairs included
+      ## let's not worry about this
+      #
+      # dplyr::group_by(src, dst, d, norm.d) %>%
+      # dplyr::summarise(
+      #   LR = paste(LR, collapse = ";"),
+      #   ligand = paste(ligand, collapse = ";"),
+      #   receptor = paste(receptor, collapse = "l"),
+      #   LRscore = mean(LRscore),
+      #   weight = mean(weight),
+      #   WLRscore = mean(WLRscore),
+      #   .groups = "drop"
+      # ) %>%
       tidygraph::mutate(from = src,
                         to = dst) %>%
       tidygraph::as_tbl_graph(directed = TRUE) %>%
@@ -270,7 +278,7 @@ to_spatial_ccc_graph <-
 #' @export
 to_spatial_ccc_graph_list <-
   function(ccc_tbl,
-           spatial_coords,
+           spatial_data,
            workers = 1) {
     # staging list of LR pairs to process
     LR_list <-
@@ -286,7 +294,7 @@ to_spatial_ccc_graph_list <-
     LR_list %>%
       furrr::future_map(function(LR_of_interest) {
         to_spatial_ccc_graph(ccc_tbl,
-                             spatial_coords,
+                             spatial_data,
                              LR_of_interest)
       },
       .options = furrr::furrr_options(seed = TRUE,
@@ -469,22 +477,24 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
 # Internal functions =====
 #
 
-#' Add spatial coordinates to CCC table
+#' Add spatial data to CCC table
 #'
 #' internal function
 #' @param df CCC table. see [compute_spatial_ccc()].
-#' @param spatial_coords spatial coordinates: cell_id, spot_x, spot_y;
-#'   the name does not matter, but only the order as they will be renamed.
-add_spatial_coords <-
+#' @param spatial_data spatial data: cell_id, spot_x, spot_y, ...;
+#'   they should contain cell_id, spot_x, spot_y, and the rest will
+#'   be added
+add_spatial_data <-
   function(df,
-           spatial_coords) {
+           spatial_data) {
 
     # adjust colnames to make them consistent
-    colnames(spatial_coords) <- c("cell_id", "spot_x", "spot_y")
+    spatial_data <-
+      spatial_data %>%
+      dplyr::relocate(cell_id, spot_x, spot_y)
 
     dplyr::left_join(df,
-                     spatial_coords %>%
-                       select(cell_id, spot_x, spot_y),
+                     spatial_data,
                      by = "cell_id")
   }
 

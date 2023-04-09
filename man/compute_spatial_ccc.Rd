@@ -24,7 +24,9 @@ compute_spatial_ccc(
 with non-zero expression value (default: 0.05)}
 
 \item{spot_dist_cutoff}{cutoff value for norm.d in spot
-distances (see \code{\link[=calc_spot_dist]{calc_spot_dist()}})}
+distances (see \code{\link[=calc_spot_dist]{calc_spot_dist()}}). Default cutoff is 1.5 and
+it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
+arranged, so by default, only computing nearest neighbors.}
 
 \item{LRscore_cutoff}{minimum LRscore to keep}
 }
