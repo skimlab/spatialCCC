@@ -17,9 +17,9 @@ plot_spatial_ccc_graph(
   edge_alpha = 1,
   node_size = 0.5,
   node_alpha = 1,
-  clip = FALSE,
+  clip = TRUE,
   tissue_img = NULL,
-  ghost_img = FALSE,
+  image_alpha = NA,
   which_on_top = "edge",
   show_arrow = FALSE
 )
@@ -49,13 +49,12 @@ default values do not work well.  Might need some manual adjustments.}
 
 \item{edge_alpha, node_alpha}{specify transparency of edges and nodes}
 
-\item{clip}{if TRUE, tissue_img will be cliped to show only active cell-cell
-communications}
+\item{clip}{if TRUE (dafault), tissue_img will be cliped to show only
+active cell-cell communications}
 
 \item{tissue_img}{Raster image, like imgRaster(spe)}
 
-\item{ghost_img}{if TRUE, tissue_img is not displayed, only used for
-placing spots.}
+\item{image_alpha}{alpha value for tissue_img. If NA, keep the current value.}
 
 \item{which_on_top}{either "edge" or "node"}
 
@@ -71,8 +70,9 @@ w/ or w/o tissue image
 the spots are placed on their original locations, keeping
 spatial relations.
 \item CCC graph without tissue image. In this format,
-the spots are placed using user-specified graph layout
-algorithm.  Default is ("kk")\code{\link[igraph:layout_with_kk]{igraph::layout_with_kk()}} algorithm.
+the spots are placed using either on their original locations ("spatial")
+or user-specified graph layout algorithm.  Default is ("kk" =
+\code{\link[igraph:layout_with_kk]{igraph::layout_with_kk()}}) algorithm.
 See \code{\link[=create_layout]{create_layout()}} for available algorithms.
 }
 }

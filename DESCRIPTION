@@ -27,6 +27,7 @@ Imports:
     grDevices,
     magrittr,
     purrr,
+    scales,
     SingleCellExperiment,
     SpatialExperiment,
     stats,

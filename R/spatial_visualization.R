@@ -8,8 +8,9 @@
 #'   spatial relations.
 #'
 #'   * CCC graph without tissue image. In this format,
-#'    the spots are placed using user-specified graph layout
-#'    algorithm.  Default is ("kk")[igraph::layout_with_kk()] algorithm.
+#'    the spots are placed using either on their original locations ("spatial")
+#'    or user-specified graph layout algorithm.  Default is ("kk" =
+#'    [igraph::layout_with_kk()]) algorithm.
 #'    See [create_layout()] for available algorithms.
 #'
 #' @param ccc_graph spatial CCC graph for a LR pair
@@ -28,11 +29,10 @@
 #' @param edge_width,node_size specify edge width and node size.  Currently,
 #'   default values do not work well.  Might need some manual adjustments.
 #' @param edge_alpha,node_alpha specify transparency of edges and nodes
-#' @param clip if TRUE, tissue_img will be cliped to show only active cell-cell
-#'   communications
+#' @param clip if TRUE (dafault), tissue_img will be cliped to show only
+#'   active cell-cell communications
 #' @param tissue_img Raster image, like imgRaster(spe)
-#' @param ghost_img if TRUE, tissue_img is not displayed, only used for
-#'   placing spots.
+#' @param image_alpha alpha value for tissue_img. If NA, keep the current value.
 #' @param which_on_top either "edge" or "node"
 #' @param show_arrow if TRUE, arrow is added to edge.  Default is FALSE.
 #'
@@ -74,9 +74,9 @@ plot_spatial_ccc_graph <-
            edge_alpha = 1,
            node_size = 0.5,
            node_alpha = 1,
-           clip = FALSE,
+           clip = TRUE,
            tissue_img = NULL,
-           ghost_img = FALSE,
+           image_alpha = NA,
            which_on_top = "edge",
            show_arrow = FALSE) {
     cells_of_interest_given <- !is.null(cells_of_interest)
@@ -223,7 +223,10 @@ plot_spatial_ccc_graph <-
 
       tissue_img <- tissue_img[y_min:y_max, x_min:x_max]
 
-      spatial_image_grob <- grid::rasterGrob(tissue_img)
+      # spatial_image_grob <- grid::rasterGrob(tissue_img)
+      spatial_image_grob <-
+        grid::rasterGrob(modify_alpha_image(tissue_img,
+                                            image.alpha = image_alpha))
 
       #
       # create ggraph object
@@ -239,18 +242,18 @@ plot_spatial_ccc_graph <-
         ) %>%
         ggraph::ggraph()
 
-      if (!ghost_img) {
-        # add tissue image
-        ggraph_ccc <-
-          ggraph_ccc +
-          geom_spatial(
-            data = tibble::tibble_row(sample = "sample",
-                                      grob = spatial_image_grob),
-            aes(grob = grob),
-            x = 0.5,
-            y = 0.5
-          )
-      }
+      # add tissue image
+      # when ghost_img was used, this block is used only
+      #   when ghost_img == FALSE
+      ggraph_ccc <-
+        ggraph_ccc +
+        geom_spatial(
+          data = tibble::tibble_row(sample = "sample",
+                                    grob = spatial_image_grob),
+          aes(grob = grob),
+          x = 0.5,
+          y = 0.5
+        )
     } else {
       #
       # create ggraph object
@@ -290,7 +293,7 @@ plot_spatial_ccc_graph <-
             aes(# color = factor(get(node_color)),
               fill = factor(get(node_color)),
               alpha = as.numeric(InFocus)),
-            pch = 21,
+            shape = 21,
             color = "black",
             size = node_size
           ) +
@@ -307,7 +310,7 @@ plot_spatial_ccc_graph <-
               fill = get(node_color),
               alpha = as.numeric(InFocus)
             ),
-            pch = 21,
+            shape = 21,
             color = "black",
             size = node_size
           ) +
@@ -384,9 +387,149 @@ plot_spatial_ccc_graph <-
         # theme_graph()
         # remove background
         theme_graph()
+
+      if (graph_layout == "spatial") {
+        ggraph_ccc <-
+          ggraph_ccc +
+          coord_fixed(expand = FALSE)
+      }
     }
 
     ggraph_ccc
+  }
+
+
+#' Plot spatial feature
+#'
+#' Visualize spatial features
+#'   w/ or w/o tissue image
+#'
+#'   The spots are placed on their original locations,
+#'   keeping spatial relations.
+#'
+#' @param spe SpatialExperiment object
+#' @param feature string, column name for a feature to be visualized
+#' @param cells_of_interest array of cell ids to highlight.
+#' @param spot_size specify size of spot (feature).  Currently,
+#'   default values do not work well.  Might need some manual adjustments.
+#' @param spot_alpha specify transparency of spot (feature)
+#' @param image_alpha alpha value for tissue image.
+#'   If NA, keep the current value.
+#' @param show_tissue_image if TRUE, tissue image is shown.
+#' @param clip if TRUE (dafault), tissue image will be cliped to the size to
+#'   cover only the spots
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' plot_spatial_features(spe,
+#'                       feature = "mclust_6")
+#'
+#' plot_spatial_features(spe,
+#'                       feature = "mclust_6",
+#'                       image_alpha = 0.75)
+#' }
+#'
+plot_spatial_feature <-
+  function(spe,
+           feature,
+           cells_of_interest = NULL,
+           spot_size = 1.6,
+           spot_alpha = 1,
+           image_alpha = NA,
+           show_tissue_image = TRUE,
+           clip = TRUE) {
+
+    spatial_col_data <-
+      get_spatial_data(spe)
+
+    cells_of_interest_given <- !is.null(cells_of_interest)
+
+    if (cells_of_interest_given) {
+      spatial_col_data <-
+        spatial_col_data %>%
+        dplyr::filter(cell_id %in% cells_of_interest)
+    }
+
+    gp_spatial <-
+      spatial_col_data %>%
+      ggplot(aes(
+        x = spot_x,
+        y = spot_y,
+        fill = get(feature)
+      )) +
+      guides(fill = guide_legend(title = feature))
+
+    tissue_img <- imgRaster(spe)
+
+    if (!is.null(tissue_img) & show_tissue_image) {
+      img_width <- ncol(tissue_img)
+      img_height <- nrow(tissue_img)
+
+      x_min <- 0
+      x_max <- img_width
+      y_min <- 0
+      y_max <- img_height
+
+      if (clip) {
+        x_min <- max(x_min, floor(min(spatial_col_data$spot_x)) - 1)
+        x_max <-
+          min(x_max, ceiling(max(spatial_col_data$spot_x)) + 1)
+        y_min <- max(y_min, floor(min(spatial_col_data$spot_y)) - 1)
+        y_max <-
+          min(y_max, ceiling(max(spatial_col_data$spot_y)) + 1)
+
+        margin <- round(0.05 * min(x_max - x_min, y_max - y_min))
+        x_min <- max(x_min - margin, 0)
+        x_max <- min(x_max + margin, img_width)
+        y_min <- max(y_min - margin, 0)
+        y_max <- min(y_max + margin, img_height)
+      }
+
+      tissue_img <- tissue_img[y_min:y_max, x_min:x_max]
+
+      # make tissue_img a bit less opaque, mainly aesthetic reason.
+      spatial_image_grob <-
+        grid::rasterGrob(modify_alpha_image(tissue_img,
+                                            image.alpha = image_alpha))
+      gp_spatial <-
+        gp_spatial +
+        geom_spatial(
+          data = tibble::tibble_row(sample = "sample",
+                                    grob = spatial_image_grob),
+          aes(grob = grob),
+          x = 0.5,
+          y = 0.5
+        )
+    } else {
+      x_min <- floor(min(spatial_col_data$spot_x)) - 1
+      x_max <- ceiling(max(spatial_col_data$spot_x)) + 1
+
+      y_min <- floor(min(spatial_col_data$spot_y)) - 1
+      y_max <- ceiling(max(spatial_col_data$spot_y)) + 1
+
+      margin <- round(0.05 * min(x_max - x_min, y_max - y_min))
+      x_min <- x_min - margin
+      x_max <-x_max + margin
+      y_min <- y_min - margin
+      y_max <- y_max + margin
+    }
+
+    gp_spatial +
+      geom_point(shape = 21,
+                 color = "grey15",
+                 size = spot_size,
+                 alpha = spot_alpha) +
+
+      # set boundary
+      xlim(x_min, x_max) +
+      ylim(y_max, y_min) +
+
+      coord_fixed(expand = FALSE) +
+
+      # remove background
+      ggplot2::theme_void()
   }
 
 #' A ggplot2 layer for visualizing the Visium histology
@@ -452,3 +595,16 @@ geom_spatial <- function(mapping = NULL,
     params = list(na.rm = na.rm, ...)
   )
 }
+
+#' Modify image with alpha
+#'
+#' @param raster Raster image, like imgRaster(spe)
+#' @param image.alpha alpha value for tissue_img. If NA, keep the current value.
+modify_alpha_image <- function(raster, image.alpha = NA) {
+  matrix(data = scales::alpha(raster, alpha = image.alpha),
+         nrow = nrow(x = raster),
+         ncol = ncol(x = raster),
+         byrow = TRUE)
+}
+
+

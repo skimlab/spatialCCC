@@ -32,11 +32,11 @@ You can install the development version of spatialCCC from [GitHub](https://gith
 devtools::install_github("dolchan/spatialCCC")
 ```
 
-# Example
+## Example
 
 This is a basic example which shows you a basic workflow of the package:
 
-### Load necessary packages
+## Load necessary packages
 
 ```{r message = FALSE}
 library(SpatialExperiment)
@@ -87,14 +87,38 @@ LRdb_m %>%
 
 ```{r visium-data-loading}
 data_dir <- file.path("example", "visium_tutorial")
-spe <- SpatialExperiment::read10xVisium(samples = data_dir, type = "HDF5", data = "filtered")
-```
-
-### Log-Normalize
-
-```{r log-normalize}
+spe <-
+  SpatialExperiment::read10xVisium(samples = data_dir,
+                                   type = "HDF5",
+                                   data = "filtered")
+# Log-Normalize
 spe <- logNormCounts(spe) 
 ```
+
+## Cell cluster data
+
+Now, let's read cell cluster data, obtained using [GraphST](https://deepst-tutorials.readthedocs.io/).
+```{r}
+cell_clusters <-
+  readr::read_csv("example/visium_tutorial/outs/graphST.csv",
+                  show_col_types = FALSE)
+
+cell_clusters <-
+  cell_clusters %>%
+  # taking only "mclust_", arranged from mclust_6, ..., mclust_11
+  dplyr::select(cell_id, all_of(paste0("mclust_", 6:11))) %>%
+  dplyr::mutate_at(vars(matches("mclust_")), factor)
+
+spe_annot <-
+  colData(spe) %>%
+  tibble::as_tibble(rownames = "cell_id") %>%
+  left_join(cell_clusters, by = "cell_id")
+
+colData(spe) <-
+  DataFrame(spe_annot %>% select(-cell_id), 
+            row.names = spe_annot$cell_id)
+```
+
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
 
@@ -124,10 +148,10 @@ The conversion also adds various graph metrics to each CCC graph.
 ```{r to-spatial-ccc-graph}
 tictoc::tic("to_spatical_ccc_graph ...")
 
-sp_col_data <- get_spatial_coords(spe)
+sp_col_data <- get_spatial_data(spe)
 
 ccc_graph_list <-
-  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 4)
+  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
 
 tictoc::toc()
 ```
@@ -148,7 +172,7 @@ ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
 
-summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
+`summarize_ccc_graph_metrics(..., level = "group")` summarizes the metrics for each subgraph (group) in CCC graph (LR)
 
 ```{r summarise-ccc-graph-metrics-group}
 tictoc::tic()
@@ -171,18 +195,80 @@ LR_of_interest <- "App_Dcc"
 
 ### spatial CCC graph plot with tissue image
 
-```{r plot-spatial-ccc-graph-tissue-image, warning=FALSE}
-plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
-                       tissue_img = imgRaster(spe),
-                       node_color = "group_diameter",
-                       node_size = 1,
-                       edge_color = "group_diameter",
-                       which_on_top = "edge")
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = imgRaster(spe),
+    node_color = "group_diameter",
+    node_size = 1,
+    node_alpha = 0.5,
+    edge_color = "group_diameter",
+    # clip = TRUE,
+    which_on_top = "edge"
+  )
+
+gp_spccc_0 <-
+  plot_spatial_ccc_graph(
+    ccc_graph =
+      ccc_graph_list[[LR_of_interest]] %>%
+      tidygraph::activate(edges) %>%
+      tidygraph::filter(norm.d == 0),
+    tissue_img = imgRaster(spe),
+    node_color = "group_diameter",
+    node_size = 1,
+    node_alpha = 0.5,
+    edge_color = "group_diameter",
+    # clip = FALSE,
+    image_alpha = 0.75,
+    which_on_top = "edge"
+  )
 ```
+
+```{r plot-spatial-ccc-graph-tissue-image, warning=FALSE}
+wrap_plots(gp_spccc, gp_spccc_0, ncol = 2, guides = "collect")
+```
+
+
 
 ### spatial CCC graph plot without tissue image
 
-In this case, graph layout can be "manual" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package. Below uses "auto" layout ("kk" spring layout)
+In this case, graph layout can be "spatial" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package. 
+
+
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    graph_layout = "spatial",
+    node_color = "group_diameter",
+    node_size = 1,
+    edge_color = "group_diameter",
+    clip = TRUE,
+    # ghost_img = TRUE,
+    which_on_top = "edge"
+  )
+
+gp_spccc_0 <-
+  plot_spatial_ccc_graph(
+    ccc_graph =
+      ccc_graph_list[[LR_of_interest]],
+    graph_layout = "spatial",
+    node_color = "mclust_7",
+    node_size = 1,
+    edge_color = "group_diameter",
+    clip = TRUE,
+    # ghost_img = TRUE,
+    which_on_top = "node"
+  )
+```
+
+```{r plot-spatial-ccc-graph-spatial, warning=FALSE}
+wrap_plots(gp_spccc, gp_spccc_0, ncol = 2)
+```
+
+
+Below uses "auto" layout ("kk" spring layout).
 
 ```{r plot-spatial-ccc-graph-kk-layout, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
@@ -206,6 +292,9 @@ plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
                        which_on_top = "edge")
 ```
 
+
+
+## Cell-overlap distance
 ```{r compute-cell-overlap-distance}
 tictoc::tic()
 

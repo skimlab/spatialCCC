@@ -4,13 +4,13 @@
 \alias{to_spatial_ccc_graph}
 \title{Convert CCC table to spatial CCC graph}
 \usage{
-to_spatial_ccc_graph(ccc_tbl, spatial_coords, LR_of_interest = NULL)
+to_spatial_ccc_graph(ccc_tbl, spatial_data, LR_of_interest = NULL)
 }
 \arguments{
 \item{ccc_tbl}{an output of \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}}
 
-\item{spatial_coords}{a table with spatial coordinates of
-spots/cells in spatial transcriptomic data.  if spatial_coords
+\item{spatial_data}{a table with spatial coordinates of
+spots/cells in spatial transcriptomic data.  if spatial_data
 includes cell_id, spot_x, spot_y, they will be used as is;
 Otherwise, use the first three columns as if they are
 cell_id, spot_x, spot_y}
