@@ -4,10 +4,10 @@
 \alias{summarise_ccc_by_cell_lr}
 \title{Summarize CCC table by (cell, LR)}
 \usage{
-summarise_ccc_by_cell_lr(ccc_tbl)
+summarise_ccc_by_cell_lr(ccc_table)
 }
 \arguments{
-\item{ccc_tbl}{CCC graph table.  see \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}.}
+\item{ccc_table}{CCC graph table.  see \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}.}
 }
 \description{
 internal function

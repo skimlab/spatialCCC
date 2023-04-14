@@ -111,7 +111,7 @@ get_spatial_data <- function(spe) {
 #' LRdb_mouse <- get_LRdb("mouse")
 #'
 #' # calculate LRscores
-#' ccc_tbl <-
+#' ccc_table <-
 #'   compute_spatial_ccc(
 #'     spe = spe,
 #'     assay_name = "logcounts",
@@ -204,7 +204,7 @@ compute_spatial_ccc <-
 
 #' Convert CCC table to spatial CCC graph
 #'
-#' @param ccc_tbl an output of [compute_spatial_ccc()]
+#' @param ccc_table an output of [compute_spatial_ccc()]
 #' @param spatial_data a table with spatial coordinates of
 #'   spots/cells in spatial transcriptomic data.  if spatial_data
 #'   includes cell_id, spot_x, spot_y, they will be used as is;
@@ -216,12 +216,12 @@ compute_spatial_ccc <-
 #' @export
 #'
 to_spatial_ccc_graph <-
-  function(ccc_tbl,
+  function(ccc_table,
            spatial_data,
            LR_of_interest = NULL) {
     if (!is.null(LR_of_interest)) {
-      ccc_tbl <-
-        dplyr::filter(ccc_tbl, LR == LR_of_interest)
+      ccc_table <-
+        dplyr::filter(ccc_table, LR == LR_of_interest)
     }
 
     # check if we have these three columns
@@ -238,11 +238,11 @@ to_spatial_ccc_graph <-
     }
 
     ccc_by_cell <-
-      summarise_ccc_by_cell_lr(ccc_tbl) %>%
+      summarise_ccc_by_cell_lr(ccc_table) %>%
       collapse_to_ccc_by_cell() %>%
       add_spatial_data(spatial_data)
 
-    ccc_tbl %>%
+    ccc_table %>%
       ## collapse when there are multiple ligand-receptor pairs included
       ## let's not worry about this
       #
@@ -277,12 +277,12 @@ to_spatial_ccc_graph <-
 #'
 #' @export
 to_spatial_ccc_graph_list <-
-  function(ccc_tbl,
+  function(ccc_table,
            spatial_data,
            workers = 1) {
     # staging list of LR pairs to process
     LR_list <-
-      ccc_tbl$LR %>%
+      ccc_table$LR %>%
       unique()
 
     names(LR_list) <- LR_list
@@ -293,7 +293,7 @@ to_spatial_ccc_graph_list <-
 
     LR_list %>%
       furrr::future_map(function(LR_of_interest) {
-        to_spatial_ccc_graph(ccc_tbl,
+        to_spatial_ccc_graph(ccc_table,
                              spatial_data,
                              LR_of_interest)
       },
@@ -473,6 +473,39 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
     dplyr::bind_rows(.id = "LR")
 }
 
+
+#' Amend CCC table with annotations for source and destination cells
+#'
+#' @param ccc_table ...
+#' @param spe ...
+#' @param annot_cols ...
+#'
+#' @export
+amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
+  annot_df <-
+    colData(spe) %>%
+    as_tibble(rownames = "cell_id") %>%
+    select(cell_id, all_of(annot_cols))
+
+  add_dot_src <- function(s) {
+    paste0(s, ".src")
+  }
+
+  add_dot_dst <- function(s) {
+    paste0(s, ".dst")
+  }
+
+  ccc_table %>%
+    # add annotations to source cells
+    dplyr::left_join(annot_df, by = c("src" = "cell_id")) %>%
+    dplyr::rename_with(add_dot_src, all_of(annot_cols)) %>%
+
+    # add annotations to destination cells
+    dplyr::left_join(annot_df, by = c("dst" = "cell_id")) %>%
+    dplyr::rename_with(add_dot_dst, all_of(annot_cols))
+}
+
+
 #
 # Internal functions =====
 #
@@ -502,11 +535,11 @@ add_spatial_data <-
 #'
 #' internal function
 #'
-#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc()].
+#' @param ccc_table CCC graph table.  see [compute_spatial_ccc()].
 summarise_ccc_by_cell_lr <-
-  function(ccc_tbl) {
+  function(ccc_table) {
     src_summary <-
-      ccc_tbl %>%
+      ccc_table %>%
       dplyr::group_by(src, LR) %>%
       summarise(
         src.n = n(),
@@ -517,7 +550,7 @@ summarise_ccc_by_cell_lr <-
       dplyr::mutate(src = TRUE)
 
     dst_summary <-
-      ccc_tbl %>%
+      ccc_table %>%
       dplyr::group_by(dst, LR) %>%
       dplyr::summarise(
         dst.n = n(),

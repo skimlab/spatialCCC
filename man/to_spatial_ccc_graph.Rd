@@ -4,10 +4,10 @@
 \alias{to_spatial_ccc_graph}
 \title{Convert CCC table to spatial CCC graph}
 \usage{
-to_spatial_ccc_graph(ccc_tbl, spatial_data, LR_of_interest = NULL)
+to_spatial_ccc_graph(ccc_table, spatial_data, LR_of_interest = NULL)
 }
 \arguments{
-\item{ccc_tbl}{an output of \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}}
+\item{ccc_table}{an output of \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}}
 
 \item{spatial_data}{a table with spatial coordinates of
 spots/cells in spatial transcriptomic data.  if spatial_data

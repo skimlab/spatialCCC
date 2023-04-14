@@ -61,7 +61,7 @@ spe <-
 LRdb_mouse <- get_LRdb("mouse")
 
 # calculate LRscores
-ccc_tbl <-
+ccc_table <-
   compute_spatial_ccc(
     spe = spe,
     assay_name = "logcounts",
