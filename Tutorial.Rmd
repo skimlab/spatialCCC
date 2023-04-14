@@ -121,7 +121,26 @@ for (cid in cluster_ids) {
 
 
 ```{r}
-plot_spatial_feature(spe = spe_brain, feature = "mclust_10")
+for (res in seq(0.6, 1.2, 0.2)) {
+  clusters <-
+    scran::quickCluster(
+      spe_brain,
+      method = "igraph",
+      graph.fun = "louvain",
+      cluster.args = list(resolution = res)
+    )
+  nc <- length(levels(clusters))
+  spe_brain[[paste0("cluster_louvain_", nc)]] <-
+    clusters
+}
+```
+
+
+```{r, fig.width=8, fig.height=4}
+plot_spatial_feature(spe = spe_brain,
+                     feature = "mclust_10") +
+  plot_spatial_feature(spe = spe_brain,
+                       feature = "cluster_louvain_10")
 ```
 
 
@@ -146,10 +165,12 @@ ccc_tbl %>%
   dplyr::arrange(desc(LRscore))
 ```
 
+Let's add cell cluster IDs to ccc_tbl, one for `src` and the other for `dst`.
+
 ```{r}
 ccc_tbl <-
   ccc_tbl %>%
-  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10"))
+  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10", "cluster_louvain_10"))
 ```
 
 
@@ -184,7 +205,7 @@ ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
 
-summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
+`summarize_ccc_graph_metrics(..., level = "group")` summarizes the metrics for each subgraph (group) in CCC graph (LR)
 
 ```{r summarise-ccc-graph-metrics-group}
 tictoc::tic()
@@ -221,7 +242,7 @@ gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = imgRaster(spe_brain),
-    node_color = "mclust_7",
+    node_color = "mclust_8",
     node_size = 1,
     node_alpha = 0.5,
     edge_color = "group_diameter",
@@ -239,6 +260,12 @@ wrap_plots(gp_spccc, gp_spccc_0, ncol = 2)
 ```
 
 
+```{r, fig.height=4, fig.width=12}
+plot_spatial_feature(spe = spe_brain, feature = "mclust_8") +
+  plot_spatial_feature(spe = spe_brain, feature = "mclust_8") +
+  plot_spatial_feature(spe = spe_brain, feature = "cluster_louvain_10")
+```
+
 
 
 ```{r}
@@ -249,7 +276,7 @@ gp_spccc <-
       tidygraph::activate(edges) %>%
       tidygraph::filter(mclust_8.src != mclust_8.dst),
     tissue_img = imgRaster(spe_brain),
-    node_color = "mclust_8",
+    node_color = "mclust_7",
     node_size = 1,
     node_alpha = 0.5,
     edge_color = "group_diameter",
@@ -264,7 +291,7 @@ gp_spccc_0 <-
       tidygraph::activate(edges) %>%
       tidygraph::filter(mclust_8.src != mclust_8.dst),
     tissue_img = imgRaster(spe_brain),
-    node_color = "mclust_8",
+    node_color = "mclust_7",
     node_size = 1,
     node_alpha = 0.5,
     edge_color = "group_diameter",
@@ -440,3 +467,50 @@ ape::as.phylo(hclus.res) %>%
   geom_tiplab(size=2, offset=0.05)
 ```
 
+
+```{r prep-ccc-graph-for-hex-sticker, warning = FALSE, eval=FALSE, echo=FALSE}
+library(hexSticker)
+
+# to generate hex sticker for the package
+gp_hex <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  plot_spatial_ccc_graph(
+    tissue_img = imgRaster(spe_brain),
+    clip = TRUE,
+    node_color = "group",
+    node_size = 1,
+    edge_color = "group_n_edges",
+    edge_width = 0.5,
+    ghost_img = TRUE,
+    which_on_top = "edge"
+  ) +
+  theme(legend.position = "none")
+
+gp_hex_sticker <- sticker(
+  gp_hex,
+  package = "spatialCCC",
+  # p_color = "#1F1F1F",
+  p_color = "snow",
+  p_family = "sans",
+  p_fontface = "bold",
+  p_y = 1.1,
+  p_size = 40,
+
+  s_x = 1.0,
+  s_y = 1.2,
+  s_width = 5,
+  s_height = 5*3/4,
+
+  # h_fill = "purple",
+  h_color = "snow",
+  h_size = 1.5,
+
+  # spotlight = TRUE,
+  # l_x = 1.0,
+  # l_y = 0.4,
+  # l_alpha = 0.25,
+
+  filename = "spatialCCC.png",
+  dpi = 600
+)
+```
