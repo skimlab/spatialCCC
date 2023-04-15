@@ -259,7 +259,7 @@ to_spatial_ccc_graph <-
       tidygraph::mutate(from = src,
                         to = dst) %>%
       tidygraph::as_tbl_graph(directed = TRUE) %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       dplyr::left_join(ccc_by_cell,
                        by = c("name" = "cell_id")) %>%
       #
@@ -346,11 +346,11 @@ add_spatial_ccc_graph_metrics <-
     if (from_scratch) {
       sp_ccc_graph %<>%
         # clean up nodes
-        tidygraph::activate(nodes) %>%
+        tidygraph::activate("nodes") %>%
         dplyr::select(-starts_with("graph"), -starts_with("group")) %>%
 
         # clean up edges
-        tidygraph::activate(edges) %>%
+        tidygraph::activate("edges") %>%
         dplyr::select(-starts_with("graph"), -starts_with("group"))
     }
 
@@ -360,7 +360,7 @@ add_spatial_ccc_graph_metrics <-
     sp_ccc_graph %<>%
 
       # assign graph metrics to node
-      activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       ## overall graph
       mutate(
         graph_n_nodes = tidygraph::graph_order(),
@@ -441,13 +441,13 @@ extract_ccc_graph_metrics <- function(ccc_graph,
 
   if (level == "graph") {
     ccc_graph %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       tibble::as_tibble() %>%
       dplyr::select(starts_with("graph_")) %>%
       dplyr::slice_head(n = 1)
   } else {
     ccc_graph %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       tibble::as_tibble() %>%
       dplyr::select(group, starts_with("group_")) %>%
       dplyr::distinct()
@@ -603,12 +603,12 @@ add_spatial_ccc_graph_metrics_to_edges <-
   function(sp_ccc_graph, from_scratch = TRUE) {
     sp_ccc_graph_nodes_df <-
       sp_ccc_graph %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       dplyr::as_tibble()
 
     if (from_scratch) {
       sp_ccc_graph %<>%
-        tidygraph::activate(edges) %>%
+        tidygraph::activate("edges") %>%
         # clean up previous metrics
         dplyr::select(-starts_with("graph"),-starts_with("group"))
     }

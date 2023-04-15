@@ -84,10 +84,10 @@ plot_spatial_ccc_graph <-
     if (cells_of_interest_given) {
       ccc_graph <-
         ccc_graph %>%
-        tidygraph::activate(nodes) %>%
+        tidygraph::activate("nodes") %>%
         tidygraph::mutate(InCOI = name %in% cells_of_interest) %>%
         tidygraph::mutate(InFocus = InCOI) %>%
-        tidygraph::activate(edges) %>%
+        tidygraph::activate("edges") %>%
         tidygraph::mutate(InCOI = src %in% cells_of_interest |
                             dst %in% cells_of_interest) %>%
         tidygraph::mutate(InFocus = InCOI)
@@ -97,21 +97,21 @@ plot_spatial_ccc_graph <-
       if (edges_expanded_to_group) {
         groups_of_interest <-
           ccc_graph %>%
-          tidygraph::activate(nodes) %>%
+          tidygraph::activate("nodes") %>%
           tidygraph::filter(InFocus) %>%
           tidygraph::pull(group) %>%
           unique()
 
         cells_in_GOI <-
           ccc_graph %>%
-          tidygraph::activate(nodes) %>%
+          tidygraph::activate("nodes") %>%
           tidygraph::filter(group %in% groups_of_interest) %>%
           tidygraph::pull(name) %>%
           unique()
 
         ccc_graph <-
           ccc_graph %>%
-          tidygraph::activate(edges) %>%
+          tidygraph::activate("edges") %>%
           tidygraph::mutate(InGOI = src %in% cells_in_GOI |
                               dst %in% cells_in_GOI) %>%
           tidygraph::mutate(InFocus = InGOI)
@@ -119,15 +119,15 @@ plot_spatial_ccc_graph <-
     } else {
       ccc_graph <-
         ccc_graph %>%
-        tidygraph::activate(nodes) %>%
+        tidygraph::activate("nodes") %>%
         tidygraph::mutate(InFocus = TRUE) %>%
-        tidygraph::activate(edges) %>%
+        tidygraph::activate("edges") %>%
         tidygraph::mutate(InFocus = TRUE)
     }
 
     ccc_graph_nodes <-
       ccc_graph %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       tibble::as_tibble()
 
     ccc_edge_palette <-
@@ -137,7 +137,7 @@ plot_spatial_ccc_graph <-
     if (is.null(edge_range)) {
       edge_color_values <-
         ccc_graph %>%
-        tidygraph::activate(edges) %>%
+        tidygraph::activate("edges") %>%
         tidygraph::pull(get(edge_color))
 
       min_edge_color <- min(edge_color_values)
@@ -156,7 +156,7 @@ plot_spatial_ccc_graph <-
     # check if node_color is discrete
     node_color_values <-
       ccc_graph %>%
-      tidygraph::activate(nodes) %>%
+      tidygraph::activate("nodes") %>%
       tidygraph::pull(get(node_color))
 
     node_color_is_discrete <-
