@@ -257,7 +257,7 @@ ccc_graph_temp <-
   ccc_graph_list[[LR_of_interest]] %>%
   tidygraph::activate("edges") %>%
   tidygraph::filter(mclust_8.src != mclust_8.dst) %>%
-  tidy_ccc_graph()
+  tidy_up_ccc_graph()
 
 cells_of_interest <-
   ccc_graph_temp %>%
