@@ -141,10 +141,14 @@ tictoc::toc()
 # future::plan(future::sequential)
 ```
 
+
+
 ```{r spatial-ccc-table-inspection}
 ccc_tbl %>% 
   dplyr::arrange(desc(LRscore))
 ```
+
+
 
 ```{r}
 ccc_tbl <-
@@ -168,6 +172,8 @@ ccc_graph_list <-
 tictoc::toc()
 ```
 
+
+
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
 
 ```{r summarize-ccc-graph-metrics-graph}
@@ -179,10 +185,13 @@ ccc_graph_metrics_summary_df <-
 tictoc::toc()
 ```
 
+
+
 ```{r inspect-ccc-graph-metrics-summary}
 ccc_graph_metrics_summary_df %>%
   arrange(graph_component_count)
 ```
+
 
 summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
 
@@ -195,9 +204,12 @@ ccc_graph_group_metrics_summary_df <-
 tictoc::toc()
 ```
 
+
 ```{r inspect-ccc-graph-metrics-group-summary}
 ccc_graph_group_metrics_summary_df 
 ```
+
+
 
 ## Visualization
 
@@ -240,42 +252,56 @@ wrap_plots(gp_spccc, gp_spccc_0, ncol = 2)
 
 
 
+```{r}
+ccc_graph_temp <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate("edges") %>%
+  tidygraph::filter(mclust_8.src != mclust_8.dst) %>%
+  tidy_ccc_graph()
+
+cells_of_interest <-
+  ccc_graph_temp %>%
+  tidygraph::activate("nodes") %>%
+  dplyr::pull("name")
+```
 
 ```{r}
 gp_spccc <-
   plot_spatial_ccc_graph(
-    ccc_graph = 
-      ccc_graph_list[[LR_of_interest]] %>%
-      tidygraph::activate(edges) %>%
-      tidygraph::filter(mclust_8.src != mclust_8.dst),
-    tissue_img = imgRaster(spe_brain),
+    ccc_graph = ccc_graph_temp,
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
-    node_size = 1,
+    node_size = 1.5,
     node_alpha = 0.5,
-    edge_color = "group_diameter",
+    edge_color = "group_n_edges",
+    edge_width = 4,
     # clip = TRUE,
-    which_on_top = "edge"
+    which_on_top = "node"
   )
 
 gp_spccc_0 <-
   plot_spatial_ccc_graph(
-    ccc_graph =
-      ccc_graph_list[[LR_of_interest]] %>%
-      tidygraph::activate(edges) %>%
-      tidygraph::filter(mclust_8.src != mclust_8.dst),
-    tissue_img = imgRaster(spe_brain),
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    cells_of_interest = cells_of_interest,
+    edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
     node_size = 1,
     node_alpha = 0.5,
-    edge_color = "group_diameter",
-    # clip = FALSE,
-    image_alpha = 0.75,
-    which_on_top = "edge"
+    edge_color = "group_n_edges",
+    # clip = TRUE,
+    which_on_top = "node"
   )
+
+gp_spccc_1 <-
+  plot_spatial_feature(spe = spe_brain,
+                       feature = "mclust_8",
+                       cells_of_interest = cells_of_interest)
 ```
 
-```{r plot-spatial-ccc-graph-tissue-overlapped-cell-cluster, warning=FALSE}
-wrap_plots(gp_spccc, gp_spccc_0, ncol = 2, guides = "collect")
+```{r plot-spatial-ccc-graph-tissue-overlapped-cell-cluster, warning=FALSE, fig.width=9, fig.height=6}
+wrap_plots(gp_spccc, gp_spccc_1, ncol = 2)
 ```
 
 

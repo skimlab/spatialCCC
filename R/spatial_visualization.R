@@ -298,8 +298,8 @@ plot_spatial_ccc_graph <-
             color = "black",
             size = node_size
           ) +
-          scale_color_manual(name = "node", values = node_color_discrete) +
-          scale_fill_manual(name = "node", values = node_color_discrete) +
+          scale_color_manual(name = node_color, values = node_color_discrete) +
+          scale_fill_manual(name = node_color, values = node_color_discrete) +
           guides(color = guide_legend(override.aes = list(size = node_size_original * 2))) +
           scale_alpha(guide = FALSE) +
           scale_size(guide = FALSE)
@@ -320,12 +320,12 @@ plot_spatial_ccc_graph <-
           # alpha = node_alpha,
           # size = node_size
           scale_color_gradientn(
-            name = "node",
+            name = node_color,
             colours = ccc_node_palette(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
           scale_fill_gradientn(
-            name = "node",
+            name = node_color,
             colours = ccc_node_palette(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
@@ -355,7 +355,7 @@ plot_spatial_ccc_graph <-
           )
         ) +
         ggraph::scale_edge_color_gradientn(
-          name = "edge",
+          name = edge_color,
           colours = ccc_edge_palette(n = 15),
           limits = c(min_edge_color, max_edge_color)
         ) +

@@ -506,6 +506,27 @@ amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
 }
 
 
+#' Tidy up CCC graph by removing isolated nodes
+#'
+#' @param ccog CCC graph
+#'
+#' @return CCC graph with all isolated nodes removed.
+#'
+#' @export
+tidy_up_ccc_graph <-
+  function(ccog) {
+    connected_nodes <-
+      ccog %>%
+      tidygraph::activate("edges") %>%
+      tibble::as_tibble() %>%
+      dplyr::select(src, dst) %>%
+      unlist()
+
+    ccog %>%
+      tidygraph::activate("nodes") %>%
+      tidygraph::filter(name %in% connected_nodes)
+  }
+
 #
 # Internal functions =====
 #
