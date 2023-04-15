@@ -81,7 +81,7 @@ prep_cell_overlap_ccc_tbl <- function(ccc_tbl) {
   names(LR_list) <- LR_list
 
   LR_list %>%
-    map(function(lr) {
+    purrr::map(function(lr) {
       ccc_tbl %>%
         dplyr::filter(LR == lr) %>%
         dplyr::mutate(src_dst = paste(src, dst, sep = "_")) %>%
@@ -149,7 +149,7 @@ lf_cell_overlap_edgesets <- function(edgeset_list) {
   colnames(cell_overlap_lf) <- c("lr1", "lr2")
 
   cell_overlap_lf %<>%
-    mutate(
+    dplyr::mutate(
       n1 = furrr::future_map_int(.$lr1,
                                  function(lr_1) {
                                    length(edgeset_list[[lr_1]])
@@ -171,6 +171,6 @@ lf_cell_overlap_edgesets <- function(edgeset_list) {
     )
 
   cell_overlap_lf %>%
-    mutate(d = 1 - intersect / union)
+    dplyr::mutate(d = 1 - intersect / union)
 }
 

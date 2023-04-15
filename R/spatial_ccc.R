@@ -135,8 +135,8 @@ compute_spatial_ccc <-
       dplyr::filter(spot_dist,
                     norm.d < spot_dist_cutoff)
 
-    gexp <- as.matrix(assays(spe)[[assay_name]])
-    rowAnnots <- rowData(spe)
+    gexp <- as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
+    rowAnnots <- SingleCellExperiment::rowData(spe)
 
     # first remove genes with no expression at all
     #   maybe, we need to remove those with expression in only 5% (cutoff) or less
@@ -196,9 +196,9 @@ compute_spatial_ccc <-
                             dplyr::mutate(ligand = lig, receptor = rec)
                         })
 
-    bind_rows(ccc_list,
-              .id = "LR") %>%
-      relocate(LR, ligand, receptor, .after = "norm.d")
+    dplyr::bind_rows(ccc_list,
+                     .id = "LR") %>%
+      dplyr::relocate(LR, ligand, receptor, .after = "norm.d")
   }
 
 
@@ -256,8 +256,8 @@ to_spatial_ccc_graph <-
       #   WLRscore = mean(WLRscore),
       #   .groups = "drop"
       # ) %>%
-      tidygraph::mutate(from = src,
-                        to = dst) %>%
+      dplyr::mutate(from = src,
+                    to = dst) %>%
       tidygraph::as_tbl_graph(directed = TRUE) %>%
       tidygraph::activate("nodes") %>%
       dplyr::left_join(ccc_by_cell,
@@ -347,11 +347,11 @@ add_spatial_ccc_graph_metrics <-
       sp_ccc_graph %<>%
         # clean up nodes
         tidygraph::activate("nodes") %>%
-        dplyr::select(-starts_with("graph"), -starts_with("group")) %>%
+        dplyr::select(-dplyr::starts_with("graph"), -dplyr::starts_with("group")) %>%
 
         # clean up edges
         tidygraph::activate("edges") %>%
-        dplyr::select(-starts_with("graph"), -starts_with("group"))
+        dplyr::select(-dplyr::starts_with("graph"), -dplyr::starts_with("group"))
     }
 
     #
@@ -362,7 +362,7 @@ add_spatial_ccc_graph_metrics <-
       # assign graph metrics to node
       tidygraph::activate("nodes") %>%
       ## overall graph
-      mutate(
+      tidygraph::mutate(
         graph_n_nodes = tidygraph::graph_order(),
         graph_n_edges = tidygraph::graph_size(),
 
@@ -377,17 +377,17 @@ add_spatial_ccc_graph_metrics <-
         graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count,
         graph_reciprocity = tidygraph::graph_reciprocity()
       ) %>%
-      tidygraph::morph(to_undirected) %>%
-      mutate(graph_clique_num = tidygraph::graph_clique_num(),
+      tidygraph::morph(tidygraph::to_undirected) %>%
+      tidygraph::mutate(graph_clique_num = tidygraph::graph_clique_num(),
              graph_clique_count = tidygraph::graph_clique_count()) %>%
       tidygraph::unmorph() %>%
 
       ## find subgraphs
-      mutate(group = tidygraph::group_components()) %>%
-      tidygraph::morph(to_components) %>%
+      tidygraph::mutate(group = tidygraph::group_components()) %>%
+      tidygraph::morph(tidygraph::to_components) %>%
 
       ### for each subgraph
-      mutate(
+      tidygraph::mutate(
         group_n_nodes = tidygraph::graph_order(),
         group_n_edges = tidygraph::graph_size(),
 
@@ -443,13 +443,13 @@ extract_ccc_graph_metrics <- function(ccc_graph,
     ccc_graph %>%
       tidygraph::activate("nodes") %>%
       tibble::as_tibble() %>%
-      dplyr::select(starts_with("graph_")) %>%
+      dplyr::select(dplyr::starts_with("graph_")) %>%
       dplyr::slice_head(n = 1)
   } else {
     ccc_graph %>%
       tidygraph::activate("nodes") %>%
       tibble::as_tibble() %>%
-      dplyr::select(group, starts_with("group_")) %>%
+      dplyr::select(group, dplyr::starts_with("group_")) %>%
       dplyr::distinct()
   }
 }
@@ -483,9 +483,9 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
 #' @export
 amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
   annot_df <-
-    colData(spe) %>%
-    as_tibble(rownames = "cell_id") %>%
-    select(cell_id, all_of(annot_cols))
+    SingleCellExperiment::colData(spe) %>%
+    tibble::as_tibble(rownames = "cell_id") %>%
+    dplyr::select(cell_id, dplyr::all_of(annot_cols))
 
   add_dot_src <- function(s) {
     paste0(s, ".src")
@@ -498,11 +498,11 @@ amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
   ccc_table %>%
     # add annotations to source cells
     dplyr::left_join(annot_df, by = c("src" = "cell_id")) %>%
-    dplyr::rename_with(add_dot_src, all_of(annot_cols)) %>%
+    dplyr::rename_with(add_dot_src, dplyr::all_of(annot_cols)) %>%
 
     # add annotations to destination cells
     dplyr::left_join(annot_df, by = c("dst" = "cell_id")) %>%
-    dplyr::rename_with(add_dot_dst, all_of(annot_cols))
+    dplyr::rename_with(add_dot_dst, dplyr::all_of(annot_cols))
 }
 
 
@@ -541,7 +541,7 @@ summarise_ccc_by_cell_lr <-
     src_summary <-
       ccc_table %>%
       dplyr::group_by(src, LR) %>%
-      summarise(
+      dplyr::summarise(
         src.n = n(),
         src.WLR_total = sum(WLRscore),
         .groups = "drop"
@@ -569,7 +569,7 @@ summarise_ccc_by_cell_lr <-
     cell_lr_summary[is.na(cell_lr_summary)] <- 0
 
     cell_lr_summary %>%
-      dplyr::relocate(src, dst, .after = last_col()) %>%
+      dplyr::relocate(src, dst, .after = dplyr::last_col()) %>%
       dplyr::mutate(inflow.n = dst.n - src.n,
                     inflow.WLR_total = dst.WLR_total - src.WLR_total)
   }
@@ -610,13 +610,13 @@ add_spatial_ccc_graph_metrics_to_edges <-
       sp_ccc_graph %<>%
         tidygraph::activate("edges") %>%
         # clean up previous metrics
-        dplyr::select(-starts_with("graph"),-starts_with("group"))
+        dplyr::select(-dplyr::starts_with("graph"),-dplyr::starts_with("group"))
     }
 
     sp_ccc_graph %>%
       dplyr::left_join(
         sp_ccc_graph_nodes_df %>%
-          dplyr::select(name, starts_with("graph_"), group, starts_with("group_")),
+          dplyr::select(name, dplyr::starts_with("graph_"), group, dplyr::starts_with("group_")),
         by = c("src" = "name")
       )
   }

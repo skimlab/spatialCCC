@@ -132,7 +132,7 @@ plot_spatial_ccc_graph <-
 
     ccc_edge_palette <-
       # RdYlBu is an alternative to Spectral
-      grDevices::colorRampPalette(rev(brewer.pal(n = 7, name = "Spectral")))
+      grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "Spectral")))
 
     if (is.null(edge_range)) {
       edge_color_values <-
@@ -151,7 +151,7 @@ plot_spatial_ccc_graph <-
     }
 
     ccc_node_palette <-
-      grDevices::colorRampPalette(rev(brewer.pal(7, "Spectral")))
+      grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "Spectral")))
 
     # check if node_color is discrete
     node_color_values <-
@@ -349,9 +349,9 @@ plot_spatial_ccc_graph <-
           arrow = grid::arrow(
             angle = 15,
             type = "closed",
-            length = unit(ifelse(show_arrow,
-                                 0.01 * edge_width,
-                                 0), "npc")
+            length = grid::unit(ifelse(show_arrow,
+                                       0.01 * edge_width,
+                                       0), "npc")
           )
         ) +
         ggraph::scale_edge_color_gradientn(
@@ -387,7 +387,7 @@ plot_spatial_ccc_graph <-
         ggraph_ccc +
         # theme_graph()
         # remove background
-        theme_graph()
+        ggraph::theme_graph()
 
       if (graph_layout == "spatial") {
         ggraph_ccc <-
@@ -462,7 +462,7 @@ plot_spatial_feature <-
       )) +
       guides(fill = guide_legend(title = feature))
 
-    tissue_img <- imgRaster(spe)
+    tissue_img <- SpatialExperiment::imgRaster(spe)
 
     if (!is.null(tissue_img) & show_tissue_image) {
       img_width <- ncol(tissue_img)

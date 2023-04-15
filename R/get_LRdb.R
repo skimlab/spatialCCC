@@ -46,7 +46,7 @@ get_LRdb_small <- function(species = c("human", "mouse")) {
 
   LRdb_small <-
     LRdb %>%
-    slice_sample(n = 100)
+    dplyr::slice_sample(n = 100)
 
   LR_pair_list <- c(
     "Apoe_Sdc1",
@@ -56,5 +56,5 @@ get_LRdb_small <- function(species = c("human", "mouse")) {
     "Cx3cl1_Itga4")
 
   rbind(LRdb_small, dplyr::filter(LRdb, LR %in% LR_pair_list)) %>%
-    distinct()
+    dplyr::distinct()
 }
