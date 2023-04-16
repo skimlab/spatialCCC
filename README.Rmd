@@ -272,12 +272,11 @@ gp_spccc <-
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
     edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
-    node_size = 1.5,
-    node_alpha = 0.5,
+    node_size = 1,
+    node_alpha = 1,
     edge_color = "group_n_edges",
-    edge_width = 4,
     # clip = TRUE,
-    which_on_top = "node"
+    which_on_top = "edge"
   )
 
 gp_spccc_0 <-
@@ -288,7 +287,7 @@ gp_spccc_0 <-
     edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
     node_size = 1,
-    node_alpha = 0.5,
+    node_alpha = 1,
     edge_color = "group_n_edges",
     # clip = TRUE,
     which_on_top = "node"
@@ -302,6 +301,10 @@ gp_spccc_1 <-
 
 ```{r plot-spatial-ccc-graph-tissue-overlapped-cell-cluster, warning=FALSE, fig.width=9, fig.height=6}
 wrap_plots(gp_spccc, gp_spccc_1, ncol = 2)
+```
+
+```{r, fig.width=8}
+gp_spccc_0
 ```
 
 

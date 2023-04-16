@@ -527,6 +527,59 @@ tidy_up_ccc_graph <-
       tidygraph::filter(name %in% connected_nodes)
   }
 
+
+#' Tag nodes if included in COIs
+#'
+#' Add additional columns to all nodes in CCC graph:
+#'   1. InCOI = TRUE if a node is included in COIs or is connected
+#'                  to a node in COIs
+#'   2. tagged = TRUE if a node is included in a group that includes
+#'                   any of COIs, when edges_expanded_to_group = TRUE
+#'
+#' @param ccog CCC graph
+#' @param COIs array of nodes to highlight
+#' @param edges_expanded_to_group If TRUE,
+#'
+#' @return CCC graph with InCOI and tagged columns (see above)
+tag_cells_in_ccc_graph <- function(ccog, COIs, edges_expanded_to_group = FALSE) {
+  ccog <-
+    ccog %>%
+    tidygraph::activate("nodes") %>%
+    tidygraph::mutate(InCOI = name %in% COIs) %>%
+    tidygraph::mutate(tagged = InCOI) %>%
+    tidygraph::activate("edges") %>%
+    tidygraph::mutate(InCOI = src %in% COIs | dst %in% COIs) %>%
+    tidygraph::mutate(tagged = InCOI) # by default
+
+  # now including all cells that belong to
+  #   the groups that cells_of_interest belong to
+  if (edges_expanded_to_group) {
+    GOIs <-
+      ccog %>%
+      tidygraph::activate("nodes") %>%
+      tidygraph::filter(InCOI) %>%
+      tidygraph::pull(group) %>%
+      unique()
+
+    cells_in_GOI <-
+      ccog %>%
+      tidygraph::activate("nodes") %>%
+      tidygraph::filter(group %in% GOIs) %>%
+      tidygraph::pull(name) %>%
+      unique()
+
+    ccog <-
+      ccog %>%
+      tidygraph::activate("nodes") %>%
+      tidygraph::mutate(tagged = name %in% cells_in_GOI) %>%
+      tidygraph::activate("edges") %>%
+      tidygraph::mutate(tagged = src %in% cells_in_GOI |
+                          dst %in% cells_in_GOI)
+  }
+
+  ccog
+}
+
 #
 # Internal functions =====
 #

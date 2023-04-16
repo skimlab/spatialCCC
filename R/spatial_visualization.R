@@ -84,45 +84,50 @@ plot_spatial_ccc_graph <-
     if (cells_of_interest_given) {
       ccc_graph <-
         ccc_graph %>%
-        tidygraph::activate("nodes") %>%
-        tidygraph::mutate(InCOI = name %in% cells_of_interest) %>%
-        tidygraph::mutate(InFocus = InCOI) %>%
-        tidygraph::activate("edges") %>%
-        tidygraph::mutate(InCOI = src %in% cells_of_interest |
-                            dst %in% cells_of_interest) %>%
-        tidygraph::mutate(InFocus = InCOI)
+        tag_cells_in_ccc_graph(COIs = cells_of_interest,
+                               edges_expanded_to_group = edges_expanded_to_group)
 
-      # now including all cells that belong to
-      #   the groups that cells_of_interest belong to
-      if (edges_expanded_to_group) {
-        groups_of_interest <-
-          ccc_graph %>%
-          tidygraph::activate("nodes") %>%
-          tidygraph::filter(InFocus) %>%
-          tidygraph::pull(group) %>%
-          unique()
-
-        cells_in_GOI <-
-          ccc_graph %>%
-          tidygraph::activate("nodes") %>%
-          tidygraph::filter(group %in% groups_of_interest) %>%
-          tidygraph::pull(name) %>%
-          unique()
-
-        ccc_graph <-
-          ccc_graph %>%
-          tidygraph::activate("edges") %>%
-          tidygraph::mutate(InGOI = src %in% cells_in_GOI |
-                              dst %in% cells_in_GOI) %>%
-          tidygraph::mutate(InFocus = InGOI)
-      }
+      # ccc_graph <-
+      #   ccc_graph %>%
+      #   tidygraph::activate("nodes") %>%
+      #   tidygraph::mutate(InCOI = name %in% cells_of_interest) %>%
+      #   tidygraph::mutate(InFocus = InCOI) %>%
+      #   tidygraph::activate("edges") %>%
+      #   tidygraph::mutate(InCOI = src %in% cells_of_interest |
+      #                       dst %in% cells_of_interest) %>%
+      #   tidygraph::mutate(InFocus = InCOI)
+      #
+      # # now including all cells that belong to
+      # #   the groups that cells_of_interest belong to
+      # if (edges_expanded_to_group) {
+      #   groups_of_interest <-
+      #     ccc_graph %>%
+      #     tidygraph::activate("nodes") %>%
+      #     tidygraph::filter(InFocus) %>%
+      #     tidygraph::pull(group) %>%
+      #     unique()
+      #
+      #   cells_in_GOI <-
+      #     ccc_graph %>%
+      #     tidygraph::activate("nodes") %>%
+      #     tidygraph::filter(group %in% groups_of_interest) %>%
+      #     tidygraph::pull(name) %>%
+      #     unique()
+      #
+      #   ccc_graph <-
+      #     ccc_graph %>%
+      #     tidygraph::activate("edges") %>%
+      #     tidygraph::mutate(InGOI = src %in% cells_in_GOI |
+      #                         dst %in% cells_in_GOI) %>%
+      #     tidygraph::mutate(InFocus = InGOI)
+      # }
     } else {
       ccc_graph <-
         ccc_graph %>%
         tidygraph::activate("nodes") %>%
-        tidygraph::mutate(InFocus = TRUE) %>%
+        tidygraph::mutate(tagged = TRUE) %>%
         tidygraph::activate("edges") %>%
-        tidygraph::mutate(InFocus = TRUE)
+        tidygraph::mutate(tagged = TRUE)
     }
 
     ccc_graph_nodes <-
@@ -150,8 +155,10 @@ plot_spatial_ccc_graph <-
       min_edge_color <- -mm
     }
 
-    ccc_node_palette <-
+    ccc_node_palette_gradient <-
       grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "Spectral")))
+
+    ccc_node_palette_discrete <- scales::hue_pal()
 
     # check if node_color is discrete
     node_color_values <-
@@ -187,10 +194,10 @@ plot_spatial_ccc_graph <-
     edge_alpha_original <- edge_alpha
 
     if (which_on_top == "edge") {
-      node_alpha = 0.5 * node_alpha_original
+      #node_alpha = 0.5 * node_alpha_original
       #node_size = 0.5 * node_size
     } else {
-      edge_alpha = 0.5 * edge_alpha_original
+      #edge_alpha = 0.5 * edge_alpha_original
       #edge_width = 0.5 * edge_width
     }
 
@@ -286,21 +293,21 @@ plot_spatial_ccc_graph <-
       if (node_color_is_discrete) {
         unique_node_color_values <- sort(unique(node_color_values))
         node_color_discrete <-
-          ccc_node_palette(n = length(unique_node_color_values))
+          ccc_node_palette_discrete(n = length(unique_node_color_values))
         names(node_color_discrete) <- unique_node_color_values
 
         gg +
           ggraph::geom_node_point(
             aes(# color = factor(get(node_color)),
               fill = factor(get(node_color)),
-              alpha = as.numeric(InFocus)),
+              alpha = as.numeric(tagged)),
             shape = 21,
             color = "black",
             size = node_size
           ) +
           scale_color_manual(name = node_color, values = node_color_discrete) +
           scale_fill_manual(name = node_color, values = node_color_discrete) +
-          guides(color = guide_legend(override.aes = list(size = node_size_original * 2))) +
+          guides(color = guide_legend(override.aes = list(size = node_size_original))) +
           scale_alpha(guide = FALSE) +
           scale_size(guide = FALSE)
       } else {
@@ -309,7 +316,7 @@ plot_spatial_ccc_graph <-
             aes(
               # color = get(node_color),
               fill = get(node_color),
-              alpha = as.numeric(InFocus)
+              alpha = as.numeric(tagged)
             ),
             shape = 21,
             color = "black",
@@ -321,15 +328,15 @@ plot_spatial_ccc_graph <-
           # size = node_size
           scale_color_gradientn(
             name = node_color,
-            colours = ccc_node_palette(n = 15),
+            colours = ccc_node_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
           scale_fill_gradientn(
             name = node_color,
-            colours = ccc_node_palette(n = 15),
+            colours = ccc_node_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
-          guides(color = guide_legend(override.aes = list(size = node_size_original * 2))) +
+          guides(color = guide_legend(override.aes = list(size = node_size_original))) +
           scale_alpha(range = node_alpha_range, guide = FALSE) +
           scale_size(guide = FALSE)
       }
@@ -339,7 +346,7 @@ plot_spatial_ccc_graph <-
       gg +
         ggraph::geom_edge_link(
           aes(color = get(edge_color),
-              alpha = as.numeric(InFocus)),
+              alpha = as.numeric(tagged)),
 
           # for all edges
           # alpha = edge_alpha,
@@ -607,5 +614,6 @@ modify_alpha_image <- function(raster, image.alpha = NA) {
          ncol = ncol(x = raster),
          byrow = TRUE)
 }
+
 
 
