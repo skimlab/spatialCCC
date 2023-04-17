@@ -480,9 +480,13 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
 
 #' Amend CCC table with annotations for source and destination cells
 #'
-#' @param ccc_table ...
-#' @param spe ...
-#' @param annot_cols ...
+#' @param ccc_table CCC table, an output of [compute_spatial_ccc()]
+#' @param spe SpatialExperiment object
+#' @param annot_cols column names in colData(spe), which will be matched
+#'   against source and destination cells and added separately:
+#'   as in annot_cols{.src, .dst}
+#' @param overwrite If TRUE, the previous columns colliding with
+#'   the new columns (annot_cols.{src, dst}) will be reset.
 #'
 #' @export
 amend_ccc_table_with_cell_annots <-

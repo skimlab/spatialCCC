@@ -7,11 +7,16 @@
 amend_ccc_table_with_cell_annots(ccc_table, spe, annot_cols, overwrite = TRUE)
 }
 \arguments{
-\item{ccc_table}{...}
+\item{ccc_table}{CCC table, an output of \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}}
 
-\item{spe}{...}
+\item{spe}{SpatialExperiment object}
 
-\item{annot_cols}{...}
+\item{annot_cols}{column names in colData(spe), which will be matched
+against source and destination cells and added separately:
+as in annot_cols{.src, .dst}}
+
+\item{overwrite}{If TRUE, the previous columns colliding with
+the new columns (annot_cols.{src, dst}) will be reset.}
 }
 \description{
 Amend CCC table with annotations for source and destination cells
