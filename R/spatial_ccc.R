@@ -188,8 +188,12 @@ compute_spatial_ccc <-
                           tibble(spot_dist, LRscore = sqrt.prod / (sqrt.prod + c_mean)) %>%
                             # Weighted LR score to account for
                             #   the attenuation of cell signaling due to
-                            #   traveling distance
-                            dplyr::mutate(weight = 1 / norm.d ^ 2) %>%
+                            #   traveling distance.
+                            #
+                            # when norm.d = 0, we will use 1 to compute weight because
+                            #   1. this is not still a single cell level, hence, no guarantee it's
+                            #      autocrine, but still very close to each other.
+                            dplyr::mutate(weight = ifelse(norm.d == 0, 1, 1 / norm.d^2)) %>%
                             dplyr::mutate(WLRscore = LRscore * weight) %>%
 
                             dplyr::filter(LRscore > LRscore_cutoff) %>%
@@ -481,12 +485,10 @@ summarize_ccc_graph_metrics <- function(ccc_graph_list,
 #' @param annot_cols ...
 #'
 #' @export
-amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
-  annot_df <-
-    SingleCellExperiment::colData(spe) %>%
-    tibble::as_tibble(rownames = "cell_id") %>%
-    dplyr::select(cell_id, dplyr::all_of(annot_cols))
+amend_ccc_table_with_cell_annots <-
+  function(ccc_table, spe, annot_cols, overwrite = TRUE) {
 
+  # temp internal functions
   add_dot_src <- function(s) {
     paste0(s, ".src")
   }
@@ -494,6 +496,22 @@ amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
   add_dot_dst <- function(s) {
     paste0(s, ".dst")
   }
+
+  if (overwrite) {
+    annot_cols.after <-
+      lapply(annot_cols,
+             function(s) {
+               c(add_dot_src(s), add_dot_dst(s))
+             }) %>% unlist()
+
+    ccc_table <-
+      ccc_table %>% select(-any_of(annot_cols.after))
+  }
+
+  annot_df <-
+    SingleCellExperiment::colData(spe) %>%
+    tibble::as_tibble(rownames = "cell_id") %>%
+    dplyr::select(cell_id, dplyr::all_of(annot_cols))
 
   ccc_table %>%
     # add annotations to source cells
@@ -505,6 +523,22 @@ amend_ccc_table_with_cell_annots <- function(ccc_table, spe, annot_cols) {
     dplyr::rename_with(add_dot_dst, dplyr::all_of(annot_cols))
 }
 
+
+#' Set default cluster in CCC table
+#'
+#' @param ccc_table CCC table, output of [compute_spatial_ccc()]
+#' @param cluster_name string, the name of default cluster.
+#'   {cluster_name}.src and {cluster_name}.dst columns will be copied to
+#'   "cluster.src" and "cluster.dst".
+#'
+#' @return CCC table with amended columns
+#' @export
+set_ccc_table_default_cluster <-
+  function(ccc_table, cluster_name) {
+    ccc_table %>%
+      mutate(cluster.src = get(paste0(cluster_name, ".src")),
+             cluster.dst = get(paste0(cluster_name, ".dst")))
+  }
 
 #' Tidy up CCC graph by removing isolated nodes
 #'

@@ -121,7 +121,7 @@ for (cid in cluster_ids) {
 
 
 ```{r}
-plot_spatial_feature(spe = spe_brain, feature = "mclust_10")
+plot_spatial_feature(spe = spe_brain, feature = "mclust_8")
 ```
 
 
@@ -149,12 +149,34 @@ ccc_tbl %>%
 ```
 
 
-
+### Add cluster lables to CCC table.
 ```{r}
 ccc_tbl <-
   ccc_tbl %>%
-  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10"))
+  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10")) %>%
+  set_ccc_table_default_cluster("mclust_8")
 ```
+
+
+### Summarize cell-cell communication between cell clusters
+```{r}
+ccc_tbl_between_clusters <-
+  ccc_tbl %>%
+  group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  summarise(n = n(),
+            LRscore.sum = sum(LRscore),
+            WLRscore.sum = sum(WLRscore))
+
+ccc_tbl_between_clusters %>%
+  dplyr::arrange(desc(n))
+```
+
+```{r}
+ccc_tbl_between_clusters %>%
+  dplyr::filter(mclust_8.dst != mclust_8.src) %>%
+  dplyr::arrange(desc(n))
+```
+
 
 
 ### Convert CCC table to CCC graph
@@ -233,10 +255,10 @@ gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = imgRaster(spe_brain),
-    node_color = "mclust_7",
+    node_color = "mclust_8",
     node_size = 1,
     node_alpha = 0.5,
-    edge_color = "group_diameter",
+    edge_color = "group",
     # clip = TRUE,
     which_on_top = "edge"
   )
@@ -270,25 +292,27 @@ gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_temp,
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    edges_expanded_to_group = FALSE,
-    node_color = "mclust_8",
-    node_size = 1,
+    node_color = "inflow.n",
+    node_size = 1.25,
     node_alpha = 1,
-    edge_color = "group_n_edges",
+    edge_color = "group",
+    show_arrow = TRUE,
     # clip = TRUE,
-    which_on_top = "edge"
+    which_on_top = "node"
   )
 
 gp_spccc_0 <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0,
     cells_of_interest = cells_of_interest,
     edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
-    node_size = 1,
+    node_size = 1.25,
     node_alpha = 1,
-    edge_color = "group_n_edges",
+    edge_color = "group",
+    show_arrow = TRUE,
     # clip = TRUE,
     which_on_top = "node"
   )

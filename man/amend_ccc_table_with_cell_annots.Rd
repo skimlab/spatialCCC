@@ -4,7 +4,7 @@
 \alias{amend_ccc_table_with_cell_annots}
 \title{Amend CCC table with annotations for source and destination cells}
 \usage{
-amend_ccc_table_with_cell_annots(ccc_table, spe, annot_cols)
+amend_ccc_table_with_cell_annots(ccc_table, spe, annot_cols, overwrite = TRUE)
 }
 \arguments{
 \item{ccc_table}{...}
