@@ -1,0 +1,121 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+
+```{r}
+barebone_ccc_tbl <- 
+  calc_spot_dist(spe_brain) %>%
+  amend_ccc_table_with_cell_annots(spe = spe_brain, 
+                                   annot_cols = c("mclust_8", "mclust_10"))
+
+barebone_ccc_tbl_summary <-
+  barebone_ccc_tbl %>%
+  group_by(mclust_8.src, mclust_8.dst) %>%
+  summarise(n = n(),
+            .groups = "drop")
+
+barebone_ccc_tbl_summary
+```
+
+
+```{r}
+ccc_tbl_summary <-
+  ccc_tbl %>%
+  group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  summarise(n = n(),
+            .groups = "drop")
+
+ccc_tbl_summary <-
+  ccc_tbl_summary %>%
+  left_join(barebone_ccc_tbl_summary, 
+            by = c("mclust_8.src", "mclust_8.dst"),
+            suffix = c(".ccc", ".base")) %>%
+  mutate(r.ccc = n.ccc/n.base)
+
+ccc_tbl_summary %>%
+  group_by(mclust_8.src, mclust_8.dst) %>%
+  slice_max(r.ccc, n = 1) %>%
+  arrange(LR)
+```
+
+
+
+```{r}
+ccc_tbl_summary <-
+  ccc_tbl %>%
+  group_by(mclust_8.src, mclust_8.dst) %>%
+  summarise(n = n(),
+            .groups = "drop")
+
+ccc_tbl_summary <-
+  ccc_tbl_summary %>%
+  left_join(barebone_ccc_tbl_summary, 
+            by = c("mclust_8.src", "mclust_8.dst"),
+            suffix = c(".ccc", ".base")) %>%
+  mutate(r.ccc = n.ccc/n.base)
+
+ccc_tbl_summary %>%
+  arrange(desc(r.ccc))
+```
+
+
+```{r}
+# LR summary
+#
+# # of LR interactions
+# # of LR interactions between cluster-pairs
+# # of LR interactions within a cluster
+# # of LR interactions within a spot
+
+
+ccc_tbl %>%
+  group_by(LR) %>%
+  summarise(n1 = n(),
+            n2 = sum(cluster.src != cluster.dst),
+            n3 = sum(cluster.src == cluster.dst),
+            n4 = sum(src == dst))
+```
+
+
+```{r}
+ccc_graph_temp2 <-
+  ccc_graph_list$Efnb1_Epha5 %>%
+  activate("edges") %>%
+  tidygraph::mutate(
+    ccc_within = mclust_8.src == mclust_8.dst,
+    ccc_between = mclust_8.src != mclust_8.dst,
+    ccc_in_spot = src == dst
+  ) %>%
+  tidygraph::mutate(ccc_kind = ifelse(
+    ccc_in_spot,
+    "in_spot",
+    ifelse(ccc_within, "within", "between")
+  )) %>%
+  tidygraph::mutate(ccc_kind.1 = factor(ccc_kind)) %>%
+  tidygraph::mutate(ccc_kind = as.numeric(ccc_kind.1))
+```
+
+
+```{r, fig.width=8}
+plot_spatial_ccc_graph(
+  ccc_graph_temp2,
+  graph_layout = "spatial",
+  node_color = "mclust_8",
+  node_size = 1,
+  edge_color = "ccc_kind",
+  which_on_top = "node"
+)
+```
+

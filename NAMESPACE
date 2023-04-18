@@ -2,7 +2,9 @@
 
 export(add_spatial_ccc_graph_metrics)
 export(amend_ccc_table_with_cell_annots)
+export(barebone_spatial_ccc_graph)
 export(calc_spot_dist)
+export(calc_spot_dist0)
 export(compute_spatial_ccc)
 export(dist_cell_overlap_ccc_tbl)
 export(extract_ccc_graph_metrics)

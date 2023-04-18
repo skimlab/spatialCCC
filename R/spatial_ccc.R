@@ -6,11 +6,11 @@
 #' @param long_format if TRUE (default), return long format data.frame.
 #'   Otherwise, matrix format.
 #'
-#' @return computed distance including both `d` and `norm.d`.
+#' @return A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
 #'
 #' @export
-calc_spot_dist <- function(coords, long_format = TRUE) {
+calc_spot_dist0 <- function(coords, long_format = TRUE) {
   cell_ids <- coords[[1]]
 
   x <-
@@ -41,6 +41,29 @@ calc_spot_dist <- function(coords, long_format = TRUE) {
   }
 }
 
+#' Calculate distance between spots
+#'
+#' @inheritParams compute_spatial_ccc
+#' @inheritParams calc_spot_dist0
+#'
+#' @return A data fame with computed distance including both `d` and `norm.d`.
+#'   `norm.d` is a multiple of the shortest distance between spots.
+#'
+#' @export
+calc_spot_dist <-
+  function(spe,
+           long_format = TRUE,
+           spot_dist_cutoff = 1.5) {
+    spe_cd <- get_spatial_data(spe)
+
+    spot_dist <-
+      calc_spot_dist0(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")],
+                      long_format = long_format)
+
+    spot_dist %>%
+      dplyr::filter(norm.d < spot_dist_cutoff)
+  }
+
 #' Get spatial coordinates
 #'
 #' Returns default spatial coordinates and scaled coordinates,
@@ -67,6 +90,21 @@ get_spatial_data <- function(spe) {
       spot_y = pxl_row_in_fullres * SpatialExperiment::scaleFactors(spe)
     )
 }
+
+#' Create barebone CCC graph
+#'
+#' @inheritParams to_barebone_spatial_ccc_graph
+#' @param spe SpatialExperiment object
+#'
+#' @return spatial CCC graph w/o LRscore
+#'
+#' @export
+barebone_spatial_ccc_graph <-
+  function(spe,
+           spot_dist_cutoff = 1.5) {
+    calc_spot_dist(spe) %>%
+      to_barebone_spatial_ccc_graph()
+  }
 
 #' Compute ligand-receptor interactions
 #'
@@ -126,14 +164,7 @@ compute_spatial_ccc <-
            spot_dist_cutoff = 1.5,
            LRscore_cutoff = 0.5) {
 
-    spe_cd <- get_spatial_data(spe)
-
-    spot_dist <-
-      calc_spot_dist(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")])
-
-    spot_dist <-
-      dplyr::filter(spot_dist,
-                    norm.d < spot_dist_cutoff)
+    spot_dist <- calc_spot_dist(spe)
 
     gexp <- as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
     rowAnnots <- SingleCellExperiment::rowData(spe)
@@ -247,22 +278,7 @@ to_spatial_ccc_graph <-
       add_spatial_data(spatial_data)
 
     ccc_table %>%
-      ## collapse when there are multiple ligand-receptor pairs included
-      ## let's not worry about this
-      #
-      # dplyr::group_by(src, dst, d, norm.d) %>%
-      # dplyr::summarise(
-      #   LR = paste(LR, collapse = ";"),
-      #   ligand = paste(ligand, collapse = ";"),
-      #   receptor = paste(receptor, collapse = "l"),
-      #   LRscore = mean(LRscore),
-      #   weight = mean(weight),
-      #   WLRscore = mean(WLRscore),
-      #   .groups = "drop"
-      # ) %>%
-      dplyr::mutate(from = src,
-                    to = dst) %>%
-      tidygraph::as_tbl_graph(directed = TRUE) %>%
+      to_barebone_spatial_ccc_graph() %>%
       tidygraph::activate("nodes") %>%
       dplyr::left_join(ccc_by_cell,
                        by = c("name" = "cell_id")) %>%
@@ -733,3 +749,15 @@ add_spatial_ccc_graph_metrics_to_edges <-
       )
   }
 
+#' Convert CCC table to barebone spatial CCC graph
+#'
+#' @param ccc_table an output of [compute_spatial_ccc()]
+#'
+#' @return CCC graph (barebone)
+to_barebone_spatial_ccc_graph <-
+  function(ccc_table) {
+    ccc_table %>%
+      dplyr::mutate(from = src,
+                    to = dst) %>%
+      tidygraph::as_tbl_graph(directed = TRUE)
+  }
