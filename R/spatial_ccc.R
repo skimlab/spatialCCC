@@ -93,8 +93,7 @@ get_spatial_data <- function(spe) {
 
 #' Create barebone CCC graph
 #'
-#' @inheritParams to_barebone_spatial_ccc_graph
-#' @param spe SpatialExperiment object
+#' @inheritParams compute_spatial_ccc
 #'
 #' @return spatial CCC graph w/o LRscore
 #'

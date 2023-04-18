@@ -8,6 +8,11 @@ barebone_spatial_ccc_graph(spe, spot_dist_cutoff = 1.5)
 }
 \arguments{
 \item{spe}{SpatialExperiment object}
+
+\item{spot_dist_cutoff}{cutoff value for norm.d in spot
+distances (see \code{\link[=calc_spot_dist]{calc_spot_dist()}}). Default cutoff is 1.5 and
+it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
+arranged, so by default, only computing nearest neighbors.}
 }
 \value{
 spatial CCC graph w/o LRscore
