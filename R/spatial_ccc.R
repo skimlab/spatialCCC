@@ -551,6 +551,7 @@ amend_ccc_table_with_cell_annots <-
 #'   "cluster.src" and "cluster.dst".
 #'
 #' @return CCC table with amended columns
+#'
 #' @export
 set_ccc_table_default_cluster <-
   function(ccc_table, cluster_name) {

@@ -310,7 +310,7 @@ gp_spccc_0 <-
     edges_expanded_to_group = FALSE,
     node_color = "mclust_8",
     node_size = 1.25,
-    node_alpha = 1,
+    node_alpha = 0.5,
     edge_color = "group",
     show_arrow = TRUE,
     # clip = TRUE,
@@ -364,7 +364,7 @@ gp_spccc_0 <-
   )
 ```
 
-```{r plot-spatial-ccc-graph-spatial, warning=FALSE, fig.width=8}
+```{r plot-spatial-ccc-graph-spatial, warning=FALSE, fig.width=10}
 wrap_plots(gp_spccc, gp_spccc_0, ncol = 2, guides = "collect")
 ```
 
