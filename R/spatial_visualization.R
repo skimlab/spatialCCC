@@ -22,7 +22,7 @@
 #'   belong to the groups that cells_of_interest belong to.
 #' @param edge_color,node_color column name to be used
 #'   for edge and node colors, respectively
-#' @param edge_range,node_range bound given in c(min, max) format.
+#' @param edge_color_range,node_color_range bound given in c(min, max) format.
 #'   if specified, the ranges are set using these values, instead of the ones
 #'   derived from data.  Useful when multiple plots are combined
 #'   later for comparison.
@@ -68,8 +68,8 @@ plot_spatial_ccc_graph <-
            edges_expanded_to_group = TRUE,
            edge_color = "group_n_edges",
            node_color = "group_n_nodes",
-           edge_range = NULL,
-           node_range = NULL,
+           edge_color_range = NULL,
+           node_color_range = NULL,
            edge_width = 0.5,
            edge_alpha = 1,
            node_size = 0.5,
@@ -86,41 +86,6 @@ plot_spatial_ccc_graph <-
         ccc_graph %>%
         tag_cells_in_ccc_graph(COIs = cells_of_interest,
                                edges_expanded_to_group = edges_expanded_to_group)
-
-      # ccc_graph <-
-      #   ccc_graph %>%
-      #   tidygraph::activate("nodes") %>%
-      #   tidygraph::mutate(InCOI = name %in% cells_of_interest) %>%
-      #   tidygraph::mutate(InFocus = InCOI) %>%
-      #   tidygraph::activate("edges") %>%
-      #   tidygraph::mutate(InCOI = src %in% cells_of_interest |
-      #                       dst %in% cells_of_interest) %>%
-      #   tidygraph::mutate(InFocus = InCOI)
-      #
-      # # now including all cells that belong to
-      # #   the groups that cells_of_interest belong to
-      # if (edges_expanded_to_group) {
-      #   groups_of_interest <-
-      #     ccc_graph %>%
-      #     tidygraph::activate("nodes") %>%
-      #     tidygraph::filter(InFocus) %>%
-      #     tidygraph::pull(group) %>%
-      #     unique()
-      #
-      #   cells_in_GOI <-
-      #     ccc_graph %>%
-      #     tidygraph::activate("nodes") %>%
-      #     tidygraph::filter(group %in% groups_of_interest) %>%
-      #     tidygraph::pull(name) %>%
-      #     unique()
-      #
-      #   ccc_graph <-
-      #     ccc_graph %>%
-      #     tidygraph::activate("edges") %>%
-      #     tidygraph::mutate(InGOI = src %in% cells_in_GOI |
-      #                         dst %in% cells_in_GOI) %>%
-      #     tidygraph::mutate(InFocus = InGOI)
-      # }
     } else {
       ccc_graph <-
         ccc_graph %>%
@@ -135,30 +100,11 @@ plot_spatial_ccc_graph <-
       tidygraph::activate("nodes") %>%
       tibble::as_tibble()
 
-    ccc_edge_palette <-
+    ccc_palette_gradient <-
       # RdYlBu is an alternative to Spectral
       grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "Spectral")))
 
-    if (is.null(edge_range)) {
-      edge_color_values <-
-        ccc_graph %>%
-        tidygraph::activate("edges") %>%
-        tidygraph::pull(get(edge_color))
-
-      min_edge_color <- min(edge_color_values)
-      max_edge_color <- max(edge_color_values)
-    }
-
-    if (max_edge_color * min_edge_color < 0) {
-      mm <- max(abs(max_edge_color), abs(min_edge_color))
-      max_edge_color <- mm
-      min_edge_color <- -mm
-    }
-
-    ccc_node_palette_gradient <-
-      grDevices::colorRampPalette(rev(RColorBrewer::brewer.pal(n = 7, name = "Spectral")))
-
-    ccc_node_palette_discrete <- scales::hue_pal()
+    ccc_palette_discrete <- scales::hue_pal()
 
     # check if node_color is discrete
     node_color_values <-
@@ -166,40 +112,68 @@ plot_spatial_ccc_graph <-
       tidygraph::activate("nodes") %>%
       tidygraph::pull(get(node_color))
 
-    node_color_is_discrete <-
-      is.factor(node_color_values) |
-      all(node_color_values == as.integer(node_color_values))
+    # previously if all node_color_values were integer,
+    #   it's considered "discrete";
+    # node_color_is_discrete <-
+    #   is.factor(node_color_values) |
+    #   all(node_color_values == as.integer(node_color_values))
 
-    if (node_color_is_discrete) {
-      node_color_is_discrete <-
-        length(unique(node_color_values)) <= 15
+    # if (node_color_is_discrete) {
+    #   node_color_is_discrete <-
+    #     length(unique(node_color_values)) <= 15
+    # }
+
+    # now, simplified; it should be given as factor; otherwise continuous
+    node_color_is_factor <- is.factor(node_color_values)
+    if (!node_color_is_factor) {
+      if (is.null(node_color_range)) {
+        max_node_color <- max(node_color_values)
+        min_node_color <- min(node_color_values)
+      }
+
+      if (max_node_color * min_node_color < 0) {
+        mm <- max(abs(max_node_color), abs(min_node_color))
+        max_node_color <- mm
+        min_node_color <- -mm
+      }
     }
 
-    if (is.null(node_range)) {
-      max_node_color <- max(as.numeric(node_color_values))
-      min_node_color <- min(as.numeric(node_color_values))
+    # check if node_color is discrete
+    edge_color_values <-
+      ccc_graph %>%
+      tidygraph::activate("edges") %>%
+      tidygraph::pull(get(edge_color))
+
+    # previously if all node_color_values were integer,
+    #   it's considered "discrete";
+    # node_color_is_discrete <-
+    #   is.factor(node_color_values) |
+    #   all(node_color_values == as.integer(node_color_values))
+
+    # if (node_color_is_discrete) {
+    #   node_color_is_discrete <-
+    #     length(unique(node_color_values)) <= 15
+    # }
+
+    # now, simplified; it should be given as factor; otherwise continuous
+    edge_color_is_factor <- is.factor(edge_color_values)
+    if (!edge_color_is_factor) {
+      if (is.null(edge_color_range)) {
+        max_edge_color <- max(edge_color_values)
+        min_edge_color <- min(edge_color_values)
+      }
+
+      if (max_edge_color * min_edge_color < 0) {
+        mm <- max(abs(max_edge_color), abs(min_edge_color))
+        max_edge_color <- mm
+        min_edge_color <- -mm
+      }
     }
-
-    if (max_node_color * min_node_color < 0) {
-      mm <- max(abs(max_node_color), abs(min_node_color))
-      max_node_color <- mm
-      min_node_color <- -mm
-    }
-
-
-    node_size_original <- node_size
-    node_alpha_original <- node_alpha
-
-    edge_width_original <- edge_width
-    edge_alpha_original <- edge_alpha
-
-    if (which_on_top == "edge") {
-      #node_alpha = 0.5 * node_alpha_original
-      #node_size = 0.5 * node_size
-    } else {
-      #edge_alpha = 0.5 * edge_alpha_original
-      #edge_width = 0.5 * edge_width
-    }
+    # node_size_original <- node_size
+    # node_alpha_original <- node_alpha
+    #
+    # edge_width_original <- edge_width
+    # edge_alpha_original <- edge_alpha
 
     edge_alpha_range <- c(0.1, edge_alpha)
     node_alpha_range <- c(0.1, node_alpha)
@@ -290,60 +264,50 @@ plot_spatial_ccc_graph <-
     }
 
     add_ggraph_nodes <- function(gg) {
-      if (node_color_is_discrete) {
+      gg <-
+        gg +
+        ggraph::geom_node_point(
+          aes(fill = get(node_color),
+              alpha = as.numeric(tagged)),
+          shape = 21,
+          color = "black",
+          size = node_size
+        )
+
+      if (node_color_is_factor) {
         unique_node_color_values <- sort(unique(node_color_values))
         node_color_discrete <-
-          ccc_node_palette_discrete(n = length(unique_node_color_values))
+          ccc_palette_discrete(n = length(unique_node_color_values))
         names(node_color_discrete) <- unique_node_color_values
 
-        gg +
-          ggraph::geom_node_point(
-            aes(# color = factor(get(node_color)),
-              fill = factor(get(node_color)),
-              alpha = as.numeric(tagged)),
-            shape = 21,
-            color = "black",
-            size = node_size
-          ) +
+        gg <-
+          gg +
           scale_color_manual(name = node_color, values = node_color_discrete) +
-          scale_fill_manual(name = node_color, values = node_color_discrete) +
-          guides(color = guide_legend(override.aes = list(size = node_size_original))) +
-          scale_alpha(guide = FALSE) +
-          scale_size(guide = FALSE)
+          scale_fill_manual(name = node_color, values = node_color_discrete)
       } else {
-        gg +
-          ggraph::geom_node_point(
-            aes(
-              # color = get(node_color),
-              fill = get(node_color),
-              alpha = as.numeric(tagged)
-            ),
-            shape = 21,
-            color = "black",
-            size = node_size
-          ) +
-
-          # for all nodes
-          # alpha = node_alpha,
-          # size = node_size
+        gg <-
+          gg +
           scale_color_gradientn(
             name = node_color,
-            colours = ccc_node_palette_gradient(n = 15),
+            colours = ccc_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
           scale_fill_gradientn(
             name = node_color,
-            colours = ccc_node_palette_gradient(n = 15),
+            colours = ccc_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
-          ) +
-          guides(color = guide_legend(override.aes = list(size = node_size_original))) +
-          scale_alpha(range = node_alpha_range, guide = FALSE) +
-          scale_size(guide = FALSE)
+          )
       }
+
+      gg +
+        guides(color = guide_legend(override.aes = list(size = node_size))) +
+        scale_alpha(range = node_alpha_range, guide = FALSE) +
+        scale_size(guide = FALSE)
     }
 
     add_ggraph_edges <- function(gg) {
-      gg +
+      gg <-
+        gg +
         ggraph::geom_edge_link(
           aes(color = get(edge_color),
               alpha = as.numeric(tagged)),
@@ -360,20 +324,38 @@ plot_spatial_ccc_graph <-
                                        0.01 * edge_width,
                                        0), "npc")
           )
-        ) +
-        ggraph::scale_edge_color_gradientn(
-          name = edge_color,
-          colours = ccc_edge_palette(n = 15),
-          limits = c(min_edge_color, max_edge_color)
-        ) +
-        ggraph::scale_edge_alpha(range = edge_alpha_range, guide = FALSE)
+        )
+
+      if (edge_color_is_factor) {
+        unique_edge_color_values <- sort(unique(edge_color_values))
+        edge_color_discrete <-
+          ccc_palette_discrete(n = length(unique_edge_color_values))
+        names(edge_color_discrete) <- unique_edge_color_values
+
+        gg <-
+          gg +
+          ggraph::scale_edge_color_manual(
+            name = edge_color,
+            values = edge_color_discrete
+          )
+      } else {
+        gg <-
+          gg +
+          ggraph::scale_edge_color_gradientn(
+            name = edge_color,
+            colours = ccc_palette_gradient(n = 15),
+            limits = c(min_edge_color, max_edge_color)
+          )
+      }
+
+      # return ggplot object
+      gg + ggraph::scale_edge_alpha(range = edge_alpha_range, guide = FALSE)
     }
 
     if (which_on_top == "edge") {
       ggraph_ccc %<>%
         add_ggraph_nodes() %>%
         add_ggraph_edges
-      # guides(size = FALSE, alpha = FALSE)
     } else {
       ggraph_ccc %<>%
         add_ggraph_edges() %>%

@@ -113,9 +113,11 @@ plot_spatial_ccc_graph(
   ccc_graph_temp2,
   graph_layout = "spatial",
   node_color = "mclust_8",
-  node_size = 1,
-  edge_color = "ccc_kind",
-  which_on_top = "node"
+  node_size = 1.5,
+  node_alpha = 0.25,
+  edge_width = 2,
+  edge_color = "ccc_kind.1",
+  which_on_top = "edge"
 )
 ```
 

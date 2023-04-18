@@ -11,8 +11,8 @@ plot_spatial_ccc_graph(
   edges_expanded_to_group = TRUE,
   edge_color = "group_n_edges",
   node_color = "group_n_nodes",
-  edge_range = NULL,
-  node_range = NULL,
+  edge_color_range = NULL,
+  node_color_range = NULL,
   edge_width = 0.5,
   edge_alpha = 1,
   node_size = 0.5,
@@ -39,7 +39,7 @@ belong to the groups that cells_of_interest belong to.}
 \item{edge_color, node_color}{column name to be used
 for edge and node colors, respectively}
 
-\item{edge_range, node_range}{bound given in c(min, max) format.
+\item{edge_color_range, node_color_range}{bound given in c(min, max) format.
 if specified, the ranges are set using these values, instead of the ones
 derived from data.  Useful when multiple plots are combined
 later for comparison.}
