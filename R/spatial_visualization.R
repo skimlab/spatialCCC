@@ -232,7 +232,7 @@ plot_spatial_ccc_graph <-
         geom_spatial(
           data = tibble::tibble_row(sample = "sample",
                                     grob = spatial_image_grob),
-          aes(grob = grob),
+          ggplot2::aes(grob = grob),
           x = 0.5,
           y = 0.5
         )
@@ -267,7 +267,7 @@ plot_spatial_ccc_graph <-
       gg <-
         gg +
         ggraph::geom_node_point(
-          aes(fill = get(node_color),
+          ggplot2::aes(fill = get(node_color),
               alpha = as.numeric(tagged)),
           shape = 21,
           color = "black",
@@ -282,17 +282,17 @@ plot_spatial_ccc_graph <-
 
         gg <-
           gg +
-          scale_color_manual(name = node_color, values = node_color_discrete) +
-          scale_fill_manual(name = node_color, values = node_color_discrete)
+          ggplot2::scale_color_manual(name = node_color, values = node_color_discrete) +
+          ggplot2::scale_fill_manual(name = node_color, values = node_color_discrete)
       } else {
         gg <-
           gg +
-          scale_color_gradientn(
+          ggplot2::scale_color_gradientn(
             name = node_color,
             colours = ccc_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
           ) +
-          scale_fill_gradientn(
+          ggplot2::scale_fill_gradientn(
             name = node_color,
             colours = ccc_palette_gradient(n = 15),
             limits = c(min_node_color, max_node_color)
@@ -300,16 +300,16 @@ plot_spatial_ccc_graph <-
       }
 
       gg +
-        guides(color = guide_legend(override.aes = list(size = node_size))) +
-        scale_alpha(range = node_alpha_range, guide = FALSE) +
-        scale_size(guide = FALSE)
+        ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = node_size))) +
+        ggplot2::scale_alpha(range = node_alpha_range, guide = FALSE) +
+        ggplot2::scale_size(guide = FALSE)
     }
 
     add_ggraph_edges <- function(gg) {
       gg <-
         gg +
         ggraph::geom_edge_link(
-          aes(color = get(edge_color),
+          ggplot2::aes(color = get(edge_color),
               alpha = as.numeric(tagged)),
 
           # for all edges
@@ -366,9 +366,9 @@ plot_spatial_ccc_graph <-
       ggraph_ccc <-
         ggraph_ccc +
         # set boundary
-        xlim(x_min, x_max) +
-        ylim(y_max, y_min) +
-        coord_fixed(expand = FALSE) +
+        ggplot2::xlim(x_min, x_max) +
+        ggplot2::ylim(y_max, y_min) +
+        ggplot2::coord_fixed(expand = FALSE) +
         # remove background
         ggplot2::theme_void()
     } else {
@@ -381,7 +381,7 @@ plot_spatial_ccc_graph <-
       if (graph_layout == "spatial") {
         ggraph_ccc <-
           ggraph_ccc +
-          coord_fixed(expand = FALSE)
+          ggplot2::coord_fixed(expand = FALSE)
       }
     }
 
@@ -430,7 +430,6 @@ plot_spatial_feature <-
            image_alpha = NA,
            show_tissue_image = TRUE,
            clip = TRUE) {
-
     spatial_col_data <-
       get_spatial_data(spe)
 
@@ -444,12 +443,12 @@ plot_spatial_feature <-
 
     gp_spatial <-
       spatial_col_data %>%
-      ggplot(aes(
+      ggplot2::ggplot(ggplot2::aes(
         x = spot_x,
         y = spot_y,
         fill = get(feature)
       )) +
-      guides(fill = guide_legend(title = feature))
+      ggplot2::guides(fill = ggplot2::guide_legend(title = feature))
 
     tissue_img <- SpatialExperiment::imgRaster(spe)
 
@@ -488,7 +487,7 @@ plot_spatial_feature <-
         geom_spatial(
           data = tibble::tibble_row(sample = "sample",
                                     grob = spatial_image_grob),
-          aes(grob = grob),
+          ggplot2::aes(grob = grob),
           x = 0.5,
           y = 0.5
         )
@@ -501,22 +500,24 @@ plot_spatial_feature <-
 
       margin <- round(0.05 * min(x_max - x_min, y_max - y_min))
       x_min <- x_min - margin
-      x_max <-x_max + margin
+      x_max <- x_max + margin
       y_min <- y_min - margin
       y_max <- y_max + margin
     }
 
     gp_spatial +
-      geom_point(shape = 21,
-                 color = "grey15",
-                 size = spot_size,
-                 alpha = spot_alpha) +
+      ggplot2::geom_point(
+        shape = 21,
+        color = "grey15",
+        size = spot_size,
+        alpha = spot_alpha
+      ) +
 
       # set boundary
-      xlim(x_min, x_max) +
-      ylim(y_max, y_min) +
+      ggplot2::xlim(x_min, x_max) +
+      ggplot2::ylim(y_max, y_min) +
 
-      coord_fixed(expand = FALSE) +
+      ggplot2::coord_fixed(expand = FALSE) +
 
       # remove background
       ggplot2::theme_void()
@@ -557,11 +558,11 @@ geom_spatial <- function(mapping = NULL,
     grob
   }
 
-  GeomCustom <- ggproto(
+  GeomCustom <- ggplot2::ggproto(
     "GeomCustom",
-    Geom,
+    ggplot2::Geom,
     setup_data = function(self, data, params) {
-      data <- ggproto_parent(Geom, self)$setup_data(data, params)
+      data <- ggplot2::ggproto_parent(ggplot2::Geom, self)$setup_data(data, params)
       data
     },
 
@@ -574,7 +575,7 @@ geom_spatial <- function(mapping = NULL,
     required_aes = c("grob", "x", "y")
   )
 
-  layer(
+  ggplot2::layer(
     geom = GeomCustom,
     mapping = mapping,
     data = data,

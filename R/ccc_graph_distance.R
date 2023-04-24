@@ -39,7 +39,7 @@ lf_to_dist <- function(lf) {
   value_name <- colnames(lf)[3]
 
   wf <-
-    lf %>% pivot_wider(
+    lf %>% tidyr::pivot_wider(
       id_cols = row_name,
       names_from = {{ col_name }},
       values_from = {{ value_name }},

@@ -524,7 +524,8 @@ amend_ccc_table_with_cell_annots <-
              }) %>% unlist()
 
     ccc_table <-
-      ccc_table %>% select(-any_of(annot_cols.after))
+      ccc_table %>%
+      dplyr::select(-any_of(annot_cols.after))
   }
 
   annot_df <-
@@ -556,8 +557,8 @@ amend_ccc_table_with_cell_annots <-
 set_ccc_table_default_cluster <-
   function(ccc_table, cluster_name) {
     ccc_table %>%
-      mutate(cluster.src = get(paste0(cluster_name, ".src")),
-             cluster.dst = get(paste0(cluster_name, ".dst")))
+      dplyr::mutate(cluster.src = get(paste0(cluster_name, ".src")),
+                    cluster.dst = get(paste0(cluster_name, ".dst")))
   }
 
 #' Tidy up CCC graph by removing isolated nodes

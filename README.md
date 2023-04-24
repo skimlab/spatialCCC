@@ -30,19 +30,20 @@ This is a basic example which shows you a basic workflow of the package:
 ## Load necessary packages
 
 ``` r
-library(SpatialExperiment)
-library(scater)
-library(dplyr)
-library(tidyr)
-library(magrittr)
-library(purrr)
-library(ggplot2)
+# library(SpatialExperiment)
+# library(scater)
+# library(dplyr)
+# library(tidyr)
+# library(magrittr)
+# library(purrr)
+# library(ggplot2)
 library(patchwork)
 
+# Looks like ggraph might have some issue inmporting 'guide_edge_colourbar' 
 library(ggraph)
-library(tidygraph)
-library(RColorBrewer)
-
+# library(tidygraph)
+# library(RColorBrewer)
+# 
 library(ggtree)
 ```
 
@@ -74,20 +75,20 @@ LRdb_m <-
   get_LRdb_small("mouse")
 
 LRdb_m %>% 
-  arrange(ligand_gene_symbol, receptor_gene_symbol)
+  dplyr::arrange(ligand_gene_symbol, receptor_gene_symbol)
 #> # A tibble: 105 × 10
 #>    LR    ligand_gene_symbol receptor_gene_symbol ligand_gene_id receptor_gene_id
 #>    <chr> <chr>              <chr>                         <dbl>            <dbl>
-#>  1 Adam… Adam10             Tspan14                       11487            52588
-#>  2 Adam… Adam15             Itgav                         11490            16410
-#>  3 Adam… Adam17             Itga6                         11491            16403
-#>  4 Adcy… Adcyap1            Vipr2                         11516            22355
-#>  5 Adip… Adipoq             Adipor1                       11450            72674
-#>  6 Afdn… Afdn               Nrxn3                         17356            18191
-#>  7 Apob… Apob               Apobr                        238055           171504
-#>  8 Apob… Apob               Lsr                          238055            54135
-#>  9 Apoe… Apoe               Ldlr                          11816            16835
-#> 10 Apoe… Apoe               Lrp6                          11816            16974
+#>  1 Adam… Adam2              Itgb1                         11495            16412
+#>  2 Afdn… Afdn               Nectin1                       17356            58235
+#>  3 Agt_… Agt                Agtr1b                        11606            11608
+#>  4 Angp… Angpt2             Itgb1                         11601            16412
+#>  5 Angp… Angpt2             Tek                           11601            21687
+#>  6 Apoc… Apoc1              Vldlr                         11812            22359
+#>  7 Apoe… Apoe               Sdc1                          11816            20969
+#>  8 App_… App                Dcc                           11820            13176
+#>  9 App_… App                Lrp2                          11820            14725
+#> 10 Bgn_… Bgn                Cd44                          12111            12505
 #> # ℹ 95 more rows
 #> # ℹ 5 more variables: ligand_ensembl_protein_id <chr>,
 #> #   receptor_ensembl_protein_id <chr>, ligand_ensembl_gene_id <chr>,
@@ -107,7 +108,7 @@ spe_brain <-
 # spe_brain[["cell_id"]] <- colnames(spe_brain)
 
 # Log-Normalize
-spe_brain <- logNormCounts(spe_brain) 
+spe_brain <- scater::logNormCounts(spe_brain) 
 ```
 
 ## Cell cluster data
@@ -148,7 +149,7 @@ ccc_tbl <- compute_spatial_ccc(spe = spe_brain,
                                assay_name = "logcounts",
                                LRdb = LRdb_m)
 tictoc::toc()
-#> 7.039 sec elapsed
+#> 7.172 sec elapsed
 
 # future::plan(future::sequential)
 ```
@@ -156,20 +157,20 @@ tictoc::toc()
 ``` r
 ccc_tbl %>% 
   dplyr::arrange(desc(LRscore))
-#> # A tibble: 160,620 × 10
+#> # A tibble: 140,680 × 10
 #>    src          dst       d norm.d LR    ligand receptor LRscore weight WLRscore
 #>    <chr>        <chr> <dbl>  <dbl> <chr> <chr>  <chr>      <dbl>  <dbl>    <dbl>
-#>  1 GCGAGAGTTGC… GCGA…    0    0    Apoe… Apoe   Lrp6       0.874  1        0.874
-#>  2 GTTCATCGTTT… GCGA…  138    1.01 Apoe… Apoe   Lrp6       0.869  0.986    0.857
-#>  3 ACTTTACCCTC… GCGA…  138.   1.01 Apoe… Apoe   Lrp6       0.868  0.980    0.851
-#>  4 AGATGATGGAG… GCGA…  138.   1.01 Apoe… Apoe   Lrp6       0.867  0.980    0.849
-#>  5 GATATGGATTA… GATA…    0    0    Clu_… Clu    Lrp8       0.858  1        0.858
-#>  6 AGAAGTGATTC… AATG…  138    1.01 Calm… Calm1  Kcnq3      0.858  0.986    0.846
-#>  7 TTGCATGCTGA… GTGC…  138.   1.01 Calm… Calm1  Kcnq3      0.858  0.980    0.840
-#>  8 CCCAACATACG… GTGC…  138.   1.00 Calm… Calm1  Kcnq3      0.857  0.992    0.850
-#>  9 TAACTCCATGG… GACA…  137    1    Clu_… Clu    Vldlr      0.857  1        0.857
-#> 10 CGGTGCAGATA… GTGC…  138    1.01 Calm… Calm1  Kcnq3      0.857  0.986    0.845
-#> # ℹ 160,610 more rows
+#>  1 GACGTGTAGGG… CTAA…  138    1.01 Col3… Col3a1 Mag        0.866  0.986    0.853
+#>  2 GCAACAGCAGT… TCTT…  138.   1.01 Hsp9… Hsp90… Lrp1       0.859  0.980    0.842
+#>  3 GCCACAATTTA… TCGC…  138    1.01 Hsp9… Hsp90… Lrp1       0.856  0.986    0.844
+#>  4 TAGTGTCAGAA… GTTA…  138.   1.01 Hsp9… Hsp90… Lrp1       0.856  0.980    0.838
+#>  5 CAGTGTTAATC… CAGG…  137.   1.00 Hsp9… Hsp90… Lrp1       0.855  0.999    0.855
+#>  6 GCTGTATTACT… TCGC…  138.   1.00 Hsp9… Hsp90… Lrp1       0.854  0.992    0.847
+#>  7 TTGAGAGTACT… TCGC…  138.   1.01 Hsp9… Hsp90… Lrp1       0.854  0.980    0.837
+#>  8 GGGTATTCTAG… CAGA…  137    1    Hsp9… Hsp90… Lrp1       0.854  1        0.854
+#>  9 GAATGCCGAAA… GTTA…  138.   1.01 Hsp9… Hsp90… Lrp1       0.853  0.980    0.836
+#> 10 CACCGTATCCC… CACC…    0    0    Hsp9… Hsp90… Lrp1       0.853  1        0.853
+#> # ℹ 140,670 more rows
 ```
 
 ### Add cluster lables to CCC table.
@@ -186,51 +187,51 @@ ccc_tbl <-
 ``` r
 ccc_tbl_between_clusters <-
   ccc_tbl %>%
-  group_by(mclust_8.src, mclust_8.dst, LR) %>%
-  summarise(n = n(),
-            LRscore.sum = sum(LRscore),
-            WLRscore.sum = sum(WLRscore))
+  dplyr::group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   LRscore.sum = sum(LRscore),
+                   WLRscore.sum = sum(WLRscore))
 #> `summarise()` has grouped output by 'mclust_8.src', 'mclust_8.dst'. You can
 #> override using the `.groups` argument.
 
 ccc_tbl_between_clusters %>%
   dplyr::arrange(desc(n))
-#> # A tibble: 1,662 × 6
+#> # A tibble: 1,663 × 6
 #> # Groups:   mclust_8.src, mclust_8.dst [46]
-#>    mclust_8.src mclust_8.dst LR               n LRscore.sum WLRscore.sum
-#>    <fct>        <fct>        <chr>        <int>       <dbl>        <dbl>
-#>  1 3            3            Calm1_Kcnq3   2845       2183.        2159.
-#>  2 3            3            Fgf1_Fgfr3    2713       1786.        1766.
-#>  3 3            3            Clu_Vldlr     2489       1862.        1842.
-#>  4 3            3            Cx3cl1_Itgav  2470       1681.        1663.
-#>  5 3            3            L1cam_Itgb1   2262       1461.        1445.
-#>  6 3            3            Apoe_Ldlr     1953       1487.        1471.
-#>  7 3            3            Fgf13_Fgfr2   1908       1231.        1218.
-#>  8 3            3            Adam15_Itgav  1876       1164.        1151.
-#>  9 3            3            Afdn_Nrxn3    1820       1181.        1168.
-#> 10 2            2            Calm1_Kcnq3   1788       1424.        1408.
-#> # ℹ 1,652 more rows
+#>    mclust_8.src mclust_8.dst LR                n LRscore.sum WLRscore.sum
+#>    <fct>        <fct>        <chr>         <int>       <dbl>        <dbl>
+#>  1 3            3            Hsp90aa1_Lrp1  4494       3630.        3590.
+#>  2 3            3            S100b_Alcam    3535       2562.        2534.
+#>  3 3            3            Nlgn1_Nrxn1    2569       1780.        1761.
+#>  4 2            2            Hsp90aa1_Lrp1  2136       1728.        1708.
+#>  5 2            2            S100b_Alcam    1977       1449.        1432.
+#>  6 3            3            Omg_Rtn4rl1    1747       1123.        1111.
+#>  7 1            1            Hsp90aa1_Lrp1  1742       1411.        1396.
+#>  8 3            3            Efnb3_Ephb1    1662       1080.        1068.
+#>  9 3            3            Nptx2_Nptxr    1605       1057.        1045.
+#> 10 2            2            Nlgn1_Nrxn1    1555       1146.        1133.
+#> # ℹ 1,653 more rows
 ```
 
 ``` r
 ccc_tbl_between_clusters %>%
   dplyr::filter(mclust_8.dst != mclust_8.src) %>%
   dplyr::arrange(desc(n))
-#> # A tibble: 1,278 × 6
+#> # A tibble: 1,263 × 6
 #> # Groups:   mclust_8.src, mclust_8.dst [38]
-#>    mclust_8.src mclust_8.dst LR               n LRscore.sum WLRscore.sum
-#>    <fct>        <fct>        <chr>        <int>       <dbl>        <dbl>
-#>  1 3            5            Calm1_Kcnq3    259       203.         200. 
-#>  2 5            3            Calm1_Kcnq3    203       161.         159. 
-#>  3 3            5            Cx3cl1_Itgav   202       140.         138. 
-#>  4 3            5            Clu_Vldlr      181       138.         136. 
-#>  5 3            8            Fgf13_Fgfr2    159       113.         111. 
-#>  6 5            3            Afdn_Nrxn3     142        94.8         93.4
-#>  7 3            5            Apoe_Lrp6      141       107.         106. 
-#>  8 1            6            Calm1_Kcnq3    138       111.         110. 
-#>  9 3            8            Clu_Vldlr      132       103.         102. 
-#> 10 8            3            Calm1_Kcnq3    132       101.          99.6
-#> # ℹ 1,268 more rows
+#>    mclust_8.src mclust_8.dst LR                n LRscore.sum WLRscore.sum
+#>    <fct>        <fct>        <chr>         <int>       <dbl>        <dbl>
+#>  1 3            5            Hsp90aa1_Lrp1   306        245.         242.
+#>  2 5            3            Hsp90aa1_Lrp1   300        242.         238.
+#>  3 3            5            S100b_Alcam     250        177.         175.
+#>  4 8            3            Hsp90aa1_Lrp1   212        171.         169.
+#>  5 3            8            Hsp90aa1_Lrp1   199        159.         157.
+#>  6 5            3            S100b_Alcam     195        139.         137.
+#>  7 5            3            Nlgn1_Nrxn1     194        137.         135.
+#>  8 3            5            Omg_Rtn4rl1     172        119.         117.
+#>  9 1            6            Hsp90aa1_Lrp1   145        118.         116.
+#> 10 6            1            Hsp90aa1_Lrp1   145        117.         116.
+#> # ℹ 1,253 more rows
 ```
 
 ### Convert CCC table to CCC graph
@@ -246,7 +247,7 @@ ccc_graph_list <-
   to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
 
 tictoc::toc()
-#> to_spatical_ccc_graph ...: 11.539 sec elapsed
+#> to_spatical_ccc_graph ...: 14.087 sec elapsed
 ```
 
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR
@@ -259,26 +260,26 @@ ccc_graph_metrics_summary_df <-
   summarize_ccc_graph_metrics(ccc_graph_list)
 
 tictoc::toc()
-#> 0.062 sec elapsed
+#> 0.074 sec elapsed
 ```
 
 ``` r
 ccc_graph_metrics_summary_df %>%
-  arrange(graph_component_count)
-#> # A tibble: 48 × 12
+  dplyr::arrange(graph_component_count)
+#> # A tibble: 50 × 12
 #>    LR        graph_n_nodes graph_n_edges graph_component_count graph_motif_count
 #>    <chr>             <int>         <dbl>                 <dbl>             <int>
-#>  1 Calm1_Kc…          2697         13616                     3             24463
-#>  2 Clu_Vldlr          2665         10624                     3             20955
-#>  3 Cx3cl1_I…          2617         11724                     4             21978
-#>  4 Adam15_I…          2388          9187                     4             17301
-#>  5 Afdn_Nrx…          2463          8262                     6             16000
-#>  6 Clu_Lrp8           2527          7510                     6             15497
-#>  7 L1cam_It…          2306          7682                     6             14856
-#>  8 Fgf1_Fgf…          2275          7569                     7             14148
-#>  9 Adam10_T…          2114          5924                     8             10890
-#> 10 Apoe_Lrp6          2497          6612                     9             13761
-#> # ℹ 38 more rows
+#>  1 Hsp90aa1…          2702         17454                     3             27855
+#>  2 Nlgn1_Nr…          2627         11042                     3             20957
+#>  3 S100b_Al…          2657         13613                     3             24055
+#>  4 Omg_Rtn4…          2475         10304                     6             18611
+#>  5 Nptx2_Np…          2326          7406                    12             14136
+#>  6 Efnb3_Ep…          2099          5832                    16             10830
+#>  7 Cck_Cckbr          1944          6384                    26             12316
+#>  8 Psen1_Er…          1794          3835                    30              6426
+#>  9 Afdn_Nec…          1900          4589                    31              8028
+#> 10 Jam3_Itg…          1988          5554                    35              9818
+#> # ℹ 40 more rows
 #> # ℹ 7 more variables: graph_diameter <dbl>, graph_un_diameter <dbl>,
 #> #   graph_mean_dist <dbl>, graph_circuit_rank <dbl>, graph_reciprocity <dbl>,
 #> #   graph_clique_num <int>, graph_clique_count <int>
@@ -294,25 +295,25 @@ ccc_graph_group_metrics_summary_df <-
   summarize_ccc_graph_metrics(ccc_graph_list, level = "group")
 
 tictoc::toc()
-#> 0.062 sec elapsed
+#> 0.076 sec elapsed
 ```
 
 ``` r
 ccc_graph_group_metrics_summary_df 
-#> # A tibble: 3,313 × 12
-#>    LR         group group_n_nodes group_n_edges group_adhesion group_motif_count
-#>    <chr>      <int>         <int>         <dbl>          <dbl>             <int>
-#>  1 Jag1_Notc…    24             3             2              0                 1
-#>  2 Jag1_Notc…    46             2             1              0                 0
-#>  3 Jag1_Notc…    47             2             1              0                 0
-#>  4 Jag1_Notc…    25             3             3              0                 1
-#>  5 Jag1_Notc…     1            13            23              0                19
-#>  6 Jag1_Notc…    48             2             1              0                 0
-#>  7 Jag1_Notc…    49             2             2              0                 0
-#>  8 Jag1_Notc…     7             5             5              0                 3
-#>  9 Jag1_Notc…    26             3             5              0                 1
-#> 10 Jag1_Notc…    90             1             1              0                 0
-#> # ℹ 3,303 more rows
+#> # A tibble: 4,056 × 12
+#>    LR        group group_n_nodes group_n_edges group_adhesion group_motif_count
+#>    <chr>     <int>         <int>         <dbl>          <dbl>             <int>
+#>  1 Tnc_Itga7    21             4             5              0                 3
+#>  2 Tnc_Itga7    48             2             2              0                 0
+#>  3 Tnc_Itga7     3            18            30              0                37
+#>  4 Tnc_Itga7     5            11            15              0                25
+#>  5 Tnc_Itga7     9             6             6              0                 5
+#>  6 Tnc_Itga7     2            25            38              0                55
+#>  7 Tnc_Itga7    31             3             2              0                 1
+#>  8 Tnc_Itga7    32             3             2              0                 1
+#>  9 Tnc_Itga7    33             3             3              0                 1
+#> 10 Tnc_Itga7    49             2             1              0                 0
+#> # ℹ 4,046 more rows
 #> # ℹ 6 more variables: group_diameter <dbl>, group_un_diameter <dbl>,
 #> #   group_mean_dist <dbl>, group_girth <dbl>, group_circuit_rank <dbl>,
 #> #   group_reciprocity <dbl>
@@ -326,8 +327,8 @@ LR_of_interest <- "App_Dcc"
 
 ``` r
 ccc_graph_list[[LR_of_interest]] %>%
-  activate(edges) %>%
-  as_tibble()
+  tidygraph::activate(edges) %>%
+  tibble::as_tibble()
 #> # A tibble: 3,822 × 40
 #>     from    to src       dst       d norm.d LR    ligand receptor LRscore weight
 #>    <int> <int> <chr>     <chr> <dbl>  <dbl> <chr> <chr>  <chr>      <dbl>  <dbl>
@@ -356,7 +357,7 @@ ccc_graph_list[[LR_of_interest]] %>%
 gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
-    tissue_img = imgRaster(spe_brain),
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
     node_color = "mclust_8",
     node_size = 1,
     node_alpha = 0.5,
@@ -480,7 +481,7 @@ Below uses “auto” layout (“kk” spring layout).
 
 ``` r
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
-                       # tissue_img = imgRaster(spe_brain),
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
                        node_color = "group",
                        node_size = 0.1,
                        edge_color = "group_diameter",
@@ -494,7 +495,7 @@ In this case, below is “stress” layout.
 
 ``` r
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
-                       # tissue_img = imgRaster(spe_brain),
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
                        graph_layout = "stress",
                        node_color = "group",
                        edge_color = "group_diameter",
@@ -513,7 +514,7 @@ cell_overlap_dist <-
   dist_cell_overlap_ccc_tbl(ccc_tbl)
 
 tictoc::toc()
-#> 0.422 sec elapsed
+#> 0.378 sec elapsed
 ```
 
 ``` r
@@ -523,7 +524,7 @@ cell_overlap_lf <-
   lf_cell_overlap_ccc_tbl(ccc_tbl)
 
 tictoc::toc()
-#> 0.503 sec elapsed
+#> 0.414 sec elapsed
 ```
 
 ``` r
@@ -546,7 +547,7 @@ high_cell_overlap_dist <-
   cell_overlap_dist[LRs_high_cell_overlap, LRs_high_cell_overlap]
 
 tictoc::toc()
-#> 0 sec elapsed
+#> 0.001 sec elapsed
 ```
 
 ``` r
@@ -559,21 +560,21 @@ high_cell_overlap_dist2 <-
   lf_to_dist()
 
 tictoc::toc()
-#> 0.007 sec elapsed
+#> 0.071 sec elapsed
 ```
 
 ``` r
 LR_ccc_summary_tbl <-
   ccc_tbl %>% 
-  pull(LR) %>%
+  dplyr::pull(LR) %>%
   table() %>%
-  as_tibble() %>%
-  rename("LR" = ".") %>%
-  arrange(desc(n)) %>%
-  left_join(
+  tibble::as_tibble() %>%
+  dplyr::rename("LR" = ".") %>%
+  dplyr::arrange(desc(n)) %>%
+  dplyr::left_join(
     ccc_tbl %>% 
-      select(LR, ligand, receptor) %>%
-      distinct(),
+      dplyr::select(LR, ligand, receptor) %>%
+      dplyr::distinct(),
     by = "LR"
   )
 ```

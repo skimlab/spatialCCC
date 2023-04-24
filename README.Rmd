@@ -39,19 +39,20 @@ This is a basic example which shows you a basic workflow of the package:
 ## Load necessary packages
 
 ```{r message = FALSE}
-library(SpatialExperiment)
-library(scater)
-library(dplyr)
-library(tidyr)
-library(magrittr)
-library(purrr)
-library(ggplot2)
+# library(SpatialExperiment)
+# library(scater)
+# library(dplyr)
+# library(tidyr)
+# library(magrittr)
+# library(purrr)
+# library(ggplot2)
 library(patchwork)
 
+# Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
 library(ggraph)
-library(tidygraph)
-library(RColorBrewer)
-
+# library(tidygraph)
+# library(RColorBrewer)
+# 
 library(ggtree)
 ```
 
@@ -80,7 +81,7 @@ LRdb_m <-
   get_LRdb_small("mouse")
 
 LRdb_m %>% 
-  arrange(ligand_gene_symbol, receptor_gene_symbol)
+  dplyr::arrange(ligand_gene_symbol, receptor_gene_symbol)
 ```
 
 ## Load Visium spatial transcriptomic data
@@ -96,7 +97,7 @@ spe_brain <-
 # spe_brain[["cell_id"]] <- colnames(spe_brain)
 
 # Log-Normalize
-spe_brain <- logNormCounts(spe_brain) 
+spe_brain <- scater::logNormCounts(spe_brain) 
 ```
 
 
@@ -162,10 +163,10 @@ ccc_tbl <-
 ```{r}
 ccc_tbl_between_clusters <-
   ccc_tbl %>%
-  group_by(mclust_8.src, mclust_8.dst, LR) %>%
-  summarise(n = n(),
-            LRscore.sum = sum(LRscore),
-            WLRscore.sum = sum(WLRscore))
+  dplyr::group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   LRscore.sum = sum(LRscore),
+                   WLRscore.sum = sum(WLRscore))
 
 ccc_tbl_between_clusters %>%
   dplyr::arrange(desc(n))
@@ -211,7 +212,7 @@ tictoc::toc()
 
 ```{r inspect-ccc-graph-metrics-summary}
 ccc_graph_metrics_summary_df %>%
-  arrange(graph_component_count)
+  dplyr::arrange(graph_component_count)
 ```
 
 
@@ -242,8 +243,8 @@ LR_of_interest <- "App_Dcc"
 
 ```{r}
 ccc_graph_list[[LR_of_interest]] %>%
-  activate(edges) %>%
-  as_tibble()
+  tidygraph::activate(edges) %>%
+  tibble::as_tibble()
 ```
 
 
@@ -254,7 +255,7 @@ ccc_graph_list[[LR_of_interest]] %>%
 gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
-    tissue_img = imgRaster(spe_brain),
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
     node_color = "mclust_8",
     node_size = 1,
     node_alpha = 0.5,
@@ -373,7 +374,7 @@ Below uses "auto" layout ("kk" spring layout).
 
 ```{r plot-spatial-ccc-graph-kk-layout, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
-                       # tissue_img = imgRaster(spe_brain),
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
                        node_color = "group",
                        node_size = 0.1,
                        edge_color = "group_diameter",
@@ -385,7 +386,7 @@ In this case, below is "stress" layout.
 
 ```{r plot-spatial-ccc-graph-stress-layout, warning=FALSE}
 plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
-                       # tissue_img = imgRaster(spe_brain),
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
                        graph_layout = "stress",
                        node_color = "group",
                        edge_color = "group_diameter",
@@ -450,15 +451,15 @@ tictoc::toc()
 ```{r summarize-ccc-table-by-LR}
 LR_ccc_summary_tbl <-
   ccc_tbl %>% 
-  pull(LR) %>%
+  dplyr::pull(LR) %>%
   table() %>%
-  as_tibble() %>%
-  rename("LR" = ".") %>%
-  arrange(desc(n)) %>%
-  left_join(
+  tibble::as_tibble() %>%
+  dplyr::rename("LR" = ".") %>%
+  dplyr::arrange(desc(n)) %>%
+  dplyr::left_join(
     ccc_tbl %>% 
-      select(LR, ligand, receptor) %>%
-      distinct(),
+      dplyr::select(LR, ligand, receptor) %>%
+      dplyr::distinct(),
     by = "LR"
   )
 ```
