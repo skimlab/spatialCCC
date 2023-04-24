@@ -7,3 +7,6 @@
 ^\.github$
 ^spatialCCC.png$
 ^doc$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
