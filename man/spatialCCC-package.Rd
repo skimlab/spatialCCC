@@ -14,6 +14,7 @@ Investigate cell-cell signaling, by analyzing ligand-receptor interactions in sp
 Useful links:
 \itemize{
   \item \url{https://github.com/dolchan/spatialCCC}
+  \item \url{https://skimlab.github.io/spatialCCC/}
   \item Report bugs at \url{https://github.com/dolchan/spatialCCC/issues}
 }
 

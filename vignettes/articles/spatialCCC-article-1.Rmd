@@ -1,0 +1,16 @@
+---
+title: "spatialCCC-article-1"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(spatialCCC)
+```
+
+This is a template for `spatialCCC` article.
