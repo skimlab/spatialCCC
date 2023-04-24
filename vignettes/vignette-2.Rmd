@@ -1,8 +1,8 @@
 ---
-title: "spatialCCC-vignette-1"
+title: "vignette-2"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{spatialCCC-vignette-1}
+  %\VignetteIndexEntry{vignette-2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

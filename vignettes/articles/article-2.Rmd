@@ -1,5 +1,5 @@
 ---
-title: "spatialCCC-article-1"
+title: "article-2"
 ---
 
 ```{r, include = FALSE}
