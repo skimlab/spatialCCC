@@ -31,7 +31,7 @@ This is a basic example which shows you a basic workflow of the package:
 
 ``` r
 # Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
-library(ggraph)
+# library(ggraph)
 
 library(spatialCCC)
 ```

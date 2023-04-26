@@ -28,7 +28,7 @@ We first load R packages required for the example here.
 library(patchwork)
 
 # Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
-library(ggraph)
+# library(ggraph)
 library(ggtree)
 
 # spatialCCC package

@@ -2,7 +2,6 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @importFrom ggraph guide_edge_colorbar
 #' @importFrom grDevices colorRampPalette
 #' @importFrom magrittr %<>%
 #' @importFrom magrittr %>%

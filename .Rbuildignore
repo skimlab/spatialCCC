@@ -4,6 +4,7 @@
 ^README\.Rmd$
 ^LRdb$
 ^example$
+^example-org$
 ^\.github$
 ^spatialCCC.png$
 ^doc$
