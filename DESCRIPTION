@@ -13,6 +13,7 @@ URL: https://github.com/dolchan/spatialCCC,
     https://skimlab.github.io/spatialCCC/
 BugReports: https://github.com/dolchan/spatialCCC/issues
 Suggests: 
+    ggtree,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
