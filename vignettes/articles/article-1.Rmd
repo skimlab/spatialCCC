@@ -9,6 +9,460 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+
+```{r, include = FALSE}
+# Since Rmd is stored in "vignette/article/", we need to move up two levels
+base_dir <-
+  file.path("..", "..")
+```
+
+
+## Example
+
+This is a basic example which shows you a basic workflow of the package:
+
+## Load necessary packages
+
+We first load R packages required for the example here.
+```{r setup, message = FALSE}
+library(patchwork)
+
+# Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
+library(ggraph)
+library(ggtree)
+
+# spatialCCC package
 library(spatialCCC)
 ```
+
+## Ligand-Receptor Database
+
+### Load built-in LRdb
+
+This LRdb is downloaded from CellTalkDB: [http://tcm.zju.edu.cn/celltalkdb/download.php].  You can see the detail by:
+
+``` r
+?LRdb_human
+?LRdb_mouse
+```
+
+We also created getter functions, get_LRdb() and get_LRdb_small(), to retrieve the database.
+
+```{r LRdb-loading}
+LRdb_m <- 
+  get_LRdb_small("mouse")
+
+LRdb_m %>% 
+  dplyr::arrange(ligand_gene_symbol, receptor_gene_symbol)
+```
+
+## Load Visium spatial transcriptomic data
+
+```{r visium-data-loading}
+data_dir <- file.path(base_dir, "example", "visium_tutorial")
+
+spe_brain <-
+  SpatialExperiment::read10xVisium(samples = data_dir,
+                                   type = "HDF5",
+                                   data = "filtered")
+
+# to keep track of cell IDs
+# spe_brain[["cell_id"]] <- colnames(spe_brain)
+
+# Log-Normalize
+spe_brain <- scater::logNormCounts(spe_brain) 
+```
+
+
+## Cell cluster data
+
+Now, let's read cell cluster data, obtained using [GraphST](https://deepst-tutorials.readthedocs.io/).
+```{r}
+cell_clusters <-
+  read.csv(file.path(data_dir, "outs", "graphST.csv"), row.names = 1)
+
+# Make sure the rows of cell_clusters are in the same order of spe_brain.
+cell_clusters <- cell_clusters[colnames(spe_brain), ]
+
+cluster_ids <- colnames(cell_clusters)
+cluster_ids <- cluster_ids[grep("mclust_", cluster_ids)]
+
+for (cid in cluster_ids) {
+  spe_brain[[cid]] <- factor(cell_clusters[[cid]])
+}
+```
+
+
+```{r}
+plot_spatial_feature(spe = spe_brain, feature = "mclust_8")
+```
+
+
+## Compute Cell-Cell Communications over ligand-receptor pairs
+
+```{r compute-spatial-ccc}
+# For full LRdb analysis, future::plan can be used 
+#   for parallelization
+# future::plan(future::multisession, workers = 4)
+
+tictoc::tic()
+ccc_tbl <- compute_spatial_ccc(spe = spe_brain, 
+                               assay_name = "logcounts",
+                               LRdb = LRdb_m)
+tictoc::toc()
+
+# future::plan(future::sequential)
+```
+
+
+
+```{r spatial-ccc-table-inspection}
+ccc_tbl %>% 
+  dplyr::arrange(desc(LRscore))
+```
+
+
+### Add cluster lables to CCC table.
+```{r}
+ccc_tbl <-
+  ccc_tbl %>%
+  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10")) %>%
+  set_ccc_table_default_cluster("mclust_8")
+```
+
+
+### Summarize cell-cell communication between cell clusters
+```{r}
+ccc_tbl_between_clusters <-
+  ccc_tbl %>%
+  dplyr::group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   LRscore.sum = sum(LRscore),
+                   WLRscore.sum = sum(WLRscore))
+
+ccc_tbl_between_clusters %>%
+  dplyr::arrange(desc(n))
+```
+
+```{r}
+ccc_tbl_between_clusters %>%
+  dplyr::filter(mclust_8.dst != mclust_8.src) %>%
+  dplyr::arrange(desc(n))
+```
+
+
+
+### Convert CCC table to CCC graph
+
+The conversion also adds various graph metrics to each CCC graph.
+
+```{r to-spatial-ccc-graph}
+tictoc::tic("to_spatical_ccc_graph ...")
+
+sp_col_data <- get_spatial_data(spe_brain)
+
+ccc_graph_list <-
+  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
+
+tictoc::toc()
+```
+
+
+
+summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
+
+```{r summarize-ccc-graph-metrics-graph}
+tictoc::tic()
+
+ccc_graph_metrics_summary_df <-
+  summarize_ccc_graph_metrics(ccc_graph_list)
+
+tictoc::toc()
+```
+
+
+
+```{r inspect-ccc-graph-metrics-summary}
+ccc_graph_metrics_summary_df %>%
+  dplyr::arrange(graph_component_count)
+```
+
+
+summarize_ccc_graph_metrics(..., level = "group") summarizes the metrics for each subgraph (group) in CCC graph (LR)
+
+```{r summarise-ccc-graph-metrics-group}
+tictoc::tic()
+
+ccc_graph_group_metrics_summary_df <-
+  summarize_ccc_graph_metrics(ccc_graph_list, level = "group")
+
+tictoc::toc()
+```
+
+
+```{r inspect-ccc-graph-metrics-group-summary}
+ccc_graph_group_metrics_summary_df 
+```
+
+
+
+## Visualization
+
+```{r example-LR, fig.width=8}
+LR_of_interest <- "App_Dcc"
+```
+
+
+```{r}
+ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate(edges) %>%
+  tibble::as_tibble()
+```
+
+
+
+### spatial CCC graph plot with tissue image
+
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    node_color = "mclust_8",
+    node_size = 1,
+    node_alpha = 0.5,
+    edge_color = "group",
+    # clip = TRUE,
+    which_on_top = "edge"
+  )
+
+gp_spccc_0 <-
+  plot_spatial_feature(spe = spe_brain,
+                       feature = "mclust_8")
+```
+
+```{r plot-spatial-ccc-graph-tissue-image, warning=FALSE}
+wrap_plots(gp_spccc, gp_spccc_0, ncol = 2)
+```
+
+
+
+```{r}
+ccc_graph_temp <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate("edges") %>%
+  tidygraph::filter(mclust_8.src != mclust_8.dst) %>%
+  tidy_up_ccc_graph()
+
+cells_of_interest <-
+  ccc_graph_temp %>%
+  tidygraph::activate("nodes") %>%
+  dplyr::pull("name")
+```
+
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_temp,
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    node_color = "inflow.n",
+    node_size = 1.25,
+    node_alpha = 1,
+    edge_color = "group",
+    show_arrow = TRUE,
+    # clip = TRUE,
+    which_on_top = "node"
+  )
+
+gp_spccc_0 <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0,
+    cells_of_interest = cells_of_interest,
+    edges_expanded_to_group = FALSE,
+    node_color = "mclust_8",
+    node_size = 1.25,
+    node_alpha = 0.5,
+    edge_color = "group",
+    show_arrow = TRUE,
+    # clip = TRUE,
+    which_on_top = "node"
+  )
+
+gp_spccc_1 <-
+  plot_spatial_feature(spe = spe_brain,
+                       feature = "mclust_8",
+                       cells_of_interest = cells_of_interest)
+```
+
+```{r plot-spatial-ccc-graph-tissue-overlapped-cell-cluster, warning=FALSE, fig.width=9, fig.height=6}
+wrap_plots(gp_spccc, gp_spccc_1, ncol = 2)
+```
+
+```{r, fig.width=8}
+gp_spccc_0
+```
+
+
+### spatial CCC graph plot without tissue image
+
+In this case, graph layout can be "spatial" which keeps the original spatial locations, or other graph layout algorithm supported by igraph package. 
+
+
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    graph_layout = "spatial",
+    node_color =  "mclust_8",
+    node_size = 1,
+    edge_color = "group_diameter",
+    clip = TRUE,
+    # ghost_img = TRUE,
+    which_on_top = "edge"
+  )
+
+gp_spccc_0 <-
+  plot_spatial_ccc_graph(
+    ccc_graph =
+      ccc_graph_list[[LR_of_interest]],
+    graph_layout = "spatial",
+    node_color = "mclust_8",
+    node_size = 1,
+    edge_color = "group_diameter",
+    clip = TRUE,
+    # ghost_img = TRUE,
+    which_on_top = "node"
+  )
+```
+
+```{r plot-spatial-ccc-graph-spatial, warning=FALSE, fig.width=10}
+wrap_plots(gp_spccc, gp_spccc_0, ncol = 2, guides = "collect")
+```
+
+
+Below uses "auto" layout ("kk" spring layout).
+
+```{r plot-spatial-ccc-graph-kk-layout, warning=FALSE}
+plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
+                       node_color = "group",
+                       node_size = 0.1,
+                       edge_color = "group_diameter",
+                       edge_width = 0.1,
+                       which_on_top = "edge")
+```
+
+In this case, below is "stress" layout.
+
+```{r plot-spatial-ccc-graph-stress-layout, warning=FALSE}
+plot_spatial_ccc_graph(ccc_graph = ccc_graph_list[[LR_of_interest]],
+                       # tissue_img = SpatialExperiment::imgRaster(spe_brain),
+                       graph_layout = "stress",
+                       node_color = "group",
+                       edge_color = "group_diameter",
+                       edge_width = 0.25,
+                       which_on_top = "edge")
+```
+
+
+
+## Cell-overlap distance
+```{r compute-cell-overlap-distance}
+tictoc::tic()
+
+cell_overlap_dist <-
+  dist_cell_overlap_ccc_tbl(ccc_tbl)
+
+tictoc::toc()
+```
+
+```{r compute-cell-overlap-distance-long-format}
+tictoc::tic()
+
+cell_overlap_lf <-
+  lf_cell_overlap_ccc_tbl(ccc_tbl)
+
+tictoc::toc()
+```
+
+```{r select-LR-with-high-cell-overlap}
+tictoc::tic()
+
+LRs_high_cell_overlap <-
+  cell_overlap_lf %>% 
+  dplyr::filter(d < 1) %>%
+  dplyr::select(lr1, lr2) %>%
+  unlist() %>% unique()
+
+tictoc::toc()
+```
+
+```{r subset-high-cell-overlap-LR}
+tictoc::tic()
+
+high_cell_overlap_dist <-
+  cell_overlap_dist[LRs_high_cell_overlap, LRs_high_cell_overlap]
+
+tictoc::toc()
+```
+
+```{r subset-high-cell-overlap-LR-2}
+tictoc::tic()
+
+high_cell_overlap_dist2 <-
+  cell_overlap_lf %>%
+  dplyr::filter(d < 1) %>%
+  dplyr::select(lr1, lr2, d) %>%
+  lf_to_dist()
+
+tictoc::toc()
+```
+
+```{r summarize-ccc-table-by-LR}
+LR_ccc_summary_tbl <-
+  ccc_tbl %>% 
+  dplyr::pull(LR) %>%
+  table() %>%
+  tibble::as_tibble() %>%
+  dplyr::rename("LR" = ".") %>%
+  dplyr::arrange(desc(n)) %>%
+  dplyr::left_join(
+    ccc_tbl %>% 
+      dplyr::select(LR, ligand, receptor) %>%
+      dplyr::distinct(),
+    by = "LR"
+  )
+```
+
+
+```{r clustering-LR-by-cell-overlap}
+hclus.res <- fastcluster::hclust(as.dist(high_cell_overlap_dist),
+                                 method = "complete")
+```
+
+
+```{r LR-similarity-flat-dendrogram, fig.width=8, fig.height=2}
+#| warning: false
+ape::as.phylo(hclus.res) %>%
+  ggtree(layout="dendrogram") %<+% LR_ccc_summary_tbl +
+  aes(color=receptor) +
+  theme(legend.position = "none") +
+  geom_tippoint(aes(size=n), alpha=0.5) +
+  geom_tiplab(size=2, offset=-0.15) +
+  xlim_tree(3)
+```
+
+
+```{r LR-similarity-circular-dendrogram, fig.width=5, fig.height=5}
+#| warning: false
+ape::as.phylo(hclus.res) %>%
+  ggtree(layout = "circular") %<+% LR_ccc_summary_tbl +
+  aes(color=receptor) +
+  # aes(color=ligand) +
+  theme(legend.position = "none") +
+  geom_tippoint(aes(size=n), alpha=0.5) +
+  geom_tiplab(size=2, offset=0.05)
+```
+
