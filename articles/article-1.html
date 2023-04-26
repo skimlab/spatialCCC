@@ -49,9 +49,9 @@
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/article-1.html">article-1</a>
-    <a class="dropdown-item" href="../articles/spatialCCC-article-1.html">spatialCCC-article-1</a>
-    <a class="dropdown-item" href="../articles/spatialCCC-vignette-1.html">spatialCCC-vignette-1</a>
+    <a class="dropdown-item" href="../articles/article-2.html">article-2</a>
     <a class="dropdown-item" href="../articles/vignette-1.html">vignette-1</a>
+    <a class="dropdown-item" href="../articles/vignette-2.html">vignette-2</a>
   </div>
 </li>
       </ul>
@@ -87,9 +87,515 @@
 
     
     
+<div class="section level2">
+<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+</h2>
+<p>This is a basic example which shows you a basic workflow of the
+package:</p>
+</div>
+<div class="section level2">
+<h2 id="load-necessary-packages">Load necessary packages<a class="anchor" aria-label="anchor" href="#load-necessary-packages"></a>
+</h2>
+<p>We first load R packages required for the example here.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dolchan/spatialCCC" class="external-link">spatialCCC</a></span><span class="op">)</span></span></code></pre></div>
-  </main>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Looks like ggraph might have some issue importing 'guide_edge_colourbar' </span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggraph.data-imaginist.com" class="external-link">ggraph</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.amazon.com/Integration-Manipulation-Visualization-Phylogenetic-Computational-ebook/dp/B0B5NLZR1Z/" class="external-link">ggtree</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># spatialCCC package</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dolchan/spatialCCC" class="external-link">spatialCCC</a></span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="ligand-receptor-database">Ligand-Receptor Database<a class="anchor" aria-label="anchor" href="#ligand-receptor-database"></a>
+</h2>
+<div class="section level3">
+<h3 id="load-built-in-lrdb">Load built-in LRdb<a class="anchor" aria-label="anchor" href="#load-built-in-lrdb"></a>
+</h3>
+<p>This LRdb is downloaded from CellTalkDB: [<a href="http://tcm.zju.edu.cn/celltalkdb/download.php" class="external-link uri">http://tcm.zju.edu.cn/celltalkdb/download.php</a>]. You can
+see the detail by:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="op">?</span><span class="va">LRdb_human</span></span>
+<span><span class="op">?</span><span class="va">LRdb_mouse</span></span></code></pre></div>
+<p>We also created getter functions, get_LRdb() and get_LRdb_small(), to
+retrieve the database.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">LRdb_m</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="fu"><a href="../reference/get_LRdb.html">get_LRdb_small</a></span><span class="op">(</span><span class="st">"mouse"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">LRdb_m</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">ligand_gene_symbol</span>, <span class="va">receptor_gene_symbol</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 105 × 10</span></span></span>
+<span><span class="co">#&gt;    LR    ligand_gene_symbol receptor_gene_symbol ligand_gene_id receptor_gene_id</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Adcy… Adcyap1            Ramp3                         <span style="text-decoration: underline;">11</span>516            <span style="text-decoration: underline;">56</span>089</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Agt_… Agt                Agtr1a                        <span style="text-decoration: underline;">11</span>606            <span style="text-decoration: underline;">11</span>607</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Alka… Alkal2             Alk                       100<span style="text-decoration: underline;">294</span>583            <span style="text-decoration: underline;">11</span>682</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Angp… Angptl3            Itgb3                         <span style="text-decoration: underline;">30</span>924            <span style="text-decoration: underline;">16</span>416</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Apoa… Apoa1              Lrp2                          <span style="text-decoration: underline;">11</span>806            <span style="text-decoration: underline;">14</span>725</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Apoe… Apoe               Sdc1                          <span style="text-decoration: underline;">11</span>816            <span style="text-decoration: underline;">20</span>969</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> App_… App                Dcc                           <span style="text-decoration: underline;">11</span>820            <span style="text-decoration: underline;">13</span>176</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> App_… App                Trpc6                         <span style="text-decoration: underline;">11</span>820            <span style="text-decoration: underline;">22</span>068</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Bmp1… Bmp10              Bmpr1a                        <span style="text-decoration: underline;">12</span>154            <span style="text-decoration: underline;">12</span>166</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Bmp2… Bmp2               Bmpr1a                        <span style="text-decoration: underline;">12</span>156            <span style="text-decoration: underline;">12</span>166</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 95 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: ligand_ensembl_protein_id &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   receptor_ensembl_protein_id &lt;chr&gt;, ligand_ensembl_gene_id &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   receptor_ensembl_gene_id &lt;chr&gt;, evidence &lt;chr&gt;</span></span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="load-visium-spatial-transcriptomic-data">Load Visium spatial transcriptomic data<a class="anchor" aria-label="anchor" href="#load-visium-spatial-transcriptomic-data"></a>
+</h2>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_dir</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">base_dir</span>, <span class="st">"example"</span>, <span class="st">"visium_tutorial"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">spe_brain</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu">SpatialExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SpatialExperiment/man/read10xVisium.html" class="external-link">read10xVisium</a></span><span class="op">(</span>samples <span class="op">=</span> <span class="va">data_dir</span>,</span>
+<span>                                   type <span class="op">=</span> <span class="st">"HDF5"</span>,</span>
+<span>                                   data <span class="op">=</span> <span class="st">"filtered"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># to keep track of cell IDs</span></span>
+<span><span class="co"># spe_brain[["cell_id"]] &lt;- colnames(spe_brain)</span></span>
+<span></span>
+<span><span class="co"># Log-Normalize</span></span>
+<span><span class="va">spe_brain</span> <span class="op">&lt;-</span> <span class="fu">scater</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/scuttle/man/logNormCounts.html" class="external-link">logNormCounts</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span> </span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="cell-cluster-data">Cell cluster data<a class="anchor" aria-label="anchor" href="#cell-cluster-data"></a>
+</h2>
+<p>Now, let’s read cell cluster data, obtained using <a href="https://deepst-tutorials.readthedocs.io/" class="external-link">GraphST</a>.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cell_clusters</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">data_dir</span>, <span class="st">"outs"</span>, <span class="st">"graphST.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Make sure the rows of cell_clusters are in the same order of spe_brain.</span></span>
+<span><span class="va">cell_clusters</span> <span class="op">&lt;-</span> <span class="va">cell_clusters</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span>, <span class="op">]</span></span>
+<span></span>
+<span><span class="va">cluster_ids</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">cell_clusters</span><span class="op">)</span></span>
+<span><span class="va">cluster_ids</span> <span class="op">&lt;-</span> <span class="va">cluster_ids</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"mclust_"</span>, <span class="va">cluster_ids</span><span class="op">)</span><span class="op">]</span></span>
+<span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">cid</span> <span class="kw">in</span> <span class="va">cluster_ids</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">spe_brain</span><span class="op">[[</span><span class="va">cid</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">cell_clusters</span><span class="op">[[</span><span class="va">cid</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_spatial_feature.html">plot_spatial_feature</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, feature <span class="op">=</span> <span class="st">"mclust_8"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/unnamed-chunk-4-1.png" width="700"></p>
+</div>
+<div class="section level2">
+<h2 id="compute-cell-cell-communications-over-ligand-receptor-pairs">Compute Cell-Cell Communications over ligand-receptor pairs<a class="anchor" aria-label="anchor" href="#compute-cell-cell-communications-over-ligand-receptor-pairs"></a>
+</h2>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># For full LRdb analysis, future::plan can be used </span></span>
+<span><span class="co">#   for parallelization</span></span>
+<span><span class="co"># future::plan(future::multisession, workers = 4)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_spatial_ccc.html">compute_spatial_ccc</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, </span>
+<span>                               assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
+<span>                               LRdb <span class="op">=</span> <span class="va">LRdb_m</span><span class="op">)</span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 32.866 sec elapsed</span></span>
+<span></span>
+<span><span class="co"># future::plan(future::sequential)</span></span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">LRscore</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 133,813 × 10</span></span></span>
+<span><span class="co">#&gt;    src          dst       d norm.d LR    ligand receptor LRscore weight WLRscore</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> CTCGAGGTCGA… TAGC…  138    1.01 Nptx… Nptx1  Nptxr      0.868  0.986    0.855</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> CGCGTTCATGA… CGCG…    0    0    Nptx… Nptx1  Nptxr      0.868  1        0.868</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> TAGCTAAGTCC… TAGC…    0    0    Nptx… Nptx1  Nptxr      0.867  1        0.867</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> CCAGGGACGTG… CGCG…  137    1    Nptx… Nptx1  Nptxr      0.867  1        0.867</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> CCTGCTATTTG… CGCG…  138.   1.01 Nptx… Nptx1  Nptxr      0.866  0.980    0.848</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> CGCGTTCATGA… CCAG…  137    1    Nptx… Nptx1  Nptxr      0.865  1        0.865</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> GAGACTGATGG… TAGC…  138.   1.01 Nptx… Nptx1  Nptxr      0.865  0.987    0.853</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> CCAGGGACGTG… CCAG…    0    0    Nptx… Nptx1  Nptxr      0.864  1        0.864</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> TAGCTAAGTCC… GAGA…  138.   1.01 Nptx… Nptx1  Nptxr      0.864  0.987    0.853</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> CTCGAGGTCGA… TGCA…  138.   1.01 Nptx… Nptx1  Nptxr      0.864  0.980    0.846</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 133,803 more rows</span></span></span></code></pre></div>
+<div class="section level3">
+<h3 id="add-cluster-lables-to-ccc-table-">Add cluster lables to CCC table.<a class="anchor" aria-label="anchor" href="#add-cluster-lables-to-ccc-table-"></a>
+</h3>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/amend_ccc_table_with_cell_annots.html">amend_ccc_table_with_cell_annots</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, annot_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mclust_8"</span>, <span class="st">"mclust_10"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/set_ccc_table_default_cluster.html">set_ccc_table_default_cluster</a></span><span class="op">(</span><span class="st">"mclust_8"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="summarize-cell-cell-communication-between-cell-clusters">Summarize cell-cell communication between cell clusters<a class="anchor" aria-label="anchor" href="#summarize-cell-cell-communication-between-cell-clusters"></a>
+</h3>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_tbl_between_clusters</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html" class="external-link">group_by</a></span><span class="op">(</span><span class="va">mclust_8.src</span>, <span class="va">mclust_8.dst</span>, <span class="va">LR</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html" class="external-link">summarise</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html" class="external-link">n</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>                   LRscore.sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">LRscore</span><span class="op">)</span>,</span>
+<span>                   WLRscore.sum <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">WLRscore</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; `summarise()` has grouped output by 'mclust_8.src', 'mclust_8.dst'. You can</span></span>
+<span><span class="co">#&gt; override using the `.groups` argument.</span></span>
+<span></span>
+<span><span class="va">ccc_tbl_between_clusters</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,666 × 6</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># Groups:   mclust_8.src, mclust_8.dst [46]</span></span></span>
+<span><span class="co">#&gt;    mclust_8.src mclust_8.dst LR               n LRscore.sum WLRscore.sum</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            3            Rtn4_Cntnap1  <span style="text-decoration: underline;">3</span>467       <span style="text-decoration: underline;">2</span>517.        <span style="text-decoration: underline;">2</span>489.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 3            3            Fgf13_Fgfr3   <span style="text-decoration: underline;">3</span>269       <span style="text-decoration: underline;">2</span>202.        <span style="text-decoration: underline;">2</span>179.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 3            3            Nptx1_Nptxr   <span style="text-decoration: underline;">2</span>794       <span style="text-decoration: underline;">1</span>895.        <span style="text-decoration: underline;">1</span>875.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            3            Nxph1_Nrxn1   <span style="text-decoration: underline;">2</span>494       <span style="text-decoration: underline;">1</span>765.        <span style="text-decoration: underline;">1</span>746.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 2            2            Nptx1_Nptxr   <span style="text-decoration: underline;">2</span>060       <span style="text-decoration: underline;">1</span>648.        <span style="text-decoration: underline;">1</span>630.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 3            3            Hras_Grin2d   <span style="text-decoration: underline;">2</span>052       <span style="text-decoration: underline;">1</span>406.        <span style="text-decoration: underline;">1</span>390.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 1            1            Nptx1_Nptxr   <span style="text-decoration: underline;">1</span>717       <span style="text-decoration: underline;">1</span>368.        <span style="text-decoration: underline;">1</span>353.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 2            2            Rtn4_Cntnap1  <span style="text-decoration: underline;">1</span>664       <span style="text-decoration: underline;">1</span>233.        <span style="text-decoration: underline;">1</span>219.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 2            2            Fgf13_Fgfr3   <span style="text-decoration: underline;">1</span>606       <span style="text-decoration: underline;">1</span>114.        <span style="text-decoration: underline;">1</span>101.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3            3            Pnoc_Oprl1    <span style="text-decoration: underline;">1</span>541        982.         971.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,656 more rows</span></span></span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_tbl_between_clusters</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mclust_8.dst</span> <span class="op">!=</span> <span class="va">mclust_8.src</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,259 × 6</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># Groups:   mclust_8.src, mclust_8.dst [38]</span></span></span>
+<span><span class="co">#&gt;    mclust_8.src mclust_8.dst LR               n LRscore.sum WLRscore.sum</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            5            Nptx1_Nptxr    253        190.         188.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 3            5            Rtn4_Cntnap1   249        183.         181.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 5            3            Nptx1_Nptxr    241        181.         178.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            5            Fgf13_Fgfr3    199        136.         134.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 5            3            Rtn4_Cntnap1   191        142.         140.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 5            3            Fgf13_Fgfr3    190        135.         133.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 8            3            Rtn4_Cntnap1   151        113.         112.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 1            6            Nptx1_Nptxr    138        108.         106.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 7            6            Rtn4_Cntnap1   137        104.         103.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 1            6            Rtn4_Cntnap1   133        102.         100.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,249 more rows</span></span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="convert-ccc-table-to-ccc-graph">Convert CCC table to CCC graph<a class="anchor" aria-label="anchor" href="#convert-ccc-table-to-ccc-graph"></a>
+</h3>
+<p>The conversion also adds various graph metrics to each CCC graph.</p>
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="st">"to_spatical_ccc_graph ..."</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">sp_col_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/get_spatial_data.html">get_spatial_data</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ccc_graph_list</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/to_spatial_ccc_graph_list.html">to_spatial_ccc_graph_list</a></span><span class="op">(</span><span class="va">ccc_tbl</span>, <span class="va">sp_col_data</span>, workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; to_spatical_ccc_graph ...: 130.397 sec elapsed</span></span></code></pre></div>
+<p>summarize_ccc_graph_metrics() summarize those graph metrics for each
+LR pair.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ccc_graph_metrics_summary_df</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 0.323 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_graph_metrics_summary_df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">graph_component_count</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 51 × 12</span></span></span>
+<span><span class="co">#&gt;    LR        graph_n_nodes graph_n_edges graph_component_count graph_motif_count</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Rtn4_Cnt…          <span style="text-decoration: underline;">2</span>663         <span style="text-decoration: underline;">13</span>683                     3             <span style="text-decoration: underline;">24</span>385</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Nxph1_Nr…          <span style="text-decoration: underline;">2</span>469          <span style="text-decoration: underline;">8</span>058                     3             <span style="text-decoration: underline;">16</span>003</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Fgf13_Fg…          <span style="text-decoration: underline;">2</span>531         <span style="text-decoration: underline;">12</span>013                     3             <span style="text-decoration: underline;">21</span>895</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Nptx1_Np…          <span style="text-decoration: underline;">2</span>496         <span style="text-decoration: underline;">12</span>674                     4             <span style="text-decoration: underline;">21</span>230</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Vegfa_Fl…          <span style="text-decoration: underline;">1</span>974          <span style="text-decoration: underline;">4</span>676                    15              <span style="text-decoration: underline;">8</span>407</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Hras_Gri…          <span style="text-decoration: underline;">2</span>177          <span style="text-decoration: underline;">5</span>633                    19             <span style="text-decoration: underline;">11</span>524</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Psen1_Ne…          <span style="text-decoration: underline;">1</span>935          <span style="text-decoration: underline;">4</span>865                    21              <span style="text-decoration: underline;">8</span>604</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Il34_Csf…          <span style="text-decoration: underline;">2</span>154          <span style="text-decoration: underline;">6</span>780                    22             <span style="text-decoration: underline;">12</span>742</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Psen1_Er…          <span style="text-decoration: underline;">1</span>794          <span style="text-decoration: underline;">3</span>835                    30              <span style="text-decoration: underline;">6</span>426</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Col4a1_I…          <span style="text-decoration: underline;">1</span>867          <span style="text-decoration: underline;">4</span>026                    35              <span style="text-decoration: underline;">6</span>700</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 41 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 7 more variables: graph_diameter &lt;dbl&gt;, graph_un_diameter &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   graph_mean_dist &lt;dbl&gt;, graph_circuit_rank &lt;dbl&gt;, graph_reciprocity &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   graph_clique_num &lt;int&gt;, graph_clique_count &lt;int&gt;</span></span></span></code></pre></div>
+<p>summarize_ccc_graph_metrics(…, level = “group”) summarizes the
+metrics for each subgraph (group) in CCC graph (LR)</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">ccc_graph_group_metrics_summary_df</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span>, level <span class="op">=</span> <span class="st">"group"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 0.334 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_graph_group_metrics_summary_df</span> </span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3,874 × 12</span></span></span>
+<span><span class="co">#&gt;    LR         group group_n_nodes group_n_edges group_adhesion group_motif_count</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Rtn4_Cntn…     1          <span style="text-decoration: underline;">2</span>653         <span style="text-decoration: underline;">13</span>653              0             <span style="text-decoration: underline;">24</span>373</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Rtn4_Cntn…     2             5            15              0                 8</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Rtn4_Cntn…     3             5            15              1                 4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Pnoc_Oprl1    31             5             4              0                 4</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Pnoc_Oprl1     1           716          <span style="text-decoration: underline;">2</span>095              0              <span style="text-decoration: underline;">3</span>479</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Pnoc_Oprl1    55             2             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Pnoc_Oprl1     2           190           330              0               517</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Pnoc_Oprl1    23             6             7              0                 5</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Pnoc_Oprl1     5            31            47              0                72</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Pnoc_Oprl1     3            93           158              0               290</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3,864 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: group_diameter &lt;dbl&gt;, group_un_diameter &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   group_mean_dist &lt;dbl&gt;, group_girth &lt;dbl&gt;, group_circuit_rank &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   group_reciprocity &lt;dbl&gt;</span></span></span></code></pre></div>
+</div>
+</div>
+<div class="section level2">
+<h2 id="visualization">Visualization<a class="anchor" aria-label="anchor" href="#visualization"></a>
+</h2>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">LR_of_interest</span> <span class="op">&lt;-</span> <span class="st">"App_Dcc"</span></span></code></pre></div>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tidygraph</span><span class="fu">::</span><span class="fu"><a href="https://tidygraph.data-imaginist.com/reference/activate.html" class="external-link">activate</a></span><span class="op">(</span><span class="va">edges</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3,822 × 40</span></span></span>
+<span><span class="co">#&gt;     from    to src       dst       d norm.d LR    ligand receptor LRscore weight</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>     1   577 AAACAAGT… CAGC…  138    1.01 App_… App    Dcc        0.745  0.986</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>     1  <span style="text-decoration: underline;">1</span>938 AAACAAGT… TTCT…  138.   1.01 App_… App    Dcc        0.685  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>     2  <span style="text-decoration: underline;">1</span>569 AAACAATC… TAGT…  138    1.01 App_… App    Dcc        0.739  0.986</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>     3  <span style="text-decoration: underline;">1</span>251 AAACACCA… GGAA…  138    1.01 App_… App    Dcc        0.671  0.986</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>     4     4 AAACAGAG… AAAC…    0    0    App_… App    Dcc        0.798  1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>     4   581 AAACAGAG… CAGC…  138.   1.01 App_… App    Dcc        0.771  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>     5     5 AAACCGGG… AAAC…    0    0    App_… App    Dcc        0.728  1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>     5   805 AAACCGGG… CGCC…  138.   1.01 App_… App    Dcc        0.726  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>     6   699 AAACCTCA… CCGA…  138.   1.01 App_… App    Dcc        0.701  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>     6  <span style="text-decoration: underline;">1</span>324 AAACCTCA… GGTA…  138.   1.01 App_… App    Dcc        0.714  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3,812 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 29 more variables: WLRscore &lt;dbl&gt;, mclust_8.src &lt;chr&gt;, mclust_10.src &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   mclust_8.dst &lt;chr&gt;, mclust_10.dst &lt;chr&gt;, cluster.src &lt;chr&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   cluster.dst &lt;chr&gt;, graph_n_nodes &lt;int&gt;, graph_n_edges &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   graph_component_count &lt;dbl&gt;, graph_motif_count &lt;int&gt;, graph_diameter &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   graph_un_diameter &lt;dbl&gt;, graph_mean_dist &lt;dbl&gt;, graph_circuit_rank &lt;dbl&gt;,</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;">#   graph_reciprocity &lt;dbl&gt;, graph_clique_num &lt;int&gt;, …</span></span></span></code></pre></div>
+<div class="section level3">
+<h3 id="spatial-ccc-graph-plot-with-tissue-image">spatial CCC graph plot with tissue image<a class="anchor" aria-label="anchor" href="#spatial-ccc-graph-plot-with-tissue-image"></a>
+</h3>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gp_spccc</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
+<span>    ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    tissue_img <span class="op">=</span> <span class="fu">SpatialExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SpatialExperiment/man/SpatialImage-class.html" class="external-link">imgRaster</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span>,</span>
+<span>    node_color <span class="op">=</span> <span class="st">"mclust_8"</span>,</span>
+<span>    node_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    node_alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>    edge_color <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>    <span class="co"># clip = TRUE,</span></span>
+<span>    which_on_top <span class="op">=</span> <span class="st">"edge"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">gp_spccc_0</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_feature.html">plot_spatial_feature</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>,</span>
+<span>                       feature <span class="op">=</span> <span class="st">"mclust_8"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">gp_spccc</span>, <span class="va">gp_spccc_0</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/plot-spatial-ccc-graph-tissue-image-1.png" width="700"></p>
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ccc_graph_temp</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tidygraph</span><span class="fu">::</span><span class="fu"><a href="https://tidygraph.data-imaginist.com/reference/activate.html" class="external-link">activate</a></span><span class="op">(</span><span class="st">"edges"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tidygraph</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mclust_8.src</span> <span class="op">!=</span> <span class="va">mclust_8.dst</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/tidy_up_ccc_graph.html">tidy_up_ccc_graph</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cells_of_interest</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">ccc_graph_temp</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tidygraph</span><span class="fu">::</span><span class="fu"><a href="https://tidygraph.data-imaginist.com/reference/activate.html" class="external-link">activate</a></span><span class="op">(</span><span class="st">"nodes"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="st">"name"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gp_spccc</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
+<span>    ccc_graph <span class="op">=</span> <span class="va">ccc_graph_temp</span>,</span>
+<span>    tissue_img <span class="op">=</span> <span class="fu">SpatialExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SpatialExperiment/man/SpatialImage-class.html" class="external-link">imgRaster</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span>,</span>
+<span>    node_color <span class="op">=</span> <span class="st">"inflow.n"</span>,</span>
+<span>    node_size <span class="op">=</span> <span class="fl">1.25</span>,</span>
+<span>    node_alpha <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    edge_color <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>    show_arrow <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    <span class="co"># clip = TRUE,</span></span>
+<span>    which_on_top <span class="op">=</span> <span class="st">"node"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">gp_spccc_0</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
+<span>    ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    tissue_img <span class="op">=</span> <span class="fu">SpatialExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SpatialExperiment/man/SpatialImage-class.html" class="external-link">imgRaster</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span>,</span>
+<span>    image_alpha <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>    cells_of_interest <span class="op">=</span> <span class="va">cells_of_interest</span>,</span>
+<span>    edges_expanded_to_group <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>    node_color <span class="op">=</span> <span class="st">"mclust_8"</span>,</span>
+<span>    node_size <span class="op">=</span> <span class="fl">1.25</span>,</span>
+<span>    node_alpha <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>    edge_color <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>    show_arrow <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    <span class="co"># clip = TRUE,</span></span>
+<span>    which_on_top <span class="op">=</span> <span class="st">"node"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">gp_spccc_1</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_feature.html">plot_spatial_feature</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>,</span>
+<span>                       feature <span class="op">=</span> <span class="st">"mclust_8"</span>,</span>
+<span>                       cells_of_interest <span class="op">=</span> <span class="va">cells_of_interest</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">gp_spccc</span>, <span class="va">gp_spccc_1</span>, ncol <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/plot-spatial-ccc-graph-tissue-overlapped-cell-cluster-1.png" width="864"></p>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gp_spccc_0</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/unnamed-chunk-12-1.png" width="768"></p>
+</div>
+<div class="section level3">
+<h3 id="spatial-ccc-graph-plot-without-tissue-image">spatial CCC graph plot without tissue image<a class="anchor" aria-label="anchor" href="#spatial-ccc-graph-plot-without-tissue-image"></a>
+</h3>
+<p>In this case, graph layout can be “spatial” which keeps the original
+spatial locations, or other graph layout algorithm supported by igraph
+package.</p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">gp_spccc</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
+<span>    ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    graph_layout <span class="op">=</span> <span class="st">"spatial"</span>,</span>
+<span>    node_color <span class="op">=</span>  <span class="st">"mclust_8"</span>,</span>
+<span>    node_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    edge_color <span class="op">=</span> <span class="st">"group_diameter"</span>,</span>
+<span>    clip <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    <span class="co"># ghost_img = TRUE,</span></span>
+<span>    which_on_top <span class="op">=</span> <span class="st">"edge"</span></span>
+<span>  <span class="op">)</span></span>
+<span></span>
+<span><span class="va">gp_spccc_0</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
+<span>    ccc_graph <span class="op">=</span></span>
+<span>      <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>    graph_layout <span class="op">=</span> <span class="st">"spatial"</span>,</span>
+<span>    node_color <span class="op">=</span> <span class="st">"mclust_8"</span>,</span>
+<span>    node_size <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>    edge_color <span class="op">=</span> <span class="st">"group_diameter"</span>,</span>
+<span>    clip <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    <span class="co"># ghost_img = TRUE,</span></span>
+<span>    which_on_top <span class="op">=</span> <span class="st">"node"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://patchwork.data-imaginist.com/reference/wrap_plots.html" class="external-link">wrap_plots</a></span><span class="op">(</span><span class="va">gp_spccc</span>, <span class="va">gp_spccc_0</span>, ncol <span class="op">=</span> <span class="fl">2</span>, guides <span class="op">=</span> <span class="st">"collect"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/plot-spatial-ccc-graph-spatial-1.png" width="960"></p>
+<p>Below uses “auto” layout (“kk” spring layout).</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span>ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                       <span class="co"># tissue_img = SpatialExperiment::imgRaster(spe_brain),</span></span>
+<span>                       node_color <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>                       node_size <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>                       edge_color <span class="op">=</span> <span class="st">"group_diameter"</span>,</span>
+<span>                       edge_width <span class="op">=</span> <span class="fl">0.1</span>,</span>
+<span>                       which_on_top <span class="op">=</span> <span class="st">"edge"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/plot-spatial-ccc-graph-kk-layout-1.png" width="700"></p>
+<p>In this case, below is “stress” layout.</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span>ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                       <span class="co"># tissue_img = SpatialExperiment::imgRaster(spe_brain),</span></span>
+<span>                       graph_layout <span class="op">=</span> <span class="st">"stress"</span>,</span>
+<span>                       node_color <span class="op">=</span> <span class="st">"group"</span>,</span>
+<span>                       edge_color <span class="op">=</span> <span class="st">"group_diameter"</span>,</span>
+<span>                       edge_width <span class="op">=</span> <span class="fl">0.25</span>,</span>
+<span>                       which_on_top <span class="op">=</span> <span class="st">"edge"</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/plot-spatial-ccc-graph-stress-layout-1.png" width="700"></p>
+</div>
+</div>
+<div class="section level2">
+<h2 id="cell-overlap-distance">Cell-overlap distance<a class="anchor" aria-label="anchor" href="#cell-overlap-distance"></a>
+</h2>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cell_overlap_dist</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/dist_cell_overlap_ccc_tbl.html">dist_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 1.467 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">cell_overlap_lf</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="../reference/lf_cell_overlap_ccc_tbl.html">lf_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 1.431 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">LRs_high_cell_overlap</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cell_overlap_lf</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">d</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">lr1</span>, <span class="va">lr2</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 0.01 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">high_cell_overlap_dist</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cell_overlap_dist</span><span class="op">[</span><span class="va">LRs_high_cell_overlap</span>, <span class="va">LRs_high_cell_overlap</span><span class="op">]</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 0.004 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">high_cell_overlap_dist2</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">cell_overlap_lf</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">d</span> <span class="op">&lt;</span> <span class="fl">1</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">lr1</span>, <span class="va">lr2</span>, <span class="va">d</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/lf_to_dist.html">lf_to_dist</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 0.033 sec elapsed</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">LR_ccc_summary_tbl</span> <span class="op">&lt;-</span></span>
+<span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">LR</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html" class="external-link">rename</a></span><span class="op">(</span><span class="st">"LR"</span> <span class="op">=</span> <span class="st">"."</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
+<span>    <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">LR</span>, <span class="va">ligand</span>, <span class="va">receptor</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>      <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/distinct.html" class="external-link">distinct</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>    by <span class="op">=</span> <span class="st">"LR"</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">hclus.res</span> <span class="op">&lt;-</span> <span class="fu">fastcluster</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/fastcluster/man/hclust.html" class="external-link">hclust</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/dist.html" class="external-link">as.dist</a></span><span class="op">(</span><span class="va">high_cell_overlap_dist</span><span class="op">)</span>,</span>
+<span>                                 method <span class="op">=</span> <span class="st">"complete"</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/as.phylo.html" class="external-link">as.phylo</a></span><span class="op">(</span><span class="va">hclus.res</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/ggtree.html" class="external-link">ggtree</a></span><span class="op">(</span>layout<span class="op">=</span><span class="st">"dendrogram"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/ggtree/man/attacher.html" class="external-link">%&lt;+%</a></span> <span class="va">LR_ccc_summary_tbl</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color<span class="op">=</span><span class="va">receptor</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/geom_tippoint.html" class="external-link">geom_tippoint</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>size<span class="op">=</span><span class="va">n</span><span class="op">)</span>, alpha<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/geom_tiplab.html" class="external-link">geom_tiplab</a></span><span class="op">(</span>size<span class="op">=</span><span class="fl">2</span>, offset<span class="op">=</span><span class="op">-</span><span class="fl">0.15</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/xlim_tree.html" class="external-link">xlim_tree</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/LR-similarity-flat-dendrogram-1.png" width="768"></p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ape</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/ape/man/as.phylo.html" class="external-link">as.phylo</a></span><span class="op">(</span><span class="va">hclus.res</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/ggtree.html" class="external-link">ggtree</a></span><span class="op">(</span>layout <span class="op">=</span> <span class="st">"circular"</span><span class="op">)</span> <span class="op"><a href="https://rdrr.io/pkg/ggtree/man/attacher.html" class="external-link">%&lt;+%</a></span> <span class="va">LR_ccc_summary_tbl</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>color<span class="op">=</span><span class="va">receptor</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="co"># aes(color=ligand) +</span></span>
+<span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/geom_tippoint.html" class="external-link">geom_tippoint</a></span><span class="op">(</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span>size<span class="op">=</span><span class="va">n</span><span class="op">)</span>, alpha<span class="op">=</span><span class="fl">0.5</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/pkg/ggtree/man/geom_tiplab.html" class="external-link">geom_tiplab</a></span><span class="op">(</span>size<span class="op">=</span><span class="fl">2</span>, offset<span class="op">=</span><span class="fl">0.05</span><span class="op">)</span></span></code></pre></div>
+<p><img src="article-1_files/figure-html/LR-similarity-circular-dendrogram-1.png" width="480"></p>
+</div>
+  </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
 

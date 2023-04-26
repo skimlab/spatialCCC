@@ -13,16 +13,16 @@
     <loc>https://skimlab.github.io/spatialCCC/articles/article-1.html</loc>
   </url>
   <url>
+    <loc>https://skimlab.github.io/spatialCCC/articles/article-2.html</loc>
+  </url>
+  <url>
     <loc>https://skimlab.github.io/spatialCCC/articles/index.html</loc>
   </url>
   <url>
-    <loc>https://skimlab.github.io/spatialCCC/articles/spatialCCC-article-1.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/articles/spatialCCC-vignette-1.html</loc>
-  </url>
-  <url>
     <loc>https://skimlab.github.io/spatialCCC/articles/vignette-1.html</loc>
+  </url>
+  <url>
+    <loc>https://skimlab.github.io/spatialCCC/articles/vignette-2.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/authors.html</loc>
@@ -40,25 +40,7 @@
     <loc>https://skimlab.github.io/spatialCCC/reference/add_spatial_ccc_graph_metrics.html</loc>
   </url>
   <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/add_spatial_ccc_graph_metrics_to_edges.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/add_spatial_data.html</loc>
-  </url>
-  <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/amend_ccc_table_with_cell_annots.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/barebone_spatial_ccc_graph.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/calc_spot_dist.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/calc_spot_dist0.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/collapse_to_ccc_by_cell.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/compute_spatial_ccc.html</loc>
@@ -67,13 +49,7 @@
     <loc>https://skimlab.github.io/spatialCCC/reference/dist_cell_overlap_ccc_tbl.html</loc>
   </url>
   <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/dist_cell_overlap_edgesets.html</loc>
-  </url>
-  <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/extract_ccc_graph_metrics.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/geom_spatial.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/get_LRdb.html</loc>
@@ -91,25 +67,16 @@
     <loc>https://skimlab.github.io/spatialCCC/reference/lf_to_dist.html</loc>
   </url>
   <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/modify_alpha_image.html</loc>
-  </url>
-  <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/plot_spatial_ccc_graph.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/plot_spatial_feature.html</loc>
   </url>
   <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/prep_cell_overlap_ccc_tbl.html</loc>
-  </url>
-  <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/set_ccc_table_default_cluster.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/spatialCCC-package.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/summarise_ccc_by_cell_lr.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/summarize_ccc_graph_metrics.html</loc>
@@ -119,9 +86,6 @@
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/tidy_up_ccc_graph.html</loc>
-  </url>
-  <url>
-    <loc>https://skimlab.github.io/spatialCCC/reference/to_barebone_spatial_ccc_graph.html</loc>
   </url>
   <url>
     <loc>https://skimlab.github.io/spatialCCC/reference/to_spatial_ccc_graph.html</loc>

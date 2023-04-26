@@ -27,9 +27,9 @@ Neighboring spots are those with norm.d &amp;lt; spot_dist_cutoff."><meta proper
   <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown-articles">Articles</a>
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/article-1.html">article-1</a>
-    <a class="dropdown-item" href="../articles/spatialCCC-article-1.html">spatialCCC-article-1</a>
-    <a class="dropdown-item" href="../articles/spatialCCC-vignette-1.html">spatialCCC-vignette-1</a>
+    <a class="dropdown-item" href="../articles/article-2.html">article-2</a>
     <a class="dropdown-item" href="../articles/vignette-1.html">vignette-1</a>
+    <a class="dropdown-item" href="../articles/vignette-2.html">vignette-2</a>
   </div>
 </li>
       </ul><form class="form-inline my-2 my-lg-0" role="search">
@@ -91,7 +91,7 @@ with non-zero expression value (default: 0.05)</p></dd>
 
 <dt>spot_dist_cutoff</dt>
 <dd><p>cutoff value for norm.d in spot
-distances (see <code><a href="calc_spot_dist.html">calc_spot_dist()</a></code>). Default cutoff is 1.5 and
+distances. Default cutoff is 1.5 and
 it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 arranged, so by default, only computing nearest neighbors.</p></dd>
 
@@ -124,7 +124,7 @@ across all genes and all samples.</p>
 <span class="r-in"><span>  <span class="fu">SpatialExperiment</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/SpatialExperiment/man/read10xVisium.html" class="external-link">read10xVisium</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    samples <span class="op">=</span> <span class="va">data_dir</span>,</span></span>
 <span class="r-in"><span>    type <span class="op">=</span> <span class="st">"HDF5"</span>,</span></span>
-<span class="r-in"><span>    data <span class="op">=</span> <span class="st">"filtered"</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span></span>
+<span class="r-in"><span>    data <span class="op">=</span> <span class="st">"filtered"</span><span class="op">)</span> <span class="op">%&gt;%</span></span></span>
 <span class="r-in"><span>    <span class="fu">logNormCounts</span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># get built-in LR datbase for mouse</span></span></span>
