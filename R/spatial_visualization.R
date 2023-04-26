@@ -541,9 +541,9 @@ plot_spatial_feature <-
 #'
 #' @return A [ggplot2::layer()] for the histology information.
 #' @author 10x Genomics
-#' @export
 #' @importFrom tibble tibble
 #'
+#' @noRd
 geom_spatial <- function(mapping = NULL,
                          data = NULL,
                          stat = "identity",
@@ -591,6 +591,8 @@ geom_spatial <- function(mapping = NULL,
 #'
 #' @param raster Raster image, like imgRaster(spe)
 #' @param image.alpha alpha value for tissue_img. If NA, keep the current value.
+#'
+#' @noRd
 modify_alpha_image <- function(raster, image.alpha = NA) {
   matrix(data = scales::alpha(raster, alpha = image.alpha),
          nrow = nrow(x = raster),

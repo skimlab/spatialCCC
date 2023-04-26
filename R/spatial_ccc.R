@@ -9,7 +9,7 @@
 #' @return A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
 #'
-#' @export
+#' @noRd
 calc_spot_dist0 <- function(coords, long_format = TRUE) {
   cell_ids <- coords[[1]]
 
@@ -49,7 +49,7 @@ calc_spot_dist0 <- function(coords, long_format = TRUE) {
 #' @return A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
 #'
-#' @export
+#' @noRd
 calc_spot_dist <-
   function(spe,
            long_format = TRUE,
@@ -97,7 +97,7 @@ get_spatial_data <- function(spe) {
 #'
 #' @return spatial CCC graph w/o LRscore
 #'
-#' @export
+#' @noRd
 barebone_spatial_ccc_graph <-
   function(spe,
            spot_dist_cutoff = 1.5) {
@@ -124,7 +124,7 @@ barebone_spatial_ccc_graph <-
 #' @param expression_min_prop minimum proportion of samples
 #'    with non-zero expression value (default: 0.05)
 #' @param spot_dist_cutoff cutoff value for norm.d in spot
-#'    distances (see [calc_spot_dist()]). Default cutoff is 1.5 and
+#'    distances. Default cutoff is 1.5 and
 #'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 #'    arranged, so by default, only computing nearest neighbors.
 #' @param LRscore_cutoff minimum LRscore to keep
@@ -646,6 +646,8 @@ tag_cells_in_ccc_graph <- function(ccog, COIs, edges_expanded_to_group = FALSE) 
 #' @param spatial_data spatial data: cell_id, spot_x, spot_y, ...;
 #'   they should contain cell_id, spot_x, spot_y, and the rest will
 #'   be added
+#'
+#' @noRd
 add_spatial_data <-
   function(df,
            spatial_data) {
@@ -665,6 +667,8 @@ add_spatial_data <-
 #' internal function
 #'
 #' @param ccc_table CCC graph table.  see [compute_spatial_ccc()].
+#'
+#' @noRd
 summarise_ccc_by_cell_lr <-
   function(ccc_table) {
     src_summary <-
@@ -707,6 +711,8 @@ summarise_ccc_by_cell_lr <-
 #'
 #' Internal function
 #' @param ccc_by_cell_lr see [summarise_ccc_by_cell_lr()]
+#'
+#' @noRd
 collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
   ccc_by_cell_lr %>%
     dplyr::group_by(cell_id) %>%
@@ -728,6 +734,8 @@ collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
 #'
 #' Internal function
 #' @inheritParams add_spatial_ccc_graph_metrics
+#'
+#' @noRd
 add_spatial_ccc_graph_metrics_to_edges <-
   function(sp_ccc_graph, from_scratch = TRUE) {
     sp_ccc_graph_nodes_df <-
@@ -755,6 +763,8 @@ add_spatial_ccc_graph_metrics_to_edges <-
 #' @param ccc_table an output of [compute_spatial_ccc()]
 #'
 #' @return CCC graph (barebone)
+#'
+#' @noRd
 to_barebone_spatial_ccc_graph <-
   function(ccc_table) {
     ccc_table %>%

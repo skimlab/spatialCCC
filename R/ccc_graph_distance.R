@@ -76,6 +76,8 @@ lf_to_dist <- function(lf) {
 #' @param ccc_tbl CCC table
 #'
 #' @return a list of CCC graph which is a list of concatenated edges
+#'
+#' @noRd
 prep_cell_overlap_ccc_tbl <- function(ccc_tbl) {
   LR_list <- unique(ccc_tbl$LR)
   names(LR_list) <- LR_list
@@ -101,6 +103,7 @@ prep_cell_overlap_ccc_tbl <- function(ccc_tbl) {
 #' @param edgeset_list a set of concatenated edges
 #'   (see [prep_cell_overlap_ccc_tbl()])
 #'
+#' @noRd
 dist_cell_overlap_edgesets <- function(edgeset_list) {
   edgeset_names <- names(edgeset_list)
 
@@ -134,7 +137,7 @@ dist_cell_overlap_edgesets <- function(edgeset_list) {
   1 - cell_overlap_dist
 }
 
-#' @rdname dist_cell_overlap_edgesets
+#' @inheritParams dist_cell_overlap_edgesets
 lf_cell_overlap_edgesets <- function(edgeset_list) {
   edgeset_names <- names(edgeset_list)
 

@@ -37,7 +37,7 @@ devtools::install_github("dolchan/spatialCCC")
 
 This is a basic example which shows you a basic workflow of the package:
 
-  * First load requured R packages.
+  * First, load required R packages.
 ```{r message = FALSE}
 # Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
 library(ggraph)
@@ -51,7 +51,7 @@ LRdb_m <-
   get_LRdb_small("mouse")
 ```
 
-  * Load Visium spatial transcriptomic data
+  * Load an example Visium spatial transcriptomic data
 ```{r visium-data-loading}
 data_dir <- file.path("example", "visium_tutorial")
 spe_brain <-
