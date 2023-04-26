@@ -17,7 +17,6 @@ Suggests:
     fastcluster,
     ggtree,
     knitr,
-    patchwork,
     rmarkdown,
     scater,
     testthat (>= 3.0.0),
