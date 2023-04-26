@@ -38,10 +38,15 @@ devtools::install_github("dolchan/spatialCCC")
 This is a basic example which shows you a basic workflow of the package:
 
   * First, load required R packages.
-```{r message = FALSE}
-# Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
+```{r just-FYI, include=FALSE}
+# Looks like ggraph might have some issue importing 'guide_edge_colourbar'.
+#   @importFrom didn't work.
+#  @importFrom & @export, a.k.a. didn't work, either.
+# adding ggraph to 'Depends' worked.
 # library(ggraph)
+```
 
+```{r message = FALSE}
 library(spatialCCC)
 ```
 

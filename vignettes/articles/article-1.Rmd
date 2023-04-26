@@ -26,9 +26,6 @@ This is a basic example which shows you a basic workflow of the package:
 We first load R packages required for the example here.
 ```{r setup, message = FALSE}
 library(patchwork)
-
-# Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
-# library(ggraph)
 library(ggtree)
 
 # spatialCCC package
