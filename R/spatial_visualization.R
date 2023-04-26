@@ -61,6 +61,7 @@
 #'                        which_on_top = "edge")
 #' }
 #'
+#' @import ggraph
 plot_spatial_ccc_graph <-
   function(ccc_graph,
            graph_layout = "auto",
