@@ -2,12 +2,12 @@
 % Please edit documentation in R/spatial_ccc.R
 \name{to_spatial_ccc_graph_list}
 \alias{to_spatial_ccc_graph_list}
-\title{Convert a list of CCC tables to a list of spatial CCC graphs}
+\title{Convert CCC table to a list of spatial CCC graphs}
 \usage{
-to_spatial_ccc_graph_list(ccc_table, spatial_data, workers = 1)
+to_spatial_ccc_graph_list(ccc_tbl, spatial_data, workers = 1)
 }
 \arguments{
-\item{ccc_table}{an output of \code{\link[=compute_spatial_ccc]{compute_spatial_ccc()}}}
+\item{ccc_tbl}{an output of \code{\link[=compute_spatial_ccc_tbl]{compute_spatial_ccc_tbl()}}}
 
 \item{spatial_data}{a table with spatial coordinates of
 spots/cells in spatial transcriptomic data.  if spatial_data
@@ -18,6 +18,42 @@ cell_id, spot_x, spot_y}
 \item{workers}{the number of processes to be used for parallel
 processing}
 }
-\description{
-Convert a list of CCC tables to a list of spatial CCC graphs
+\value{
+a list of spatial CCC graph
 }
+\description{
+Convert CCC table to a list of spatial CCC graphs
+}
+\section{graph metrics}{
+
+\enumerate{
+\item For overall graph,
+\itemize{
+\item graph_n_nodes,
+\item graph_n_edges
+\item graph_component_count
+\item graph_motif_count
+\item graph_diameter
+\item graph_un_diameter
+\item graph_mean_dist
+\item graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count
+\item graph_reciprocity
+\item graph_clique_num (sp_ccc_graph assumed as undirected)
+\item graph_clique_count (sp_ccc_graph assumed as undirected)
+}
+\item For each sub-graph (after \code{\link[=group_components]{group_components()}})
+\itemize{
+\item group_n_nodes
+\item group_n_edges
+\item group_adhesion
+\item group_motif_count
+\item group_diameter
+\item group_un_diameter
+\item group_mean_dist
+\item group_girth
+\item group_circuit_rank
+\item group_reciprocity
+}
+}
+}
+

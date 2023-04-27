@@ -52,8 +52,10 @@ library(spatialCCC)
 
   * Then, load built-in LR database.
 ```{r LRdb-loading}
+set.seed(100)
+
 LRdb_m <- 
-  get_LRdb_small("mouse")
+  get_LRdb("mouse", n_samples = 100)
 ```
 
   * Load an example Visium spatial transcriptomic data
@@ -73,21 +75,11 @@ spe_brain <- scater::logNormCounts(spe_brain)
 
   * Compute Cell-Cell Communications over ligand-receptor pairs
 ```{r compute-spatial-ccc}
-ccc_tbl <-
-  compute_spatial_ccc(spe = spe_brain,
-                      assay_name = "logcounts",
-                      LRdb = LRdb_m)
-```
-
-
-  * Convert CCC table to CCC graph
-    The conversion also adds various graph metrics to each CCC graph.
-
-```{r to-spatial-ccc-graph}
-sp_col_data <- get_spatial_data(spe_brain)
-
 ccc_graph_list <-
-  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
+  compute_spatial_ccc_graph_list(spe = spe_brain,
+                                 assay_name = "logcounts",
+                                 LRdb = LRdb_m, 
+                                 workers = 6)
 ```
 
 
@@ -96,16 +88,13 @@ ccc_graph_list <-
   * Spatial CCC graph plot with tissue image
 
 ```{r spatial-ccc-with-tissue-image, warning=FALSE}
-LR_of_interest <- "App_Dcc"
+LR_of_interest <- "Pdgfb_Pdgfra"
 
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   tissue_img = SpatialExperiment::imgRaster(spe_brain),
   node_color = "group",
-  node_size = 1,
-  node_alpha = 0.5,
   edge_color = "group",
-  # clip = TRUE,
   which_on_top = "edge"
 )
 ```

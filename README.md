@@ -30,17 +30,16 @@ This is a basic example which shows you a basic workflow of the package:
 - First, load required R packages.
 
 ``` r
-# Looks like ggraph might have some issue importing 'guide_edge_colourbar' 
-# library(ggraph)
-
 library(spatialCCC)
 ```
 
 - Then, load built-in LR database.
 
 ``` r
+set.seed(100)
+
 LRdb_m <- 
-  get_LRdb_small("mouse")
+  get_LRdb("mouse", n_samples = 100)
 ```
 
 - Load an example Visium spatial transcriptomic data
@@ -61,20 +60,11 @@ spe_brain <- scater::logNormCounts(spe_brain)
 - Compute Cell-Cell Communications over ligand-receptor pairs
 
 ``` r
-ccc_tbl <-
-  compute_spatial_ccc(spe = spe_brain,
-                      assay_name = "logcounts",
-                      LRdb = LRdb_m)
-```
-
-- Convert CCC table to CCC graph The conversion also adds various graph
-  metrics to each CCC graph.
-
-``` r
-sp_col_data <- get_spatial_data(spe_brain)
-
 ccc_graph_list <-
-  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
+  compute_spatial_ccc_graph_list(spe = spe_brain,
+                                 assay_name = "logcounts",
+                                 LRdb = LRdb_m, 
+                                 workers = 6)
 ```
 
 ### Cell-cell commuication visualization
@@ -82,7 +72,7 @@ ccc_graph_list <-
 - Spatial CCC graph plot with tissue image
 
 ``` r
-LR_of_interest <- "App_Dcc"
+LR_of_interest <- "Pdgfb_Pdgfra"
 
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],

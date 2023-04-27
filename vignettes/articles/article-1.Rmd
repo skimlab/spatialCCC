@@ -46,8 +46,10 @@ This LRdb is downloaded from CellTalkDB: [http://tcm.zju.edu.cn/celltalkdb/downl
 We also created getter functions, get_LRdb() and get_LRdb_small(), to retrieve the database.
 
 ```{r LRdb-loading}
+set.seed(100)
+
 LRdb_m <- 
-  get_LRdb_small("mouse")
+  get_LRdb("mouse", n_samples = 100)
 
 LRdb_m %>% 
   dplyr::arrange(ligand_gene_symbol, receptor_gene_symbol)
@@ -103,9 +105,9 @@ plot_spatial_feature(spe = spe_brain, feature = "mclust_8")
 # future::plan(future::multisession, workers = 4)
 
 tictoc::tic()
-ccc_tbl <- compute_spatial_ccc(spe = spe_brain, 
-                               assay_name = "logcounts",
-                               LRdb = LRdb_m)
+ccc_tbl <- compute_spatial_ccc_tbl(spe = spe_brain, 
+                                   assay_name = "logcounts",
+                                   LRdb = LRdb_m)
 tictoc::toc()
 
 # future::plan(future::sequential)
@@ -123,8 +125,8 @@ ccc_tbl %>%
 ```{r}
 ccc_tbl <-
   ccc_tbl %>%
-  amend_ccc_table_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10")) %>%
-  set_ccc_table_default_cluster("mclust_8")
+  amend_ccc_tbl_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10")) %>%
+  set_ccc_tbl_default_cluster("mclust_8")
 ```
 
 
@@ -206,7 +208,7 @@ ccc_graph_group_metrics_summary_df
 ## Visualization
 
 ```{r example-LR, fig.width=8}
-LR_of_interest <- "App_Dcc"
+LR_of_interest <- "Pdgfb_Pdgfra"
 ```
 
 

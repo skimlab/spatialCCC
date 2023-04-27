@@ -2,15 +2,14 @@
 % Please edit documentation in R/get_LRdb.R
 \name{get_LRdb}
 \alias{get_LRdb}
-\alias{get_LRdb_small}
 \title{Return LRdb table}
 \usage{
-get_LRdb(species = c("human", "mouse"))
-
-get_LRdb_small(species = c("human", "mouse"))
+get_LRdb(species = c("human", "mouse"), n_samples = 0)
 }
 \arguments{
 \item{species}{string, either "human" (default) or "mouse"}
+
+\item{n_samples}{the number of LR-pairs to sample; if 0, return full table.}
 }
 \value{
 LRdb table in data frame

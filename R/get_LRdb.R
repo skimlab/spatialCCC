@@ -5,7 +5,7 @@
 #'   See [LRdb_human] and [LRdb_mouse] for more detail about the database.
 #'
 #' @param species string, either "human" (default) or "mouse"
-#'
+#' @param n_samples the number of LR-pairs to sample; if 0, return full table.
 #'
 #' @return LRdb table in data frame
 #'
@@ -15,7 +15,7 @@
 #' @examples
 #' LRdb <- get_LRdb(species = "human")
 #'
-get_LRdb <- function(species = c("human", "mouse")) {
+get_LRdb <- function(species = c("human", "mouse"), n_samples = 0) {
   if (length(species) > 1) {
     species <- species[1]
   }
@@ -29,17 +29,20 @@ get_LRdb <- function(species = c("human", "mouse")) {
 
   species <- species_option[pmatch(species, species_option)]
 
-  if (species == "human") {
-    LRdb_human
-  } else {
-    LRdb_mouse
-  }
+  if (species == "human")
+    LRdb <- LRdb_human
+  else
+    LRdb <-LRdb_mouse
+
+  if (n_samples > 0)
+    LRdb <- dplyr::slice_sample(LRdb, n = n_samples)
+
+  LRdb
 }
 
 #'
-#' @rdname get_LRdb
+#' @noRd
 #'
-#' @export
 get_LRdb_small <- function(species = c("human", "mouse")) {
   LRdb <-
     get_LRdb(species)
