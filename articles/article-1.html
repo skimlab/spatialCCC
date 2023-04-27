@@ -99,9 +99,6 @@ package:</p>
 <p>We first load R packages required for the example here.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://patchwork.data-imaginist.com" class="external-link">patchwork</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Looks like ggraph might have some issue importing 'guide_edge_colourbar' </span></span>
-<span><span class="co"># library(ggraph)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://www.amazon.com/Integration-Manipulation-Visualization-Phylogenetic-Computational-ebook/dp/B0B5NLZR1Z/" class="external-link">ggtree</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># spatialCCC package</span></span>
@@ -121,25 +118,27 @@ see the detail by:</p>
 <p>We also created getter functions, get_LRdb() and get_LRdb_small(), to
 retrieve the database.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">LRdb_m</span> <span class="op">&lt;-</span> </span>
-<span>  <span class="fu"><a href="../reference/get_LRdb.html">get_LRdb_small</a></span><span class="op">(</span><span class="st">"mouse"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">LRdb_m</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="fu"><a href="../reference/get_LRdb.html">get_LRdb</a></span><span class="op">(</span><span class="st">"mouse"</span>, n_samples <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">LRdb_m</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">ligand_gene_symbol</span>, <span class="va">receptor_gene_symbol</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 105 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 100 × 10</span></span></span>
 <span><span class="co">#&gt;    LR    ligand_gene_symbol receptor_gene_symbol ligand_gene_id receptor_gene_id</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>              <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>                         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>            <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Adam… Adam17             Tnfrsf1b                      <span style="text-decoration: underline;">11</span>491            <span style="text-decoration: underline;">21</span>938</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Adam… Adam9              Itgav                         <span style="text-decoration: underline;">11</span>502            <span style="text-decoration: underline;">16</span>410</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Adcy… Adcyap1            Ramp2                         <span style="text-decoration: underline;">11</span>516            <span style="text-decoration: underline;">54</span>409</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Adip… Adipoq             Adipor2                       <span style="text-decoration: underline;">11</span>450            <span style="text-decoration: underline;">68</span>465</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Adm2… Adm2               Calcrl                       <span style="text-decoration: underline;">223</span>780            <span style="text-decoration: underline;">54</span>598</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Agt_… Agt                Agtr1a                        <span style="text-decoration: underline;">11</span>606            <span style="text-decoration: underline;">11</span>607</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Apob… Apob               Cd36                         <span style="text-decoration: underline;">238</span>055            <span style="text-decoration: underline;">12</span>491</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Apoe… Apoe               Sdc1                          <span style="text-decoration: underline;">11</span>816            <span style="text-decoration: underline;">20</span>969</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> App_… App                Dcc                           <span style="text-decoration: underline;">11</span>820            <span style="text-decoration: underline;">13</span>176</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Bmp4… Bmp4               Bmpr2                         <span style="text-decoration: underline;">12</span>159            <span style="text-decoration: underline;">12</span>168</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 95 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Adam… Adam10             Notch1                        <span style="text-decoration: underline;">11</span>487            <span style="text-decoration: underline;">18</span>128</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Adam… Adam12             Epha1                         <span style="text-decoration: underline;">11</span>489            <span style="text-decoration: underline;">13</span>835</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Adam… Adam17             Aplp2                         <span style="text-decoration: underline;">11</span>491            <span style="text-decoration: underline;">11</span>804</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Adam… Adam2              Itgb7                         <span style="text-decoration: underline;">11</span>495            <span style="text-decoration: underline;">16</span>421</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Adcy… Adcyap1            Adcyap1r1                     <span style="text-decoration: underline;">11</span>516            <span style="text-decoration: underline;">11</span>517</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Adcy… Adcyap1            Ramp3                         <span style="text-decoration: underline;">11</span>516            <span style="text-decoration: underline;">56</span>089</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Adip… Adipoq             Adipor1                       <span style="text-decoration: underline;">11</span>450            <span style="text-decoration: underline;">72</span>674</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Adm2… Adm2               Calcrl                       <span style="text-decoration: underline;">223</span>780            <span style="text-decoration: underline;">54</span>598</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Apoe… Apoe               Ldlr                          <span style="text-decoration: underline;">11</span>816            <span style="text-decoration: underline;">16</span>835</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Apoe… Apoe               Trem2                         <span style="text-decoration: underline;">11</span>816            <span style="text-decoration: underline;">83</span>433</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 90 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 5 more variables: ligand_ensembl_protein_id &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   receptor_ensembl_protein_id &lt;chr&gt;, ligand_ensembl_gene_id &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   receptor_ensembl_gene_id &lt;chr&gt;, evidence &lt;chr&gt;</span></span></span></code></pre></div>
@@ -192,38 +191,38 @@ retrieve the database.</p>
 <span><span class="co"># future::plan(future::multisession, workers = 4)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_spatial_ccc.html">compute_spatial_ccc</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, </span>
-<span>                               assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
-<span>                               LRdb <span class="op">=</span> <span class="va">LRdb_m</span><span class="op">)</span></span>
+<span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/compute_spatial_ccc_tbl.html">compute_spatial_ccc_tbl</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, </span>
+<span>                                   assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
+<span>                                   LRdb <span class="op">=</span> <span class="va">LRdb_m</span><span class="op">)</span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 22.789 sec elapsed</span></span>
+<span><span class="co">#&gt; 17.451 sec elapsed</span></span>
 <span></span>
 <span><span class="co"># future::plan(future::sequential)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">LRscore</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 113,546 × 10</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 126,286 × 10</span></span></span>
 <span><span class="co">#&gt;    src          dst       d norm.d LR    ligand receptor LRscore weight WLRscore</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>    <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> GATATGGATTA… GATA…    0    0    Clu_… Clu    Lrp8       0.858  1        0.858</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> TCACATCTTAT… GATA…  138.   1.01 Clu_… Clu    Lrp8       0.852  0.986    0.840</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> TCGTCACACTG… GATA…  138.   1.01 Clu_… Clu    Lrp8       0.850  0.980    0.833</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> TTATCGCCTGC… GATA…  138.   1.01 Clu_… Clu    Lrp8       0.849  0.980    0.832</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> TTGATTATGCA… TTAT…  138    1.01 Clu_… Clu    Lrp8       0.846  0.986    0.834</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> CGCAAACACGA… TTAT…  137    1    Clu_… Clu    Lrp8       0.845  1        0.845</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> CTAATTCGCAC… TTAT…  138.   1.00 Clu_… Clu    Lrp8       0.844  0.992    0.838</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> AGAGCAGTTAT… GATA…  138.   1.00 Clu_… Clu    Lrp8       0.844  0.992    0.837</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> TGTCGGCATGG… GGGT…  138    1.01 Rtn4… Rtn4   Rtn4r      0.844  0.986    0.831</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> TCAGTACTGAC… TTAT…  138.   1.01 Clu_… Clu    Lrp8       0.843  0.980    0.826</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 113,536 more rows</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> CAGTCTGTATA… AGGT…  137.   1.00 Apoe… Apoe   Trem2      0.866  0.999    0.866</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> ACGTTAATGTC… AGGT…  138    1.01 Apoe… Apoe   Trem2      0.864  0.986    0.852</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> CCTAAATTAAC… AGGT…  138.   1.00 Apoe… Apoe   Trem2      0.864  0.992    0.857</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> TATACACAGAC… ACGC…  138.   1.01 Apoe… Apoe   Trem2      0.863  0.980    0.846</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> TGTTCGTATTG… ACGC…  138    1.01 Apoe… Apoe   Trem2      0.863  0.986    0.850</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> AGGTTTCACAC… AGGT…    0    0    Apoe… Apoe   Trem2      0.862  1        0.862</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> CGCATGGTGCG… AGGT…  138.   1.01 Apoe… Apoe   Trem2      0.861  0.987    0.850</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> GATAGGTAACG… ACGC…  138.   1.00 Apoe… Apoe   Trem2      0.861  0.992    0.854</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> GCGCCGTTCCA… AGGT…  137    1    Apoe… Apoe   Trem2      0.861  1        0.861</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> ACGCGAAGTCA… ACGC…    0    0    Apoe… Apoe   Trem2      0.860  1        0.860</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 126,276 more rows</span></span></span></code></pre></div>
 <div class="section level3">
 <h3 id="add-cluster-lables-to-ccc-table-">Add cluster lables to CCC table.<a class="anchor" aria-label="anchor" href="#add-cluster-lables-to-ccc-table-"></a>
 </h3>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/amend_ccc_table_with_cell_annots.html">amend_ccc_table_with_cell_annots</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, annot_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mclust_8"</span>, <span class="st">"mclust_10"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
-<span>  <span class="fu"><a href="../reference/set_ccc_table_default_cluster.html">set_ccc_table_default_cluster</a></span><span class="op">(</span><span class="st">"mclust_8"</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="../reference/amend_ccc_tbl_with_cell_annots.html">amend_ccc_tbl_with_cell_annots</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>, annot_cols <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mclust_8"</span>, <span class="st">"mclust_10"</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
+<span>  <span class="fu"><a href="../reference/set_ccc_tbl_default_cluster.html">set_ccc_tbl_default_cluster</a></span><span class="op">(</span><span class="st">"mclust_8"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="summarize-cell-cell-communication-between-cell-clusters">Summarize cell-cell communication between cell clusters<a class="anchor" aria-label="anchor" href="#summarize-cell-cell-communication-between-cell-clusters"></a>
@@ -240,40 +239,40 @@ retrieve the database.</p>
 <span></span>
 <span><span class="va">ccc_tbl_between_clusters</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,603 × 6</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,327 × 6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># Groups:   mclust_8.src, mclust_8.dst [46]</span></span></span>
-<span><span class="co">#&gt;    mclust_8.src mclust_8.dst LR                n LRscore.sum WLRscore.sum</span></span>
-<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            3            Mdk_Lrp1       <span style="text-decoration: underline;">3</span>225       <span style="text-decoration: underline;">2</span>246.        <span style="text-decoration: underline;">2</span>221.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 3            3            Mfge8_Itgb5    <span style="text-decoration: underline;">2</span>237       <span style="text-decoration: underline;">1</span>466.        <span style="text-decoration: underline;">1</span>450.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 2            2            Rtn4_Rtn4r     <span style="text-decoration: underline;">1</span>717       <span style="text-decoration: underline;">1</span>294.        <span style="text-decoration: underline;">1</span>279.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            3            Clu_Lrp8       <span style="text-decoration: underline;">1</span>709       <span style="text-decoration: underline;">1</span>267.        <span style="text-decoration: underline;">1</span>253.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 3            3            Calm1_Cacna1c  <span style="text-decoration: underline;">1</span>646       <span style="text-decoration: underline;">1</span>230.        <span style="text-decoration: underline;">1</span>217.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 3            3            Rtn4_Rtn4r     <span style="text-decoration: underline;">1</span>643       <span style="text-decoration: underline;">1</span>153.        <span style="text-decoration: underline;">1</span>141.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 1            1            Rtn4_Rtn4r     <span style="text-decoration: underline;">1</span>617       <span style="text-decoration: underline;">1</span>267.        <span style="text-decoration: underline;">1</span>253.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 3            3            Sema4d_Plxnb2  <span style="text-decoration: underline;">1</span>521        944.         934.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 2            2            Mdk_Lrp1       <span style="text-decoration: underline;">1</span>233        838.         829.</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 6            6            Rtn4_Rtn4r     <span style="text-decoration: underline;">1</span>232        945.         935.</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,593 more rows</span></span></span></code></pre></div>
+<span><span class="co">#&gt;    mclust_8.src mclust_8.dst LR                    n LRscore.sum WLRscore.sum</span></span>
+<span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            3            App_Lrp1           <span style="text-decoration: underline;">4</span>480       <span style="text-decoration: underline;">3</span>576.        <span style="text-decoration: underline;">3</span>537.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 3            3            Nlgn2_Nrxn1        <span style="text-decoration: underline;">3</span>592       <span style="text-decoration: underline;">2</span>585.        <span style="text-decoration: underline;">2</span>556.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 3            3            Ncam1_Fgfr1        <span style="text-decoration: underline;">3</span>093       <span style="text-decoration: underline;">2</span>167.        <span style="text-decoration: underline;">2</span>143.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            3            S100a1_Ryr2        <span style="text-decoration: underline;">2</span>349       <span style="text-decoration: underline;">1</span>592.        <span style="text-decoration: underline;">1</span>574.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 2            2            App_Lrp1           <span style="text-decoration: underline;">2</span>136       <span style="text-decoration: underline;">1</span>710.        <span style="text-decoration: underline;">1</span>691.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 3            3            Apoe_Ldlr          <span style="text-decoration: underline;">1</span>953       <span style="text-decoration: underline;">1</span>487.        <span style="text-decoration: underline;">1</span>471.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 2            2            Nlgn2_Nrxn1        <span style="text-decoration: underline;">1</span>840       <span style="text-decoration: underline;">1</span>386.        <span style="text-decoration: underline;">1</span>370.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 1            1            App_Lrp1           <span style="text-decoration: underline;">1</span>742       <span style="text-decoration: underline;">1</span>406.        <span style="text-decoration: underline;">1</span>391.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 3            3            Apoe_Trem2         <span style="text-decoration: underline;">1</span>720       <span style="text-decoration: underline;">1</span>322.        <span style="text-decoration: underline;">1</span>308.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3            3            Adcyap1_Adcyap1r1  <span style="text-decoration: underline;">1</span>687       <span style="text-decoration: underline;">1</span>131.        <span style="text-decoration: underline;">1</span>118.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,317 more rows</span></span></span></code></pre></div>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_tbl_between_clusters</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">mclust_8.dst</span> <span class="op">!=</span> <span class="va">mclust_8.src</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="fu">desc</span><span class="op">(</span><span class="va">n</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,214 × 6</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 1,004 × 6</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># Groups:   mclust_8.src, mclust_8.dst [38]</span></span></span>
 <span><span class="co">#&gt;    mclust_8.src mclust_8.dst LR                n LRscore.sum WLRscore.sum</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;fct&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>       <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>        <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            5            Rtn4_Rtn4r      194       146.         143. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 5            3            Mdk_Lrp1        178       124.         122. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 3            5            Mdk_Lrp1        167       121.         119. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            5            Calm1_Cacna1c   163       123.         121. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 3            5            Mfge8_Itgb5     161       110.         109. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 1            6            Rtn4_Rtn4r      145       114.         112. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 6            1            Rtn4_Rtn4r      144       113.         112. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 3            8            Mdk_Lrp1        136        95.5         94.1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 6            7            Rtn4_Rtn4r      136       106.         104. </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3            5            Clu_Lrp8        130        97.9         96.5</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 1,204 more rows</span></span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> 3            5            App_Lrp1        304        241.         238.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> 5            3            App_Lrp1        300        238.         235.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> 5            3            Nlgn2_Nrxn1     255        184.         182.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> 3            5            S100a1_Ryr2     224        161.         159.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> 8            3            App_Lrp1        212        171.         168.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> 3            5            Ncam1_Fgfr1     208        145.         143.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> 3            8            App_Lrp1        199        157.         155.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> 3            5            Nlgn2_Nrxn1     195        141.         139.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> 5            3            Ncam1_Fgfr1     165        116.         114.</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> 3            5            Calm2_Cacna1c   163        122.         120.</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 994 more rows</span></span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="convert-ccc-table-to-ccc-graph">Convert CCC table to CCC graph<a class="anchor" aria-label="anchor" href="#convert-ccc-table-to-ccc-graph"></a>
@@ -288,7 +287,7 @@ retrieve the database.</p>
 <span>  <span class="fu"><a href="../reference/to_spatial_ccc_graph_list.html">to_spatial_ccc_graph_list</a></span><span class="op">(</span><span class="va">ccc_tbl</span>, <span class="va">sp_col_data</span>, workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; to_spatical_ccc_graph ...: 90.435 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; to_spatical_ccc_graph ...: 66.829 sec elapsed</span></span></code></pre></div>
 <p>summarize_ccc_graph_metrics() summarize those graph metrics for each
 LR pair.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -298,24 +297,24 @@ LR pair.</p>
 <span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.221 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.168 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_graph_metrics_summary_df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">graph_component_count</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 49 × 12</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 41 × 12</span></span></span>
 <span><span class="co">#&gt;    LR        graph_n_nodes graph_n_edges graph_component_count graph_motif_count</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>                 <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Mfge8_It…          <span style="text-decoration: underline;">2</span>509          <span style="text-decoration: underline;">8</span>700                     4             <span style="text-decoration: underline;">17</span>113</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Rtn4_Rtn…          <span style="text-decoration: underline;">2</span>590         <span style="text-decoration: underline;">11</span>251                     5             <span style="text-decoration: underline;">20</span>250</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Mdk_Lrp1           <span style="text-decoration: underline;">2</span>588         <span style="text-decoration: underline;">10</span>099                     5             <span style="text-decoration: underline;">19</span>447</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Clu_Lrp8           <span style="text-decoration: underline;">2</span>527          <span style="text-decoration: underline;">7</span>510                     6             <span style="text-decoration: underline;">15</span>497</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Calm1_Ca…          <span style="text-decoration: underline;">2</span>462          <span style="text-decoration: underline;">8</span>111                     6             <span style="text-decoration: underline;">16</span>315</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Sema4d_P…          <span style="text-decoration: underline;">2</span>079          <span style="text-decoration: underline;">5</span>690                    14             <span style="text-decoration: underline;">10</span>292</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Adam9_It…          <span style="text-decoration: underline;">2</span>128          <span style="text-decoration: underline;">6</span>146                    17             <span style="text-decoration: underline;">11</span>349</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Gnai2_Ca…          <span style="text-decoration: underline;">2</span>175          <span style="text-decoration: underline;">4</span>327                    26              <span style="text-decoration: underline;">8</span>931</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Wnt10a_F…            92            74                    32                48</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Mdk_Lrp6           <span style="text-decoration: underline;">1</span>764          <span style="text-decoration: underline;">3</span>528                    40              <span style="text-decoration: underline;">5</span>802</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 39 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> App_Lrp1           <span style="text-decoration: underline;">2</span>700         <span style="text-decoration: underline;">17</span>430                     3             <span style="text-decoration: underline;">27</span>811</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Ncam1_Fg…          <span style="text-decoration: underline;">2</span>549          <span style="text-decoration: underline;">9</span>640                     3             <span style="text-decoration: underline;">18</span>340</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Nlgn2_Nr…          <span style="text-decoration: underline;">2</span>675         <span style="text-decoration: underline;">14</span>289                     3             <span style="text-decoration: underline;">25</span>062</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> S100a1_R…          <span style="text-decoration: underline;">2</span>591         <span style="text-decoration: underline;">10</span>689                     5             <span style="text-decoration: underline;">20</span>094</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Calm2_Ca…          <span style="text-decoration: underline;">2</span>461          <span style="text-decoration: underline;">8</span>105                     6             <span style="text-decoration: underline;">16</span>288</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Apoe_Tre…          <span style="text-decoration: underline;">2</span>560          <span style="text-decoration: underline;">6</span>937                     8             <span style="text-decoration: underline;">14</span>484</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Apoe_Ldlr          <span style="text-decoration: underline;">2</span>295          <span style="text-decoration: underline;">5</span>608                    26             <span style="text-decoration: underline;">11</span>724</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Slit1_Ro…          <span style="text-decoration: underline;">1</span>651          <span style="text-decoration: underline;">4</span>373                    41              <span style="text-decoration: underline;">7</span>866</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Calm2_My…          <span style="text-decoration: underline;">1</span>967          <span style="text-decoration: underline;">4</span>247                    42              <span style="text-decoration: underline;">8</span>830</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Adcyap1_…          <span style="text-decoration: underline;">1</span>642          <span style="text-decoration: underline;">4</span>172                    43              <span style="text-decoration: underline;">7</span>801</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 31 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 7 more variables: graph_diameter &lt;dbl&gt;, graph_un_diameter &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   graph_mean_dist &lt;dbl&gt;, graph_circuit_rank &lt;dbl&gt;, graph_reciprocity &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   graph_clique_num &lt;int&gt;, graph_clique_count &lt;int&gt;</span></span></span></code></pre></div>
@@ -328,23 +327,23 @@ metrics for each subgraph (group) in CCC graph (LR)</p>
 <span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span>, level <span class="op">=</span> <span class="st">"group"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.238 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.161 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_graph_group_metrics_summary_df</span> </span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 4,039 × 12</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2,877 × 12</span></span></span>
 <span><span class="co">#&gt;    LR         group group_n_nodes group_n_edges group_adhesion group_motif_count</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;int&gt;</span>         <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>          <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>             <span style="color: #949494; font-style: italic;">&lt;int&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Clu_Lrp8       1          <span style="text-decoration: underline;">2</span>503          <span style="text-decoration: underline;">7</span>478              0             <span style="text-decoration: underline;">15</span>464</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Clu_Lrp8       3             5             5              0                 6</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Clu_Lrp8       4             5            13              0                 8</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Clu_Lrp8       6             3             3              0                 1</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Clu_Lrp8       2             7             7              0                15</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Clu_Lrp8       5             4             4              0                 3</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Adam9_Itg…     1          <span style="text-decoration: underline;">1</span>952          <span style="text-decoration: underline;">5</span>850              0             <span style="text-decoration: underline;">10</span>957</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Adam9_Itg…     2            68           125              0               161</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Adam9_Itg…     3            59           122              0               203</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Adam9_Itg…    17             1             1              0                 0</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 4,029 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span> Rspo3_Lgr6    38             2             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span> Rspo3_Lgr6    13             3             3              0                 1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span> Rspo3_Lgr6    39             2             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span> Rspo3_Lgr6    14             3             2              0                 1</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span> Rspo3_Lgr6     5             4             3              0                 3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span> Rspo3_Lgr6     6             4             4              0                 3</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span> Rspo3_Lgr6    75             1             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span> Rspo3_Lgr6    40             2             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span> Rspo3_Lgr6    41             2             1              0                 0</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span> Rspo3_Lgr6    15             3             3              0                 1</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2,867 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 6 more variables: group_diameter &lt;dbl&gt;, group_un_diameter &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   group_mean_dist &lt;dbl&gt;, group_girth &lt;dbl&gt;, group_circuit_rank &lt;dbl&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   group_reciprocity &lt;dbl&gt;</span></span></span></code></pre></div>
@@ -354,25 +353,25 @@ metrics for each subgraph (group) in CCC graph (LR)</p>
 <h2 id="visualization">Visualization<a class="anchor" aria-label="anchor" href="#visualization"></a>
 </h2>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">LR_of_interest</span> <span class="op">&lt;-</span> <span class="st">"App_Dcc"</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">LR_of_interest</span> <span class="op">&lt;-</span> <span class="st">"Pdgfb_Pdgfra"</span></span></code></pre></div>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">tidygraph</span><span class="fu">::</span><span class="fu"><a href="https://tidygraph.data-imaginist.com/reference/activate.html" class="external-link">activate</a></span><span class="op">(</span><span class="va">edges</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">tibble</span><span class="fu">::</span><span class="fu"><a href="https://tibble.tidyverse.org/reference/as_tibble.html" class="external-link">as_tibble</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 3,822 × 40</span></span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2,406 × 40</span></span></span>
 <span><span class="co">#&gt;     from    to src       dst       d norm.d LR    ligand receptor LRscore weight</span></span>
 <span><span class="co">#&gt;    <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;int&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>     <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span> <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;chr&gt;</span>      <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span>  <span style="color: #949494; font-style: italic;">&lt;dbl&gt;</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>     1   577 AAACAAGT… CAGC…  138    1.01 App_… App    Dcc        0.745  0.986</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>     1  <span style="text-decoration: underline;">1</span>938 AAACAAGT… TTCT…  138.   1.01 App_… App    Dcc        0.685  0.980</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>     2  <span style="text-decoration: underline;">1</span>569 AAACAATC… TAGT…  138    1.01 App_… App    Dcc        0.739  0.986</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>     3  <span style="text-decoration: underline;">1</span>251 AAACACCA… GGAA…  138    1.01 App_… App    Dcc        0.671  0.986</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>     4     4 AAACAGAG… AAAC…    0    0    App_… App    Dcc        0.798  1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>     4   581 AAACAGAG… CAGC…  138.   1.01 App_… App    Dcc        0.771  0.980</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>     5     5 AAACCGGG… AAAC…    0    0    App_… App    Dcc        0.728  1    </span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>     5   805 AAACCGGG… CGCC…  138.   1.01 App_… App    Dcc        0.726  0.980</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>     6   699 AAACCTCA… CCGA…  138.   1.01 App_… App    Dcc        0.701  0.980</span></span>
-<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>     6  <span style="text-decoration: underline;">1</span>324 AAACCTCA… GGTA…  138.   1.01 App_… App    Dcc        0.714  0.980</span></span>
-<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 3,812 more rows</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 1</span>     1     1 AAACAAGT… AAAC…    0    0    Pdgf… Pdgfb  Pdgfra     0.621  1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 2</span>     1   920 AAACAAGT… AGAG…  138.   1.01 Pdgf… Pdgfb  Pdgfra     0.649  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 3</span>     1   921 AAACAAGT… GGCA…  138.   1.01 Pdgf… Pdgfb  Pdgfra     0.684  0.987</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 4</span>     1   896 AAACAAGT… TTCT…  138.   1.01 Pdgf… Pdgfb  Pdgfra     0.629  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 5</span>     2   922 AAACAGAG… TCAC…  138.   1.01 Pdgf… Pdgfb  Pdgfra     0.599  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 6</span>     3     3 AAACCGGG… AAAC…    0    0    Pdgf… Pdgfb  Pdgfra     0.541  1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 7</span>     3   923 AAACCGGG… CGCT…  138    1.01 Pdgf… Pdgfb  Pdgfra     0.631  0.986</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 8</span>     3   924 AAACCGGG… TTGG…  138.   1.01 Pdgf… Pdgfb  Pdgfra     0.509  0.980</span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;"> 9</span>     4     4 AAACGAGA… AAAC…    0    0    Pdgf… Pdgfb  Pdgfra     0.641  1    </span></span>
+<span><span class="co">#&gt; <span style="color: #BCBCBC;">10</span>     4    50 AAACGAGA… AAGA…  138    1.01 Pdgf… Pdgfb  Pdgfra     0.670  0.986</span></span>
+<span><span class="co">#&gt; <span style="color: #949494;"># ℹ 2,396 more rows</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;"># ℹ 29 more variables: WLRscore &lt;dbl&gt;, mclust_8.src &lt;chr&gt;, mclust_10.src &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   mclust_8.dst &lt;chr&gt;, mclust_10.dst &lt;chr&gt;, cluster.src &lt;chr&gt;,</span></span></span>
 <span><span class="co">#&gt; <span style="color: #949494;">#   cluster.dst &lt;chr&gt;, graph_n_nodes &lt;int&gt;, graph_n_edges &lt;dbl&gt;,</span></span></span>
@@ -519,7 +518,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/dist_cell_overlap_ccc_tbl.html">dist_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.832 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.756 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -527,7 +526,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/lf_cell_overlap_ccc_tbl.html">lf_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 1.128 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.852 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -538,7 +537,7 @@ package.</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.008 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.007 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -557,7 +556,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/lf_to_dist.html">lf_to_dist</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.022 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.019 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">LR_ccc_summary_tbl</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>

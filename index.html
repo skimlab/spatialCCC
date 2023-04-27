@@ -98,16 +98,15 @@
 <li>First, load required R packages.</li>
 </ul>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Looks like ggraph might have some issue importing 'guide_edge_colourbar' </span></span>
-<span><span class="co"># library(ggraph)</span></span>
-<span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dolchan/spatialCCC" class="external-link">spatialCCC</a></span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dolchan/spatialCCC" class="external-link">spatialCCC</a></span><span class="op">)</span></span></code></pre></div>
 <ul>
 <li>Then, load built-in LR database.</li>
 </ul>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">LRdb_m</span> <span class="op">&lt;-</span> </span>
-<span>  <span class="fu"><a href="reference/get_LRdb.html">get_LRdb_small</a></span><span class="op">(</span><span class="st">"mouse"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">LRdb_m</span> <span class="op">&lt;-</span> </span>
+<span>  <span class="fu"><a href="reference/get_LRdb.html">get_LRdb</a></span><span class="op">(</span><span class="st">"mouse"</span>, n_samples <span class="op">=</span> <span class="fl">100</span><span class="op">)</span></span></code></pre></div>
 <ul>
 <li>Load an example Visium spatial transcriptomic data</li>
 </ul>
@@ -127,18 +126,11 @@
 <li>Compute Cell-Cell Communications over ligand-receptor pairs</li>
 </ul>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">ccc_tbl</span> <span class="op">&lt;-</span></span>
-<span>  <span class="fu"><a href="reference/compute_spatial_ccc.html">compute_spatial_ccc</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>,</span>
-<span>                      assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
-<span>                      LRdb <span class="op">=</span> <span class="va">LRdb_m</span><span class="op">)</span></span></code></pre></div>
-<ul>
-<li>Convert CCC table to CCC graph The conversion also adds various graph metrics to each CCC graph.</li>
-</ul>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sp_col_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/get_spatial_data.html">get_spatial_data</a></span><span class="op">(</span><span class="va">spe_brain</span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">ccc_graph_list</span> <span class="op">&lt;-</span></span>
-<span>  <span class="fu"><a href="reference/to_spatial_ccc_graph_list.html">to_spatial_ccc_graph_list</a></span><span class="op">(</span><span class="va">ccc_tbl</span>, <span class="va">sp_col_data</span>, workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">ccc_graph_list</span> <span class="op">&lt;-</span></span>
+<span>  <span class="fu"><a href="reference/compute_spatial_ccc_graph_list.html">compute_spatial_ccc_graph_list</a></span><span class="op">(</span>spe <span class="op">=</span> <span class="va">spe_brain</span>,</span>
+<span>                                 assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
+<span>                                 LRdb <span class="op">=</span> <span class="va">LRdb_m</span>, </span>
+<span>                                 workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="cell-cell-commuication-visualization">Cell-cell commuication visualization<a class="anchor" aria-label="anchor" href="#cell-cell-commuication-visualization"></a>
@@ -146,8 +138,8 @@
 <ul>
 <li>Spatial CCC graph plot with tissue image</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">LR_of_interest</span> <span class="op">&lt;-</span> <span class="st">"App_Dcc"</span></span>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">LR_of_interest</span> <span class="op">&lt;-</span> <span class="st">"Pdgfb_Pdgfra"</span></span>
 <span></span>
 <span><span class="fu"><a href="reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
 <span>  ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
@@ -164,7 +156,7 @@
 <li>Spatial CCC graph plot without tissue image</li>
 </ul>
 <p>In this case, graph layout can be “spatial” which keeps the original spatial locations, or other graph layout algorithm supported by igraph package.</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
 <span>  ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>  graph_layout <span class="op">=</span> <span class="st">"spatial"</span>,</span>
@@ -179,7 +171,7 @@
 <li>Spatial CCC graph plot with “auto”, a.k.a., “kk” spring layout</li>
 </ul>
 <p>In this format and the one below, one can see the distribution of cell-cell communication clusters</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
 <span>  ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>  node_color <span class="op">=</span> <span class="st">"group"</span>,</span>
@@ -192,7 +184,7 @@
 <ul>
 <li>Spatial CCC graph plot with “stress” layout</li>
 </ul>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="reference/plot_spatial_ccc_graph.html">plot_spatial_ccc_graph</a></span><span class="op">(</span></span>
 <span>  ccc_graph <span class="op">=</span> <span class="va">ccc_graph_list</span><span class="op">[[</span><span class="va">LR_of_interest</span><span class="op">]</span><span class="op">]</span>,</span>
 <span>  <span class="co"># tissue_img = SpatialExperiment::imgRaster(spe_brain),</span></span>
