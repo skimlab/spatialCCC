@@ -695,7 +695,8 @@ add_spatial_ccc_graph_metrics <-
         # probably not informative
         group_girth = tidygraph::graph_girth(),
 
-        group_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count,
+        # group_n_edges - group_n_nodes + group_componet_count (=1)
+        group_circuit_rank = group_n_edges - group_n_nodes + 1,
         group_reciprocity = tidygraph::graph_reciprocity()
 
       ) %>%
