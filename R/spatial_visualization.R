@@ -80,6 +80,12 @@ plot_spatial_ccc_graph <-
            image_alpha = NA,
            which_on_top = "edge",
            show_arrow = FALSE) {
+
+    if (is.null(ccc_graph)) {
+      return(ggplot() + theme_void())
+    }
+
+
     cells_of_interest_given <- !is.null(cells_of_interest)
 
     if (cells_of_interest_given) {
