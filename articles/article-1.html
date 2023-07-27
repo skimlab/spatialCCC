@@ -195,7 +195,7 @@ retrieve the database.</p>
 <span>                                   assay_name <span class="op">=</span> <span class="st">"logcounts"</span>,</span>
 <span>                                   LRdb <span class="op">=</span> <span class="va">LRdb_m</span><span class="op">)</span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 17.451 sec elapsed</span></span>
+<span><span class="co">#&gt; 20.23 sec elapsed</span></span>
 <span></span>
 <span><span class="co"># future::plan(future::sequential)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
@@ -287,7 +287,7 @@ retrieve the database.</p>
 <span>  <span class="fu"><a href="../reference/to_spatial_ccc_graph_list.html">to_spatial_ccc_graph_list</a></span><span class="op">(</span><span class="va">ccc_tbl</span>, <span class="va">sp_col_data</span>, workers <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; to_spatical_ccc_graph ...: 66.829 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; to_spatical_ccc_graph ...: 74.904 sec elapsed</span></span></code></pre></div>
 <p>summarize_ccc_graph_metrics() summarize those graph metrics for each
 LR pair.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -297,7 +297,7 @@ LR pair.</p>
 <span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.168 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.206 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_graph_metrics_summary_df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/arrange.html" class="external-link">arrange</a></span><span class="op">(</span><span class="va">graph_component_count</span><span class="op">)</span></span>
@@ -327,7 +327,7 @@ metrics for each subgraph (group) in CCC graph (LR)</p>
 <span>  <span class="fu"><a href="../reference/summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics</a></span><span class="op">(</span><span class="va">ccc_graph_list</span>, level <span class="op">=</span> <span class="st">"group"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.161 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.176 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ccc_graph_group_metrics_summary_df</span> </span>
 <span><span class="co">#&gt; <span style="color: #949494;"># A tibble: 2,877 × 12</span></span></span>
@@ -518,7 +518,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/dist_cell_overlap_ccc_tbl.html">dist_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.756 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.879 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -526,7 +526,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/lf_cell_overlap_ccc_tbl.html">lf_cell_overlap_ccc_tbl</a></span><span class="op">(</span><span class="va">ccc_tbl</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.852 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.834 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">tic</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -556,7 +556,7 @@ package.</p>
 <span>  <span class="fu"><a href="../reference/lf_to_dist.html">lf_to_dist</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">tictoc</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/tictoc/man/tic.html" class="external-link">toc</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 0.019 sec elapsed</span></span></code></pre></div>
+<span><span class="co">#&gt; 0.022 sec elapsed</span></span></code></pre></div>
 <div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">LR_ccc_summary_tbl</span> <span class="op">&lt;-</span></span>
 <span>  <span class="va">ccc_tbl</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> </span>
