@@ -66,7 +66,8 @@ Neighboring spots are those with norm.d &lt; spot_dist_cutoff.</p>
 <span>  <span class="va">LRdb</span>,</span>
 <span>  expression_min_prop <span class="op">=</span> <span class="fl">0.05</span>,</span>
 <span>  spot_dist_cutoff <span class="op">=</span> <span class="fl">1.5</span>,</span>
-<span>  LRscore_cutoff <span class="op">=</span> <span class="fl">0.5</span></span>
+<span>  LRscore_cutoff <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  workers <span class="op">=</span> <span class="fl">1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -98,6 +99,11 @@ arranged, so by default, only computing nearest neighbors.</p></dd>
 
 <dt>LRscore_cutoff</dt>
 <dd><p>minimum LRscore to keep</p></dd>
+
+
+<dt>workers</dt>
+<dd><p>the number of processes to be used for parallel
+processing</p></dd>
 
 </dl></div>
     <div class="section level2">
