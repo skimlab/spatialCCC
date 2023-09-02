@@ -10,7 +10,8 @@ compute_spatial_ccc_tbl(
   LRdb,
   expression_min_prop = 0.05,
   spot_dist_cutoff = 1.5,
-  LRscore_cutoff = 0.5
+  LRscore_cutoff = 0.5,
+  workers = 1
 )
 }
 \arguments{
@@ -29,6 +30,9 @@ it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 arranged, so by default, only computing nearest neighbors.}
 
 \item{LRscore_cutoff}{minimum LRscore to keep}
+
+\item{workers}{the number of processes to be used for parallel
+processing}
 }
 \value{
 LRscore table in data.frame with the following columns:

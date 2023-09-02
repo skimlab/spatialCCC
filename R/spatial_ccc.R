@@ -21,6 +21,8 @@
 #'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 #'    arranged, so by default, only computing nearest neighbors.
 #' @param LRscore_cutoff minimum LRscore to keep
+#' @param workers the number of processes to be used for parallel
+#'   processing
 #'
 #' @return LRscore table in data.frame with the following columns:
 #' \describe{
@@ -62,18 +64,19 @@ compute_spatial_ccc_tbl <-
            LRdb,
            expression_min_prop = 0.05,
            spot_dist_cutoff = 1.5,
-           LRscore_cutoff = 0.5) {
-
+           LRscore_cutoff = 0.5,
+           workers = 1) {
     spot_dist <- calc_spot_dist(spe)
 
-    gexp <- as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
+    gexp <-
+      as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
     rowAnnots <- SingleCellExperiment::rowData(spe)
 
     # first remove genes with no expression at all
     #   maybe, we need to remove those with expression in only 5% (cutoff) or less
     n_cutoff <- ncol(gexp) * expression_min_prop
     subset_idx <- rowSums(gexp > 0) > n_cutoff
-    gexp <- gexp[subset_idx,]
+    gexp <- gexp[subset_idx, ]
     rowAnnots <- subset(rowAnnots, subset = subset_idx)
 
     # background/baseline expression
@@ -87,49 +90,70 @@ compute_spatial_ccc_tbl <-
       )
 
     # this seems to be faster, than using apply(.., MARGIN, ...)
-    k <- 1:nrow(LRdb)
-    names(k) <- LRdb$LR
 
-    ccc_list <-
-      furrr::future_map(k,
-                        function(k) {
-                          # ligand and receptor names
-                          lig <- LRdb$ligand_gene_symbol[k]
-                          rec <- LRdb$receptor_gene_symbol[k]
+    compute_lr_score <- function(k) {
+      # ligand and receptor names
+      lig <- LRdb$ligand_gene_symbol[k]
+      rec <- LRdb$receptor_gene_symbol[k]
 
-                          # ligand and receptor expression values
-                          lig_ids <- which(rowAnnots$symbol == lig)
-                          rec_ids <- which(rowAnnots$symbol == rec)
+      # ligand and receptor expression values
+      lig_ids <- which(rowAnnots$symbol == lig)
+      rec_ids <- which(rowAnnots$symbol == rec)
 
-                          if (length(lig_ids) > 1) {
-                            lig_exp <- colMeans(gexp[lig_ids,])
-                          } else {
-                            lig_exp <- gexp[lig_ids,]
-                          }
+      if (length(lig_ids) > 1) {
+        lig_exp <- colMeans(gexp[lig_ids, ])
+      } else {
+        lig_exp <- gexp[lig_ids, ]
+      }
 
-                          if (length(rec_ids) > 1) {
-                            rec_exp <- colMeans(gexp[rec_ids,])
-                          } else {
-                            rec_exp <- gexp[rec_ids,]
-                          }
+      if (length(rec_ids) > 1) {
+        rec_exp <- colMeans(gexp[rec_ids, ])
+      } else {
+        rec_exp <- gexp[rec_ids, ]
+      }
 
-                          sqrt.prod <-
-                            sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
+      sqrt.prod <-
+        sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
 
-                          tibble(spot_dist, LRscore = sqrt.prod / (sqrt.prod + c_mean)) %>%
-                            # Weighted LR score to account for
-                            #   the attenuation of cell signaling due to
-                            #   traveling distance.
-                            #
-                            # when norm.d = 0, we will use 1 to compute weight because
-                            #   1. this is not still a single cell level, hence, no guarantee it's
-                            #      autocrine, but still very close to each other.
-                            dplyr::mutate(weight = ifelse(norm.d == 0, 1, 1 / norm.d^2)) %>%
-                            dplyr::mutate(WLRscore = LRscore * weight) %>%
+      tibble(spot_dist, LRscore = sqrt.prod / (sqrt.prod + c_mean)) %>%
+        # Weighted LR score to account for
+        #   the attenuation of cell signaling due to
+        #   traveling distance.
+        #
+        # when norm.d = 0, we will use 1 to compute weight because
+        #   1. this is not still a single cell level, hence, no guarantee it's
+        #      autocrine, but still very close to each other.
+        dplyr::mutate(weight = ifelse(norm.d == 0, 1, 1 / norm.d ^ 2)) %>%
+        dplyr::mutate(WLRscore = LRscore * weight) %>%
 
-                            dplyr::filter(LRscore > LRscore_cutoff) %>%
-                            dplyr::mutate(ligand = lig, receptor = rec)
-                        })
+        dplyr::filter(LRscore > LRscore_cutoff) %>%
+        dplyr::mutate(ligand = lig, receptor = rec)
+    }
+
+    multiworkers <- function(Ks,
+                             workers) {
+      # set up future::plan and its release on exit
+      future::plan(future::multisession, workers = workers)
+      on.exit(future::plan(future::sequential), add = TRUE)
+
+      furrr::future_map(Ks,
+                        compute_lr_score,
+                        # making sure "dplyr" package is attached to future parallel processes
+                        .options = furrr::furrr_options(seed = TRUE,
+                                                        packages = c("dplyr")))
+    }
+
+
+    Ks <- setNames(1:nrow(LRdb), nm = LRdb$LR)
+
+    if (workers > 1) {
+      ccc_list <-
+        multiworkers(Ks, workers)
+    } else {
+      ccc_list <-
+        # single worker
+        purrr::map(Ks, compute_lr_score)
+    }
 
     dplyr::bind_rows(ccc_list,
                      .id = "LR") %>%
@@ -186,16 +210,17 @@ compute_spatial_ccc_graph_list <-
     sp_col_data <-
       get_spatial_data(spe)
 
-    compute_spatial_ccc_tbl(spe,
-                            assay_name,
-                            LRdb,
-                            expression_min_prop,
-                            spot_dist_cutoff,
-                            LRscore_cutoff) %>%
-      to_spatial_ccc_graph_list(
-        spatial_data = sp_col_data,
-        workers = workers
-      )
+    compute_spatial_ccc_tbl(
+      spe,
+      assay_name,
+      LRdb,
+      expression_min_prop,
+      spot_dist_cutoff,
+      LRscore_cutoff,
+      workers = workers
+    ) %>%
+      to_spatial_ccc_graph_list(spatial_data = sp_col_data,
+                                workers = workers)
   }
 
 
@@ -226,18 +251,40 @@ to_spatial_ccc_graph_list <-
 
     names(LR_list) <- LR_list
 
-    future::plan(future::multisession, workers = workers)
+    if (workers > 1) {
+      # set up future::plan and its release on exit
+      future::plan(future::multisession, workers = workers)
+      on.exit(future::plan(future::sequential), add = TRUE)
 
-    on.exit(future::plan(future::sequential), add = TRUE)
+      ccc_graph_list <-
+        furrr::future_map(LR_list,
+                          function(LR_of_interest) {
+                            to_spatial_ccc_graph(ccc_tbl,
+                                                 spatial_data,
+                                                 LR_of_interest)
+                          },
+                          # making sure c("tidygraph", "dplyr") packages are attached to future parallel processes
+                          .options = furrr::furrr_options(seed = TRUE,
+                                                          packages = c("tidygraph", "dplyr")))
+    } else {
+      ccc_graph_list <-
+        purrr::map(LR_list,
+                   function(LR_of_interest) {
+                     to_spatial_ccc_graph(ccc_tbl,
+                                          spatial_data,
+                                          LR_of_interest)
+                   })
 
-    LR_list %>%
-      furrr::future_map(function(LR_of_interest) {
-        to_spatial_ccc_graph(ccc_tbl,
-                             spatial_data,
-                             LR_of_interest)
-      },
-      .options = furrr::furrr_options(seed = TRUE,
-                                      packages = c("tidygraph", "dplyr")))
+    }
+
+    ccc_graph_list
+
+    # purrr::map(LR_list,
+    #            function(LR_of_interest) {
+    #              to_spatial_ccc_graph(ccc_tbl,
+    #                                   spatial_data,
+    #                                   LR_of_interest)
+    #            })
   }
 
 
@@ -451,6 +498,7 @@ to_spatial_ccc_graph <-
   function(ccc_tbl,
            spatial_data,
            LR_of_interest = NULL) {
+
     if (!is.null(LR_of_interest)) {
       ccc_tbl <-
         dplyr::filter(ccc_tbl, LR == LR_of_interest)
@@ -762,7 +810,7 @@ summarise_ccc_by_cell_lr <-
       ccc_tbl %>%
       dplyr::group_by(src, LR) %>%
       dplyr::summarise(
-        src.n = n(),
+        src.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
         src.WLR_total = sum(WLRscore),
         .groups = "drop"
       ) %>%
@@ -773,7 +821,7 @@ summarise_ccc_by_cell_lr <-
       ccc_tbl %>%
       dplyr::group_by(dst, LR) %>%
       dplyr::summarise(
-        dst.n = n(),
+        dst.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
         dst.WLR_total = sum(WLRscore),
         .groups = "drop"
       ) %>%
@@ -804,7 +852,7 @@ collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
   ccc_by_cell_lr %>%
     dplyr::group_by(cell_id) %>%
     dplyr::summarise(
-      n = n(),
+      n = dplyr::n(),
       LR = paste(LR, collapse = ";"),
       src.n = mean(src.n),
       src.WLR_total = mean(src.WLR_total),
