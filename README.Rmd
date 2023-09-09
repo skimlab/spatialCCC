@@ -48,6 +48,8 @@ This is a basic example which shows you a basic workflow of the package:
 
 ```{r message = FALSE}
 library(spatialCCC)
+library(dplyr)
+library(ggplot2)
 ```
 
   * Then, load built-in LR database.
@@ -59,6 +61,9 @@ LRdb_m <-
 
 LRdb_full <-
   get_LRdb("mouse")
+
+LRdb <- LRdb_m
+#LRdb <- LRdb_full
 ```
 
   * Load an example Visium spatial transcriptomic data
@@ -83,7 +88,7 @@ spe_brain <- scater::logNormCounts(spe_brain)
 ccc_graph_list <-
   compute_spatial_ccc_graph_list(spe = spe_brain,
                                  assay_name = "logcounts",
-                                 LRdb = LRdb_full, 
+                                 LRdb = LRdb,
                                  workers = 8)
 
 #future::plan(future::sequential)
@@ -104,35 +109,154 @@ ccc_graph_list <-
 ```
 
 
-### Cell-cell commuication visualization
 
-  * Spatial CCC graph plot with tissue image
+```{r}
+ccc_graph_summary_tbl <-
+  left_join(
+    calculate_percent_rank(ccc_graph_list),
+    summarize_ccc_graph_metrics(ccc_graph_list),
+    by = "LR"
+  ) 
+```
 
-```{r spatial-ccc-with-tissue-image, warning=FALSE}
-LR_of_interest <- "Pdgfb_Pdgfra"
 
+```{r}
+setNames(nm = names(ccc_graph_list)) %>%
+  purrr::map(function(lr) {
+    strsplit(lr, split = "_") %>% 
+      unlist() %>% 
+      setNames(nm = c("L", "R")) %>% 
+      tibble::as_tibble_row()
+  }) %>% bind_rows(.id = "LR") %>%
+  arrange(R)
+```
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  dplyr::arrange(desc(perc_rank))
+```
+
+
+```{r}
+ccog_flattened <-
+  flatten_ccc_graph(ccc_graph_ls = ccc_graph_list)
+```
+
+
+
+
+
+
+
+
+```{r}
 plot_spatial_ccc_graph(
-  ccc_graph = ccc_graph_list[[LR_of_interest]],
+  ccog_flattened,
   tissue_img = SpatialExperiment::imgRaster(spe_brain),
-  node_color = "group",
-  edge_color = "group",
+  graph_layout = "spatial",
+  node_color = "src.WLR_total",
+  edge_color = "LRscore.sum",
+  # node_size = 1.6,
   which_on_top = "edge"
 )
 ```
 
 
 
-```{r spatial-ccc-with-tissue-image, warning=FALSE}
-LR_of_interest <- "Pdgfb_Pdgfra"
+```{r}
+ccog_flattened_R_Fzd7 <-
+  ccc_graph_list[grep("Fzd7", names(ccc_graph_list))] %>%
+  flatten_ccc_graph()
+```
 
-plot_spatial_ccc_graph(
-  ccc_graph = ccc_graph_list[[LR_of_interest]],
-  tissue_img = SpatialExperiment::imgRaster(spe_brain),
-  node_color = "group",
-  edge_color = "group",
-  which_on_top = "node"
+
+```{r, fig.width=8, fig.height=4}
+patchwork::wrap_plots(
+  plot_spatial_ccc_graph(
+    ccog_flattened_R_Fzd7,
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0.75,
+    graph_layout = "spatial",
+    node_color = "src.WLR_total",
+    edge_color = "LRscore.sum",
+    node_size = 1.6,
+    which_on_top = "node"
+  ),
+  plot_spatial_ccc_graph(
+    ccog_flattened_R_Fzd7,
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0.75,
+    graph_layout = "spatial",
+    node_color = "dst.WLR_total",
+    edge_color = "LRscore.sum",
+    node_size = 1.6,
+    which_on_top = "node"
+  )
+)
+
+```
+
+
+### Cell-cell commuication visualization
+
+  * Spatial CCC graph plot with tissue image
+
+```{r spatial-ccc-with-tissue-image, warning=FALSE}
+LR_of_interest_list <- 
+  ccc_graph_summary_tbl %>% 
+  arrange(desc(perc_rank)) %>% 
+  pull(LR) 
+
+LR_of_interest <- LR_of_interest_list[2]
+```
+
+
+```{r spatial-ccc-with-tissue-image, warning=FALSE}
+gp_list <-
+  LR_of_interest_list[1:6] %>%
+  purrr::map(function(lr) {
+    plot_spatial_ccc_graph(
+      ccc_graph = ccc_graph_list[[lr]],
+      tissue_img = SpatialExperiment::imgRaster(spe_brain),
+      node_color = "src.WLR_total",
+      node_size = 1.6,
+      edge_color = "LRscore_prank",
+      which_on_top = "node"
+    ) + ggtitle(lr)
+  })
+```
+
+```{r, fig.width=12}
+patchwork::wrap_plots(gp_list, ncol = 3)
+```
+
+
+
+
+```{r spatial-ccc-with-tissue-image, warning=FALSE, fig.width=8, fig.height=4}
+patchwork::wrap_plots(
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0.75,
+    # node_size = 1.6,
+    node_color = "src.WLR_total",
+    edge_color = "LRscore_prank",
+    which_on_top = "edge"
+  ),
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    image_alpha = 0.75,
+    # node_size = 1.6,
+    node_color = "src.WLR_total",
+    edge_color = "LRscore",
+    which_on_top = "edge"
+  )
 )
 ```
+
 
 
   * Spatial CCC graph plot without tissue image
@@ -141,12 +265,12 @@ In this case, graph layout can be "spatial" which keeps the original spatial loc
 or other graph layout algorithm supported by igraph package. 
 
 
-```{r spatial-ccc-with-spatial-layout}
+```{r spatial-ccc-with-spatial-layout, fig.width=8}
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   graph_layout = "spatial",
-  node_color =  "group",
-  node_size = 1,
+  node_color =  "group_n_nodes",
+  # node_size = 1,
   edge_color = "group_diameter",
   clip = TRUE,
   which_on_top = "edge"
@@ -158,10 +282,10 @@ plot_spatial_ccc_graph(
 In this format and the one below,  one can see the distribution of cell-cell 
 communication clusters
 
-```{r spatial-ccc-with-kk-layout, warning=FALSE}
+```{r spatial-ccc-with-kk-layout, warning=FALSE, fig.width=8}
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
-  node_color = "group",
+  node_color = "group_n_nodes",
   node_size = 0.1,
   edge_color = "group_diameter",
   edge_width = 0.1,

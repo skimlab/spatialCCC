@@ -4,10 +4,10 @@
 \alias{to_spatial_ccc_tbl}
 \title{Convert spatial CCC graphs to spatial CCC table}
 \usage{
-to_spatial_ccc_tbl(ccc_graph_list)
+to_spatial_ccc_tbl(ccc_graph_ls)
 }
 \arguments{
-\item{ccc_graph_list}{a list of spatial CCC graphs}
+\item{ccc_graph_ls}{a list of spatial CCC graphs}
 }
 \value{
 spatial CCC table

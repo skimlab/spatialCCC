@@ -4,10 +4,10 @@
 \alias{summarize_ccc_graph_metrics}
 \title{Summarize spatial CCC graph list to table}
 \usage{
-summarize_ccc_graph_metrics(ccc_graph_list, level = c("graph", "group"))
+summarize_ccc_graph_metrics(ccc_graph_ls, level = c("graph", "group"))
 }
 \arguments{
-\item{ccc_graph_list}{list of spatial CCC graph,
+\item{ccc_graph_ls}{list of spatial CCC graph,
 each of which is an output of to_spatial_ccc_graph.}
 
 \item{level}{extract graph metrics from either overall graph ("graph") or

@@ -126,7 +126,15 @@ compute_spatial_ccc_tbl <-
         dplyr::mutate(weight = ifelse(norm.d == 0, 1, 1 / norm.d ^ 2)) %>%
         dplyr::mutate(WLRscore = LRscore * weight) %>%
 
+        # temporarily disable the line below to calculate "p-value"?
+        # now back to LRscore filtering
         dplyr::filter(LRscore > LRscore_cutoff) %>%
+
+        dplyr::mutate(LRscore_perc_rank = percent_rank(LRscore)) %>%
+
+        # keep as many as possible, except LRscore = 0
+        # dplyr::filter(LRscore > 0) %>%
+
         dplyr::mutate(ligand = lig, receptor = rec)
     }
 
@@ -147,19 +155,92 @@ compute_spatial_ccc_tbl <-
     Ks <- setNames(1:nrow(LRdb), nm = LRdb$LR)
 
     if (workers > 1) {
-      ccc_list <-
+      # ccc_list
+      ccc_ls <-
         multiworkers(Ks, workers)
     } else {
-      ccc_list <-
+      ccc_ls <-
         # single worker
         purrr::map(Ks, compute_lr_score)
     }
 
-    dplyr::bind_rows(ccc_list,
+    dplyr::bind_rows(ccc_ls,
                      .id = "LR") %>%
       dplyr::relocate(LR, ligand, receptor, .after = "norm.d")
   }
 
+
+#' Flatten multiple CCC graphs into aggregate one
+#'
+#' @param ccc_graph_ls a list of spatial CCC graphs
+#'
+#' @return a spatial CCC graph
+#'
+#' The following node parameters will be kept:
+#'   * name
+#'   * spot_x, spot_y
+#'   * in_tissue
+#'   * array_row, array_col
+#'   * sizeFactor
+#'
+#' The following node parameters will be aggregated:
+#'   * n, src.n, src.WLR_total, dst.n, and dst.WLR_total will be summed.
+#'   * node_is_src and node_is_dst will be OR'd
+#'   * inflow.n and inflow.WLR_total will be summed.
+#'
+#' @export
+flatten_ccc_graph <- function(ccc_graph_ls) {
+  ccog_nodes <-
+    ccc_graph_ls %>%
+    purrr::map(function(ccog) {
+      ccog %>%
+        tidygraph::activate("nodes") %>%
+        as_tibble()
+    }) %>%
+    bind_rows() %>%
+    group_by(name,
+             spot_x,
+             spot_y,
+             in_tissue,
+             array_row,
+             array_col,
+             sizeFactor) %>%
+    summarise(
+      n = sum(n),
+      src.n = sum(src.n),
+      src.WLR_total = sum(src.WLR_total),
+      dst.n = sum(dst.n),
+      dst.WLR_total = sum(dst.WLR_total),
+      node_is_src = any(node_is_src),
+      node_is_dst = any(node_is_dst),
+      inflow.n = sum(inflow.n),
+      inflow.WLR_total = sum(inflow.WLR_total),
+      .groups = "drop"
+    ) %>%
+    rename(cell_id = name)
+
+  ccog_edges <-
+    ccc_graph_ls %>%
+    purrr::map(function(ccog) {
+      ccog %>%
+        tidygraph::activate("edges") %>%
+        as_tibble()
+    }) %>%
+    bind_rows() %>%
+    group_by(src, dst, d, norm.d) %>%
+    summarise(n = n(),
+              LRscore.sum = sum(LRscore),
+              WLRscore.sum = sum(WLRscore),
+              LRscore.sd = sd(LRscore),
+              WLRscore.sd = sd(WLRscore),
+              .groups = "drop")
+
+  ccog_edges %>%
+    to_barebone_spatial_ccc_graph() %>%
+    tidygraph::activate(nodes) %>%
+    left_join(ccog_nodes,
+              by = c("name" = "cell_id"))
+}
 
 
 #' Compute cell-cell communication graphs
@@ -245,19 +326,19 @@ to_spatial_ccc_graph_list <-
            spatial_data,
            workers = 1) {
     # staging list of LR pairs to process
-    LR_list <-
+    LR_ls <-
       ccc_tbl$LR %>%
       unique()
 
-    names(LR_list) <- LR_list
+    names(LR_ls) <- LR_ls
 
     if (workers > 1) {
       # set up future::plan and its release on exit
       future::plan(future::multisession, workers = workers)
       on.exit(future::plan(future::sequential), add = TRUE)
 
-      ccc_graph_list <-
-        furrr::future_map(LR_list,
+      ccc_graph_ls <-
+        furrr::future_map(LR_ls,
                           function(LR_of_interest) {
                             to_spatial_ccc_graph(ccc_tbl,
                                                  spatial_data,
@@ -267,8 +348,8 @@ to_spatial_ccc_graph_list <-
                           .options = furrr::furrr_options(seed = TRUE,
                                                           packages = c("tidygraph", "dplyr")))
     } else {
-      ccc_graph_list <-
-        purrr::map(LR_list,
+      ccc_graph_ls <-
+        purrr::map(LR_ls,
                    function(LR_of_interest) {
                      to_spatial_ccc_graph(ccc_tbl,
                                           spatial_data,
@@ -277,9 +358,9 @@ to_spatial_ccc_graph_list <-
 
     }
 
-    ccc_graph_list
+    ccc_graph_ls
 
-    # purrr::map(LR_list,
+    # purrr::map(LR_ls,
     #            function(LR_of_interest) {
     #              to_spatial_ccc_graph(ccc_tbl,
     #                                   spatial_data,
@@ -291,14 +372,14 @@ to_spatial_ccc_graph_list <-
 
 #' Convert spatial CCC graphs to spatial CCC table
 #'
-#' @param ccc_graph_list a list of spatial CCC graphs
+#' @param ccc_graph_ls a list of spatial CCC graphs
 #'
 #' @return spatial CCC table
 #'
 #' @export
 to_spatial_ccc_tbl <-
-  function(ccc_graph_list) {
-    lapply(ccc_graph_list,
+  function(ccc_graph_ls) {
+    lapply(ccc_graph_ls,
            function(ccog) {
              ccog %>%
                tidygraph::activate("edges") %>%
@@ -309,14 +390,48 @@ to_spatial_ccc_tbl <-
   }
 
 
+#' Calculate (combined) percent rank of n and LRscore
+#'
+#' @param ccc_graph_ls list of spatial CCC graph
+#'
+#' @return data frame (tibble)
+#'
+#' In the table returned,
+#'   * n:  number of edges in CCC graph (LR),
+#'   * LRscore: median of all LRscores in CCC graph
+#'   * n_perc_rank:  percent rank of n
+#'   * LRscore_perc_rank: percent rank of LRscore (median)
+#'   * perc_rank: combined percent rank (geometric mean of n_perc_rank and LRscore_perc_rank)
+#'   * perc_x: binned perc_rank
+#'
+#' @export
+calculate_percent_rank <- function(ccc_graph_ls) {
+  ccc_graph_el_tbl <-
+    ccc_graph_ls %>%
+    purrr::map(function(ccog) {
+      ccog %>%
+        tidygraph::activate("edges") %>%
+        as_tibble()
+    }) %>%
+    bind_rows()
 
+  ccc_graph_el_tbl %>%
+    group_by(LR) %>%
+    summarise(n = n(),
+              LRscore = median(LRscore)) %>%
+    mutate(n_perc_rank = percent_rank(n),
+           LRscore_perc_rank = percent_rank(LRscore)) %>%
+    # geometric mean of percent ranks of n and LRscore
+    mutate(perc_rank = sqrt(n_perc_rank * LRscore_perc_rank)) %>%
+    mutate(perc_x = sprintf("perc_%02d", floor(perc_rank * 10) * 10))
+}
 
 
 
 
 #' Summarize spatial CCC graph list to table
 #'
-#' @param ccc_graph_list list of spatial CCC graph,
+#' @param ccc_graph_ls list of spatial CCC graph,
 #'   each of which is an output of to_spatial_ccc_graph.
 #' @param level extract graph metrics from either overall graph ("graph") or
 #'   subgraph ("group")
@@ -324,9 +439,9 @@ to_spatial_ccc_tbl <-
 #' @return graph metrics table summarized for each LR pair
 #'
 #' @export
-summarize_ccc_graph_metrics <- function(ccc_graph_list,
+summarize_ccc_graph_metrics <- function(ccc_graph_ls,
                                         level = c("graph", "group")) {
-  ccc_graph_list %>%
+  ccc_graph_ls %>%
     purrr::map(function(ccc_graph) {
       ccc_graph %>%
         extract_ccc_graph_metrics(level)
@@ -815,7 +930,7 @@ summarise_ccc_by_cell_lr <-
         .groups = "drop"
       ) %>%
       dplyr::rename(cell_id = src) %>%
-      dplyr::mutate(src = TRUE)
+      dplyr::mutate(node_is_src = TRUE)
 
     dst_summary <-
       ccc_tbl %>%
@@ -826,7 +941,7 @@ summarise_ccc_by_cell_lr <-
         .groups = "drop"
       ) %>%
       dplyr::rename(cell_id = dst) %>%
-      dplyr::mutate(dst = TRUE)
+      dplyr::mutate(node_is_dst = TRUE)
 
     cell_lr_summary <-
       dplyr::full_join(src_summary,
@@ -837,7 +952,7 @@ summarise_ccc_by_cell_lr <-
     cell_lr_summary[is.na(cell_lr_summary)] <- 0
 
     cell_lr_summary %>%
-      dplyr::relocate(src, dst, .after = dplyr::last_col()) %>%
+      dplyr::relocate(node_is_src, node_is_dst, .after = dplyr::last_col()) %>%
       dplyr::mutate(inflow.n = dst.n - src.n,
                     inflow.WLR_total = dst.WLR_total - src.WLR_total)
   }
@@ -858,8 +973,8 @@ collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
       src.WLR_total = mean(src.WLR_total),
       dst.n = mean(dst.n),
       dst.WLR_total = mean(dst.WLR_total),
-      src = any(src),
-      dst = any(dst),
+      node_is_src = any(node_is_src),
+      node_is_dst = any(node_is_dst),
       inflow.n = mean(inflow.n),
       inflow.WLR_total = mean(inflow.WLR_total)
     )

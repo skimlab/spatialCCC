@@ -256,7 +256,7 @@ plot_spatial_ccc_graph <-
             x = spot_x,
             y = spot_y
           ) %>%
-          ggraph::ggraph()
+          ggraph::ggraph() + scale_y_reverse()
       } else {
         # some layout alg. does not work
         # so, default back to stress
@@ -527,7 +527,10 @@ plot_spatial_feature <-
       ggplot2::coord_fixed(expand = FALSE) +
 
       # remove background
-      ggplot2::theme_void()
+      ggplot2::theme_void() +
+
+      scale_fill_continuous(type = "viridis") +
+      scale_color_continuous(type = "viridis")
   }
 
 #' A ggplot2 layer for visualizing the Visium histology

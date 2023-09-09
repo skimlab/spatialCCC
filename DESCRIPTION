@@ -37,12 +37,12 @@ Imports:
     purrr,
     RColorBrewer,
     scales,
-    SingleCellExperiment,
-    SpatialExperiment,
     stats,
-    SummarizedExperiment,
     tibble,
     tidygraph,
     tidyr,
-    utils
+    utils,
+    SingleCellExperiment,
+    SpatialExperiment,
+    SummarizedExperiment
 VignetteBuilder: knitr
