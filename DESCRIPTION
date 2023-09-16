@@ -24,14 +24,18 @@ Suggests:
 Config/testthat/edition: 3
 Depends: 
     R (>= 2.10),
+    ggplot2,
+    tidygraph,
     ggraph
 LazyData: true
 Imports: 
+    SingleCellExperiment,
+    SpatialExperiment,
+    SummarizedExperiment,
     cli,
     dplyr,
     furrr,
     future,
-    ggplot2,
     grDevices,
     magrittr,
     purrr,
@@ -39,10 +43,6 @@ Imports:
     scales,
     stats,
     tibble,
-    tidygraph,
     tidyr,
-    utils,
-    SingleCellExperiment,
-    SpatialExperiment,
-    SummarizedExperiment
+    utils
 VignetteBuilder: knitr
