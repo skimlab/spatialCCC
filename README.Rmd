@@ -50,6 +50,7 @@ This is a basic example which shows you a basic workflow of the package:
 library(spatialCCC)
 library(dplyr)
 library(ggplot2)
+library(patchwork)
 ```
 
   * Then, load built-in LR database.
@@ -95,106 +96,14 @@ ccc_graph_list <-
 ```
 
 
-```{r convert-to-ccc_graph-list}
-# ccc_graph_tbl <-
-#   compute_spatial_ccc_tbl(spe = spe_brain,
-#                                  assay_name = "logcounts",
-#                                  LRdb = LRdb_m, 
-#                                  workers = 4)
-# 
-# ccc_graph_list <-
-#   to_spatial_ccc_graph_list(ccc_tbl = ccc_graph_tbl,
-#                             spatial_data = get_spatial_data(spe_brain),
-#                             workers = 1)  
-```
-
-
-
+  * Summarize spatial CCC graphs by LR
 ```{r}
 ccc_graph_summary_tbl <-
-  left_join(
-    calculate_percent_rank(ccc_graph_list),
-    summarize_ccc_graph_metrics(ccc_graph_list),
-    by = "LR"
-  ) 
-```
+  ccc_graph_list %>%
+  to_LR_summary_tbl() %>%
+  arrange(desc(perc_rank))
 
-
-```{r}
-setNames(nm = names(ccc_graph_list)) %>%
-  purrr::map(function(lr) {
-    strsplit(lr, split = "_") %>% 
-      unlist() %>% 
-      setNames(nm = c("L", "R")) %>% 
-      tibble::as_tibble_row()
-  }) %>% bind_rows(.id = "LR") %>%
-  arrange(R)
-```
-
-
-```{r}
-ccc_graph_summary_tbl %>%
-  dplyr::arrange(desc(perc_rank))
-```
-
-
-```{r}
-ccog_flattened <-
-  flatten_ccc_graph(ccc_graph_ls = ccc_graph_list)
-```
-
-
-
-
-
-
-
-
-```{r}
-plot_spatial_ccc_graph(
-  ccog_flattened,
-  tissue_img = SpatialExperiment::imgRaster(spe_brain),
-  graph_layout = "spatial",
-  node_color = "src.WLR_total",
-  edge_color = "LRscore.sum",
-  # node_size = 1.6,
-  which_on_top = "edge"
-)
-```
-
-
-
-```{r}
-ccog_flattened_R_Fzd7 <-
-  ccc_graph_list[grep("Fzd7", names(ccc_graph_list))] %>%
-  flatten_ccc_graph()
-```
-
-
-```{r, fig.width=8, fig.height=4}
-patchwork::wrap_plots(
-  plot_spatial_ccc_graph(
-    ccog_flattened_R_Fzd7,
-    tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    graph_layout = "spatial",
-    node_color = "src.WLR_total",
-    edge_color = "LRscore.sum",
-    node_size = 1.6,
-    which_on_top = "node"
-  ),
-  plot_spatial_ccc_graph(
-    ccog_flattened_R_Fzd7,
-    tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    graph_layout = "spatial",
-    node_color = "dst.WLR_total",
-    edge_color = "LRscore.sum",
-    node_size = 1.6,
-    which_on_top = "node"
-  )
-)
-
+ccc_graph_summary_tbl
 ```
 
 
@@ -207,8 +116,6 @@ LR_of_interest_list <-
   ccc_graph_summary_tbl %>% 
   arrange(desc(perc_rank)) %>% 
   pull(LR) 
-
-LR_of_interest <- LR_of_interest_list[2]
 ```
 
 
@@ -220,37 +127,41 @@ gp_list <-
       ccc_graph = ccc_graph_list[[lr]],
       tissue_img = SpatialExperiment::imgRaster(spe_brain),
       node_color = "src.WLR_total",
-      node_size = 1.6,
-      edge_color = "LRscore_prank",
+      edge_color = "LRscore_perc_rank",
       which_on_top = "node"
     ) + ggtitle(lr)
   })
 ```
 
-```{r, fig.width=12}
-patchwork::wrap_plots(gp_list, ncol = 3)
+```{r, fig.width=12, fig.height=8}
+wrap_plots(gp_list, ncol = 3)
 ```
 
 
+```{r}
+LR_of_interest <- LR_of_interest_list[4]
+```
 
 
 ```{r spatial-ccc-with-tissue-image, warning=FALSE, fig.width=8, fig.height=4}
-patchwork::wrap_plots(
+wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
     image_alpha = 0.75,
-    # node_size = 1.6,
+    #node_size = 1,
     node_color = "src.WLR_total",
-    edge_color = "LRscore_prank",
+    node_alpha = 0,
+    edge_color = "LRscore_perc_rank",
     which_on_top = "edge"
   ),
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
     image_alpha = 0.75,
-    # node_size = 1.6,
+    #node_size = 1,
     node_color = "src.WLR_total",
+    node_alpha = 0,
     edge_color = "LRscore",
     which_on_top = "edge"
   )
