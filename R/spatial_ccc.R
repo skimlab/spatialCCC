@@ -342,6 +342,8 @@ flatten_ccc_graph_list <- function(ccc_graph_ls) {
     bind_rows() %>%
     group_by(src, dst, d, norm.d) %>%
     summarise(n = n(),
+              LRscore = max(LRscore),
+              WLRscore = max(WLRscore),
               LRscore.sum = sum(LRscore),
               WLRscore.sum = sum(WLRscore),
               LRscore.sd = sd(LRscore),
