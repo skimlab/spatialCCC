@@ -25,6 +25,7 @@ ccc_graph_intersect <- function(ccog1, ccog2) {
     tidygraph::activate("edges") %>%
     tidygraph::mutate(src_dst = paste(src, dst, sep = "_")) %>%
     tidygraph::filter(src_dst %in% ccog2_src_dst) %>%
+    tidygraph::select(-src_dst) %>%
     tidy_up_ccc_graph()
 }
 
@@ -45,5 +46,6 @@ ccc_graph_diff <- function(ccog1, ccog2) {
     tidygraph::activate("edges") %>%
     tidygraph::mutate(src_dst = paste(src, dst, sep = "_")) %>%
     tidygraph::filter(!(src_dst %in% ccog2_src_dst)) %>%
+    tidygraph::select(-src_dst) %>%
     tidy_up_ccc_graph()
 }
