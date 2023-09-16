@@ -36,6 +36,8 @@
 #' @param which_on_top either "edge" or "node"
 #' @param show_arrow if TRUE, arrow is added to edge.  Default is FALSE.
 #'
+#' @returns ggplot object of spatial CCC graph
+#'
 #' @export
 #'
 #' @examples
@@ -362,7 +364,7 @@ plot_spatial_ccc_graph <-
     if (which_on_top == "edge") {
       ggraph_ccc %<>%
         add_ggraph_nodes() %>%
-        add_ggraph_edges
+        add_ggraph_edges()
     } else {
       ggraph_ccc %<>%
         add_ggraph_edges() %>%
@@ -415,6 +417,8 @@ plot_spatial_ccc_graph <-
 #' @param show_tissue_image if TRUE, tissue image is shown.
 #' @param clip if TRUE (dafault), tissue image will be cliped to the size to
 #'   cover only the spots
+#'
+#' @returns ggplot object of spatial feature plot
 #'
 #' @export
 #'
@@ -549,7 +553,7 @@ plot_spatial_feature <-
 #' @param inherit.aes Passed to `ggplot2::layer(inherit.aes)`.
 #' @param ... Other arguments passed to `ggplot2::layer(params = list(...))`.
 #'
-#' @return A [ggplot2::layer()] for the histology information.
+#' @returns A [ggplot2::layer()] for the histology information.
 #' @author 10x Genomics
 #' @importFrom tibble tibble
 #'

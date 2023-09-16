@@ -60,6 +60,9 @@ active cell-cell communications}
 
 \item{show_arrow}{if TRUE, arrow is added to edge.  Default is FALSE.}
 }
+\value{
+ggplot object of spatial CCC graph
+}
 \description{
 Visualize spatial CCC graph in various formats,
 w/ or w/o tissue image

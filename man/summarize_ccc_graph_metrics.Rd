@@ -2,7 +2,7 @@
 % Please edit documentation in R/spatial_ccc.R
 \name{summarize_ccc_graph_metrics}
 \alias{summarize_ccc_graph_metrics}
-\title{Summarize spatial CCC graph list to table}
+\title{Summarize spatial CCC graph list to graph/group metrics table}
 \usage{
 summarize_ccc_graph_metrics(ccc_graph_ls, level = c("graph", "group"))
 }
@@ -17,5 +17,5 @@ subgraph ("group")}
 graph metrics table summarized for each LR pair
 }
 \description{
-Summarize spatial CCC graph list to table
+Summarize spatial CCC graph list to graph/group metrics table
 }

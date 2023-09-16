@@ -1,4 +1,4 @@
-#' Compute ligand-receptor interactions
+#' Compute spatial ligand-receptor interactions
 #'
 #' Compute ligand-receptor interactions (LRscore) between neighboring spots.
 #'   Neighboring spots are those with norm.d < spot_dist_cutoff.
@@ -13,18 +13,19 @@
 #'
 #' @param spe SpatialExperiment object
 #' @param assay_name assay name in string
-#' @param LRdb LRdb in data.frame (see [get_LRdb()])
+#' @param ligand ligand
+#' @param receptor receptor
 #' @param expression_min_prop minimum proportion of samples
 #'    with non-zero expression value (default: 0.05)
+#' @param spot_dist distances between spots, an output of [calc_spot_dist()]
 #' @param spot_dist_cutoff cutoff value for norm.d in spot
 #'    distances. Default cutoff is 1.5 and
 #'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 #'    arranged, so by default, only computing nearest neighbors.
 #' @param LRscore_cutoff minimum LRscore to keep
-#' @param workers the number of processes to be used for parallel
-#'   processing
 #'
-#' @return LRscore table in data.frame with the following columns:
+#'
+#' @returns LRscore table in data.frame with the following columns:
 #' \describe{
 #'   \item{src, dst}{source and destination cells/spots}
 #'   \item{d, norm.d}{cell-cell/spot-spot distance and normalized distance}
@@ -35,38 +36,16 @@
 #' }
 #'
 #' @export
-#'
-#' @examples
-#' \dontrun{
-#' # read Visium spatial transcriptomic data
-#' #   and log-normalize data
-#' spe <-
-#'   SpatialExperiment::read10xVisium(
-#'     samples = data_dir,
-#'     type = "HDF5",
-#'     data = "filtered") %>%
-#'     logNormCounts()
-#'
-#' # get built-in LR datbase for mouse
-#' LRdb_mouse <- get_LRdb("mouse")
-#'
-#' # calculate LRscores
-#' ccc_table <-
-#'   compute_spatial_ccc(
-#'     spe = spe,
-#'     assay_name = "logcounts",
-#'     LRdb = LRdb_mouse)#'
-#' }
-#'
 compute_spatial_ccc_tbl <-
   function(spe,
            assay_name = "logcounts",
-           LRdb,
+           ligand, receptor,
            expression_min_prop = 0.05,
+           spot_dist = calc_spot_dist(spe),
            spot_dist_cutoff = 1.5,
-           LRscore_cutoff = 0.5,
-           workers = 1) {
-    spot_dist <- calc_spot_dist(spe)
+           LRscore_cutoff = 0.5) {
+    #
+    # spot_dist <- calc_spot_dist(spe)
 
     gexp <-
       as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
@@ -82,19 +61,7 @@ compute_spatial_ccc_tbl <-
     # background/baseline expression
     c_mean <- mean(gexp)
 
-    # make sure to process only LR pairs present in gene expression data
-    LRdb %<>%
-      dplyr::filter(
-        ligand_gene_symbol %in% rowAnnots$symbol,
-        receptor_gene_symbol %in% rowAnnots$symbol
-      )
-
-    # this seems to be faster, than using apply(.., MARGIN, ...)
-
-    compute_lr_score <- function(k) {
-      # ligand and receptor names
-      lig <- LRdb$ligand_gene_symbol[k]
-      rec <- LRdb$receptor_gene_symbol[k]
+    compute_LRscore <- function(lig, rec) {
 
       # ligand and receptor expression values
       lig_ids <- which(rowAnnots$symbol == lig)
@@ -138,35 +105,179 @@ compute_spatial_ccc_tbl <-
         dplyr::mutate(ligand = lig, receptor = rec)
     }
 
-    multiworkers <- function(Ks,
-                             workers) {
+    compute_LRscore(lig = ligand, rec = receptor) %>%
+      dplyr::relocate(ligand, receptor, .after = "norm.d")
+  }
+
+
+#' Compute a spatial CCC graph
+#'
+#' @inheritParams compute_spatial_ccc_tbl
+#' @inheritParams to_spatial_ccc_graph
+#'
+#' @returns a spatial CCC graphs in `tidygraph` format;
+#'   spatial CCC graph also include the following graph metrics
+#'
+#' @section graph metrics:
+#'   1. For overall graph,
+#'      * graph_n_nodes,
+#'      * graph_n_edges
+#'      * graph_component_count
+#'      * graph_motif_count
+#'      * graph_diameter
+#'      * graph_un_diameter
+#'      * graph_mean_dist
+#'      * graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count
+#'      * graph_reciprocity
+#'      * graph_clique_num (sp_ccc_graph assumed as undirected)
+#'      * graph_clique_count (sp_ccc_graph assumed as undirected)
+#'
+#'  2. For each sub-graph (after [group_components()])
+#'      * group_n_nodes
+#'      * group_n_edges
+#'      * group_adhesion
+#'      * group_motif_count
+#'      * group_diameter
+#'      * group_un_diameter
+#'      * group_mean_dist
+#'      * group_girth
+#'      * group_circuit_rank
+#'      * group_reciprocity
+#'
+#' @export
+compute_spatial_ccc_graph <-
+  function(spe,
+           assay_name = "logcounts",
+           ligand,
+           receptor,
+           expression_min_prop = 0.05,
+           spot_dist = calc_spot_dist(spe),
+           spot_dist_cutoff = 1.5,
+           LRscore_cutoff = 0.5) {
+    compute_spatial_ccc_tbl(
+      spe,
+      assay_name,
+      ligand,
+      receptor,
+      expression_min_prop,
+      spot_dist,
+      spot_dist_cutoff,
+      LRscore_cutoff
+    ) %>%
+      to_spatial_ccc_graph(get_spatial_data(spe))
+  }
+
+
+#' Calculate distance between spots
+#'
+#' @inheritParams compute_spatial_ccc_tbl
+#' @param long_format if TRUE (default), return long format data.frame.
+#'   Otherwise, matrix format.
+#'
+#' @returns A data fame with computed distance including both `d` and `norm.d`.
+#'   `norm.d` is a multiple of the shortest distance between spots.
+#'
+#' @export
+calc_spot_dist <-
+  function(spe,
+           long_format = TRUE,
+           spot_dist_cutoff = 1.5) {
+    spe_cd <- get_spatial_data(spe)
+
+    spot_dist <-
+      calc_spot_dist0(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")],
+                      long_format = long_format)
+
+    spot_dist %>%
+      dplyr::filter(norm.d < spot_dist_cutoff)
+  }
+
+
+#' Compute spatial CCC graphs over a list of LR pairs
+#'
+#' @inheritParams compute_spatial_ccc_graph
+#' @param LRdb LRdb in data.frame (see [get_LRdb()])
+#' @param workers the number of processes to be used for parallel
+#'   processing
+#'
+#' @returns a list of spatial CCC graphs
+#'
+#' @inheritSection compute_spatial_ccc_graph graph metrics
+#'
+#' @export
+compute_spatial_ccc_graph_list <-
+  function(spe,
+           assay_name = "logcounts",
+           LRdb,
+           expression_min_prop = 0.05,
+           spot_dist_cutoff = 1.5,
+           LRscore_cutoff = 0.5,
+           workers = 1) {
+
+    # will save some overhead in compute_spatial_ccc_graph
+    spot_dist <- calc_spot_dist(spe)
+
+    # sp_col_data <-
+    #   get_spatial_data(spe)
+
+    # probably redundant, but needed to avoid unnecessary calculation later
+    gexp <-
+      as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
+    rowAnnots <- SingleCellExperiment::rowData(spe)
+
+    # first remove genes with no expression at all
+    #   maybe, we need to remove those with expression in only 5% (cutoff) or less
+    n_cutoff <- ncol(gexp) * expression_min_prop
+    subset_idx <- rowSums(gexp > 0) > n_cutoff
+    gexp <- gexp[subset_idx,]
+    rowAnnots <- subset(rowAnnots, subset = subset_idx)
+
+    # make sure to process only LR pairs present in gene expression data
+    LRdb <-
+      LRdb %>%
+      dplyr::filter(
+        ligand_gene_symbol %in% rowAnnots$symbol,
+        receptor_gene_symbol %in% rowAnnots$symbol
+      )
+
+    Ks <- setNames(1:nrow(LRdb), nm = LRdb$LR)
+
+    if (workers > 1) {
       # set up future::plan and its release on exit
       future::plan(future::multisession, workers = workers)
       on.exit(future::plan(future::sequential), add = TRUE)
 
       furrr::future_map(Ks,
-                        compute_lr_score,
+                        function(k) {
+                          compute_spatial_ccc_graph(
+                            spe,
+                            assay_name,
+                            ligand = LRdb$ligand_gene_symbol[k],
+                            receptor = LRdb$receptor_gene_symbol[k],
+                            expression_min_prop,
+                            spot_dist,
+                            spot_dist_cutoff,
+                            LRscore_cutoff
+                          )
+                        },
                         # making sure "dplyr" package is attached to future parallel processes
                         .options = furrr::furrr_options(seed = TRUE,
                                                         packages = c("dplyr")))
-    }
-
-
-    Ks <- setNames(1:nrow(LRdb), nm = LRdb$LR)
-
-    if (workers > 1) {
-      # ccc_list
-      ccc_ls <-
-        multiworkers(Ks, workers)
     } else {
-      ccc_ls <-
-        # single worker
-        purrr::map(Ks, compute_lr_score)
+      purrr::map(Ks,
+                 function(k) {
+                   compute_spatial_ccc_graph(
+                     spe,
+                     assay_name,
+                     ligand = LRdb$ligand_gene_symbol[k],
+                     receptor = LRdb$receptor_gene_symbol[k],
+                     expression_min_prop,
+                     spot_dist,
+                     spot_dist_cutoff,
+                     LRscore_cutoff
+                   )
+                 })
     }
-
-    dplyr::bind_rows(ccc_ls,
-                     .id = "LR") %>%
-      dplyr::relocate(LR, ligand, receptor, .after = "norm.d")
   }
 
 
@@ -174,7 +285,9 @@ compute_spatial_ccc_tbl <-
 #'
 #' @param ccc_graph_ls a list of spatial CCC graphs
 #'
-#' @return a spatial CCC graph
+#' @returns a spatial CCC graph
+#'
+#' @section flattening_CCC_graph:
 #'
 #' The following node parameters will be kept:
 #'   * name
@@ -183,13 +296,13 @@ compute_spatial_ccc_tbl <-
 #'   * array_row, array_col
 #'   * sizeFactor
 #'
-#' The following node parameters will be aggregated:
+#' The following node parameters will be aggregated over all LR pairs:
 #'   * n, src.n, src.WLR_total, dst.n, and dst.WLR_total will be summed.
 #'   * node_is_src and node_is_dst will be OR'd
 #'   * inflow.n and inflow.WLR_total will be summed.
 #'
 #' @export
-flatten_ccc_graph <- function(ccc_graph_ls) {
+flatten_ccc_graph_list <- function(ccc_graph_ls) {
   ccog_nodes <-
     ccc_graph_ls %>%
     purrr::map(function(ccog) {
@@ -206,7 +319,7 @@ flatten_ccc_graph <- function(ccc_graph_ls) {
              array_col,
              sizeFactor) %>%
     summarise(
-      n = sum(n),
+      n = n(),
       src.n = sum(src.n),
       src.WLR_total = sum(src.WLR_total),
       dst.n = sum(dst.n),
@@ -243,141 +356,34 @@ flatten_ccc_graph <- function(ccc_graph_ls) {
 }
 
 
-#' Compute cell-cell communication graphs
+
+#' Summarize spatial CCC graph for LR
 #'
-#' @inheritParams compute_spatial_ccc_tbl
-#' @inheritParams to_spatial_ccc_graph_list
+#' @inheritParams summarize_ccc_graph_metrics
 #'
-#' @return a list of spatial CCC graphs, each of which is in `tidygraph` format;
-#'   spatial CCC graph also include the following graph metrics to characterize
-#'   each CCC graph.
+#' @returns spatial CCC graph summarized for LR,
+#'    aggregating LRscores over the graph and computing percentile ranks.
 #'
-#' @section graph metrics:
-#'   1. For overall graph,
-#'      * graph_n_nodes,
-#'      * graph_n_edges
-#'      * graph_component_count
-#'      * graph_motif_count
-#'      * graph_diameter
-#'      * graph_un_diameter
-#'      * graph_mean_dist
-#'      * graph_circuit_rank = graph_n_edges - graph_n_nodes + graph_component_count
-#'      * graph_reciprocity
-#'      * graph_clique_num (sp_ccc_graph assumed as undirected)
-#'      * graph_clique_count (sp_ccc_graph assumed as undirected)
-#'
-#'  2. For each sub-graph (after [group_components()])
-#'      * group_n_nodes
-#'      * group_n_edges
-#'      * group_adhesion
-#'      * group_motif_count
-#'      * group_diameter
-#'      * group_un_diameter
-#'      * group_mean_dist
-#'      * group_girth
-#'      * group_circuit_rank
-#'      * group_reciprocity
-#'
+#' @inheritSection calculate_LR_percent_rank CCC_graph_percent_rank
 #' @export
-compute_spatial_ccc_graph_list <-
-  function(spe,
-           assay_name = "logcounts",
-           LRdb,
-           expression_min_prop = 0.05,
-           spot_dist_cutoff = 1.5,
-           LRscore_cutoff = 0.5,
-           workers = 1) {
-
-    sp_col_data <-
-      get_spatial_data(spe)
-
-    compute_spatial_ccc_tbl(
-      spe,
-      assay_name,
-      LRdb,
-      expression_min_prop,
-      spot_dist_cutoff,
-      LRscore_cutoff,
-      workers = workers
-    ) %>%
-      to_spatial_ccc_graph_list(spatial_data = sp_col_data,
-                                workers = workers)
-  }
-
-
-#' Convert CCC table to a list of spatial CCC graphs
-#'
-#' @param ccc_tbl an output of [compute_spatial_ccc_tbl()]
-#' @param spatial_data a table with spatial coordinates of
-#'   spots/cells in spatial transcriptomic data.  if spatial_data
-#'   includes cell_id, spot_x, spot_y, they will be used as is;
-#'   Otherwise, use the first three columns as if they are
-#'   cell_id, spot_x, spot_y
-#' @param workers the number of processes to be used for parallel
-#'   processing
-#'
-#' @inheritSection compute_spatial_ccc_graph_list graph metrics
-#'
-#' @return a list of spatial CCC graph
-#'
-#' @export
-to_spatial_ccc_graph_list <-
-  function(ccc_tbl,
-           spatial_data,
-           workers = 1) {
-    # staging list of LR pairs to process
-    LR_ls <-
-      ccc_tbl$LR %>%
-      unique()
-
-    names(LR_ls) <- LR_ls
-
-    if (workers > 1) {
-      # set up future::plan and its release on exit
-      future::plan(future::multisession, workers = workers)
-      on.exit(future::plan(future::sequential), add = TRUE)
-
-      ccc_graph_ls <-
-        furrr::future_map(LR_ls,
-                          function(LR_of_interest) {
-                            to_spatial_ccc_graph(ccc_tbl,
-                                                 spatial_data,
-                                                 LR_of_interest)
-                          },
-                          # making sure c("tidygraph", "dplyr") packages are attached to future parallel processes
-                          .options = furrr::furrr_options(seed = TRUE,
-                                                          packages = c("tidygraph", "dplyr")))
-    } else {
-      ccc_graph_ls <-
-        purrr::map(LR_ls,
-                   function(LR_of_interest) {
-                     to_spatial_ccc_graph(ccc_tbl,
-                                          spatial_data,
-                                          LR_of_interest)
-                   })
-
-    }
-
-    ccc_graph_ls
-
-    # purrr::map(LR_ls,
-    #            function(LR_of_interest) {
-    #              to_spatial_ccc_graph(ccc_tbl,
-    #                                   spatial_data,
-    #                                   LR_of_interest)
-    #            })
-  }
-
+to_LR_summary_tbl <- function(ccc_graph_ls) {
+  left_join(
+    calculate_LR_percent_rank(ccc_graph_ls),
+    summarize_ccc_graph_metrics(ccc_graph_ls, level = "graph"),
+    by = "LR"
+  ) %>%
+    split_ccc_tbl_LR()
+}
 
 
 #' Convert spatial CCC graphs to spatial CCC table
 #'
 #' @param ccc_graph_ls a list of spatial CCC graphs
 #'
-#' @return spatial CCC table
+#' @returns spatial CCC table
 #'
 #' @export
-to_spatial_ccc_tbl <-
+extract_spatial_ccc_graph_edges <-
   function(ccc_graph_ls) {
     lapply(ccc_graph_ls,
            function(ccog) {
@@ -390,53 +396,17 @@ to_spatial_ccc_tbl <-
   }
 
 
-#' Calculate (combined) percent rank of n and LRscore
-#'
-#' @param ccc_graph_ls list of spatial CCC graph
-#'
-#' @return data frame (tibble)
-#'
-#' In the table returned,
-#'   * n:  number of edges in CCC graph (LR),
-#'   * LRscore: median of all LRscores in CCC graph
-#'   * n_perc_rank:  percent rank of n
-#'   * LRscore_perc_rank: percent rank of LRscore (median)
-#'   * perc_rank: combined percent rank (geometric mean of n_perc_rank and LRscore_perc_rank)
-#'   * perc_x: binned perc_rank
-#'
-#' @export
-calculate_percent_rank <- function(ccc_graph_ls) {
-  ccc_graph_el_tbl <-
-    ccc_graph_ls %>%
-    purrr::map(function(ccog) {
-      ccog %>%
-        tidygraph::activate("edges") %>%
-        as_tibble()
-    }) %>%
-    bind_rows()
-
-  ccc_graph_el_tbl %>%
-    group_by(LR) %>%
-    summarise(n = n(),
-              LRscore = median(LRscore)) %>%
-    mutate(n_perc_rank = percent_rank(n),
-           LRscore_perc_rank = percent_rank(LRscore)) %>%
-    # geometric mean of percent ranks of n and LRscore
-    mutate(perc_rank = sqrt(n_perc_rank * LRscore_perc_rank)) %>%
-    mutate(perc_x = sprintf("perc_%02d", floor(perc_rank * 10) * 10))
-}
 
 
 
-
-#' Summarize spatial CCC graph list to table
+#' Summarize spatial CCC graph list to graph/group metrics table
 #'
 #' @param ccc_graph_ls list of spatial CCC graph,
 #'   each of which is an output of to_spatial_ccc_graph.
 #' @param level extract graph metrics from either overall graph ("graph") or
 #'   subgraph ("group")
 #'
-#' @return graph metrics table summarized for each LR pair
+#' @returns graph metrics table summarized for each LR pair
 #'
 #' @export
 summarize_ccc_graph_metrics <- function(ccc_graph_ls,
@@ -482,7 +452,7 @@ amend_ccc_tbl_with_cell_annots <-
 
     ccc_tbl <-
       ccc_tbl %>%
-      dplyr::select(-any_of(annot_cols.after))
+      dplyr::select(-dplyr::any_of(annot_cols.after))
   }
 
   annot_df <-
@@ -508,7 +478,7 @@ amend_ccc_tbl_with_cell_annots <-
 #'   {cluster_name}.src and {cluster_name}.dst columns will be copied to
 #'   "cluster.src" and "cluster.dst".
 #'
-#' @return CCC table with amended columns
+#' @returns CCC table with amended columns
 #'
 #' @export
 set_ccc_tbl_default_cluster <-
@@ -522,7 +492,7 @@ set_ccc_tbl_default_cluster <-
 #'
 #' @param ccog CCC graph
 #'
-#' @return CCC graph with all isolated nodes removed.
+#' @returns CCC graph with all isolated nodes removed.
 #'
 #' @export
 tidy_up_ccc_graph <-
@@ -552,7 +522,7 @@ tidy_up_ccc_graph <-
 #' @param COIs array of nodes to highlight
 #' @param edges_expanded_to_group If TRUE,
 #'
-#' @return CCC graph with InCOI and tagged columns (see above)
+#' @returns CCC graph with InCOI and tagged columns (see above)
 tag_cells_in_ccc_graph <- function(ccog, COIs, edges_expanded_to_group = FALSE) {
   ccog <-
     ccog %>%
@@ -598,26 +568,26 @@ tag_cells_in_ccc_graph <- function(ccog, COIs, edges_expanded_to_group = FALSE) 
 
 
 
+
+
 #' Convert CCC table to CCC graph
 #'
-#' @inheritParams to_spatial_ccc_graph_list
-#' @param LR_of_interest LR pair name in string.  If NULL (default),
-#'   CCC graph will be created using all LR pairs.
 #'
-#' @return spatial CCC graph -- a `tidygraph`
+#' @param ccc_tbl an output of [compute_spatial_ccc_tbl()]
+#' @param spatial_data a table with spatial coordinates of
+#'   spots/cells in spatial transcriptomic data.  if spatial_data
+#'   includes cell_id, spot_x, spot_y, they will be used as is;
+#'   Otherwise, use the first three columns as if they are
+#'   cell_id, spot_x, spot_y
+#'
+#' @returns spatial CCC graph -- a `tidygraph`
 #'
 #' @inheritSection compute_spatial_ccc_graph_list graph metrics
 #'
-#' @noRd
+#' @export
 to_spatial_ccc_graph <-
   function(ccc_tbl,
-           spatial_data,
-           LR_of_interest = NULL) {
-
-    if (!is.null(LR_of_interest)) {
-      ccc_tbl <-
-        dplyr::filter(ccc_tbl, LR == LR_of_interest)
-    }
+           spatial_data) {
 
     # check if we have these three columns
     cell_spot_columns <-
@@ -633,8 +603,7 @@ to_spatial_ccc_graph <-
     }
 
     ccc_by_cell <-
-      summarise_ccc_by_cell_lr(ccc_tbl) %>%
-      collapse_to_ccc_by_cell() %>%
+      summarise_ccc_by_cell(ccc_tbl) %>%
       add_spatial_data(spatial_data)
 
     ccc_tbl %>%
@@ -649,16 +618,47 @@ to_spatial_ccc_graph <-
   }
 
 
+#' Calculate (combined) percent rank of n and LRscore
+#'
+#' @param ccc_graph_ls list of spatial CCC graph
+#'
+#' @returns data frame (tibble)
+#'
+#' @section CCC_graph_percent_rank:
+#'
+#' In the table returned,
+#'   * n:  number of edges in CCC graph (LR),
+#'   * LRscore: median of all LRscores in CCC graph
+#'   * n_perc_rank:  percent rank of n
+#'   * LRscore_perc_rank: percent rank of LRscore (median)
+#'   * perc_rank: combined percent rank (geometric mean of n_perc_rank and LRscore_perc_rank)
+#'   * perc_group: binned perc_rank
+#'
+calculate_LR_percent_rank <- function(ccc_graph_ls) {
+  ccc_graph_el_tbl <-
+    ccc_graph_ls %>%
+    extract_spatial_ccc_graph_edges()
+
+  ccc_graph_el_tbl %>%
+    group_by(LR) %>%
+    summarise(n = n(),
+              LRscore = median(LRscore)) %>%
+    mutate(n_perc_rank = percent_rank(n),
+           LRscore_perc_rank = percent_rank(LRscore)) %>%
+    # geometric mean of percent ranks of n and LRscore
+    mutate(perc_rank = sqrt(n_perc_rank * LRscore_perc_rank)) %>%
+    mutate(perc_group = sprintf("perc_%02d", floor(perc_rank * 10) * 10))
+}
+
 
 #' Calculate distance between spots
 #'
+#' @inheritParams calc_spot_dist
 #' @param coords spatial coordinates in data.frame
 #'   with `cell_id`, `x`, and `y` in that order.  The column headings
 #'   do not matter, just the order.
-#' @param long_format if TRUE (default), return long format data.frame.
-#'   Otherwise, matrix format.
 #'
-#' @return A data fame with computed distance including both `d` and `norm.d`.
+#' @returns A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
 #'
 #' @noRd
@@ -693,28 +693,6 @@ calc_spot_dist0 <- function(coords, long_format = TRUE) {
   }
 }
 
-#' Calculate distance between spots
-#'
-#' @inheritParams compute_spatial_ccc
-#' @inheritParams calc_spot_dist0
-#'
-#' @return A data fame with computed distance including both `d` and `norm.d`.
-#'   `norm.d` is a multiple of the shortest distance between spots.
-#'
-#' @noRd
-calc_spot_dist <-
-  function(spe,
-           long_format = TRUE,
-           spot_dist_cutoff = 1.5) {
-    spe_cd <- get_spatial_data(spe)
-
-    spot_dist <-
-      calc_spot_dist0(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")],
-                      long_format = long_format)
-
-    spot_dist %>%
-      dplyr::filter(norm.d < spot_dist_cutoff)
-  }
 
 #' Get spatial coordinates
 #'
@@ -723,7 +701,7 @@ calc_spot_dist <-
 #'
 #' @param spe SpatialExperiment object
 #'
-#' @return spatial coordinates in data.frame with
+#' @returns spatial coordinates in data.frame with
 #'   `cell_id`, ... (from `spatialCoords(spe)`),
 #'   `spot_x`, `spot_y`.
 #'
@@ -743,11 +721,22 @@ get_spatial_data <- function(spe) {
     )
 }
 
+#' Split LR into L and R
+#'
+#' @param ccc_tbl an output of [extract_spatial_ccc_graph_edges()] or
+#'                any table with "LR" column which should be in "$L_$R" format
+split_ccc_tbl_LR <- function(ccc_tbl) {
+  ccc_tbl %>%
+    mutate(L = sub("_.+", "", LR),
+           R = sub(".+_", "", LR)) %>%
+    relocate(L, R, .after = "LR")
+}
+
 #' Create barebone CCC graph
 #'
 #' @inheritParams compute_spatial_ccc
 #'
-#' @return spatial CCC graph w/o LRscore
+#' @returns spatial CCC graph w/o LRscore
 #'
 #' @noRd
 barebone_spatial_ccc_graph <-
@@ -870,6 +859,35 @@ add_spatial_ccc_graph_metrics <-
   }
 
 
+#' Copy graph metrics from nodes to edges
+#'
+#' Internal function
+#' @inheritParams add_spatial_ccc_graph_metrics
+#'
+#' @noRd
+add_spatial_ccc_graph_metrics_to_edges <-
+  function(sp_ccc_graph, from_scratch = TRUE) {
+    sp_ccc_graph_nodes_df <-
+      sp_ccc_graph %>%
+      tidygraph::activate("nodes") %>%
+      dplyr::as_tibble()
+
+    if (from_scratch) {
+      sp_ccc_graph %<>%
+        tidygraph::activate("edges") %>%
+        # clean up previous metrics
+        dplyr::select(-dplyr::starts_with("graph"),-dplyr::starts_with("group"))
+    }
+
+    sp_ccc_graph %>%
+      dplyr::left_join(
+        sp_ccc_graph_nodes_df %>%
+          dplyr::select(name, dplyr::starts_with("graph_"), group, dplyr::starts_with("group_")),
+        by = c("src" = "name")
+      )
+  }
+
+
 #' Extract spatial CCC graph metrics
 #'
 #' @param ccc_graph spatial CCC graph, in `tidygraph` format,
@@ -877,7 +895,7 @@ add_spatial_ccc_graph_metrics <-
 #'                  or [compute_spatial_ccc_graph_list()]
 #' @inheritParams summarize_ccc_graph_metrics
 #'
-#' @return one row data.frame with graph metrics
+#' @returns one row data.frame with graph metrics
 #'
 #' @noRd
 extract_ccc_graph_metrics <- function(ccc_graph,
@@ -916,14 +934,14 @@ extract_ccc_graph_metrics <- function(ccc_graph,
 #'
 #' internal function
 #'
-#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc()].
+#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc_tbl()].
 #'
-#' @noRd
-summarise_ccc_by_cell_lr <-
+#' @export
+summarise_ccc_by_cell <-
   function(ccc_tbl) {
     src_summary <-
       ccc_tbl %>%
-      dplyr::group_by(src, LR) %>%
+      dplyr::group_by(src) %>%
       dplyr::summarise(
         src.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
         src.WLR_total = sum(WLRscore),
@@ -934,7 +952,7 @@ summarise_ccc_by_cell_lr <-
 
     dst_summary <-
       ccc_tbl %>%
-      dplyr::group_by(dst, LR) %>%
+      dplyr::group_by(dst) %>%
       dplyr::summarise(
         dst.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
         dst.WLR_total = sum(WLRscore),
@@ -943,76 +961,29 @@ summarise_ccc_by_cell_lr <-
       dplyr::rename(cell_id = dst) %>%
       dplyr::mutate(node_is_dst = TRUE)
 
-    cell_lr_summary <-
+    cell_summary <-
       dplyr::full_join(src_summary,
                        dst_summary,
-                       by = c("cell_id", "LR"))
+                       by = c("cell_id"))
 
     # replace all NAs with 0
-    cell_lr_summary[is.na(cell_lr_summary)] <- 0
+    cell_summary[is.na(cell_summary)] <- 0
 
-    cell_lr_summary %>%
+    cell_summary %>%
       dplyr::relocate(node_is_src, node_is_dst, .after = dplyr::last_col()) %>%
       dplyr::mutate(inflow.n = dst.n - src.n,
                     inflow.WLR_total = dst.WLR_total - src.WLR_total)
   }
 
-#' Aggregate ccc_by_cell_lr to cells
-#'
-#' Internal function
-#' @param ccc_by_cell_lr see [summarise_ccc_by_cell_lr()]
-#'
-#' @noRd
-collapse_to_ccc_by_cell <- function(ccc_by_cell_lr) {
-  ccc_by_cell_lr %>%
-    dplyr::group_by(cell_id) %>%
-    dplyr::summarise(
-      n = dplyr::n(),
-      LR = paste(LR, collapse = ";"),
-      src.n = mean(src.n),
-      src.WLR_total = mean(src.WLR_total),
-      dst.n = mean(dst.n),
-      dst.WLR_total = mean(dst.WLR_total),
-      node_is_src = any(node_is_src),
-      node_is_dst = any(node_is_dst),
-      inflow.n = mean(inflow.n),
-      inflow.WLR_total = mean(inflow.WLR_total)
-    )
-}
 
-#' Copy graph metrics from nodes to edges
-#'
-#' Internal function
-#' @inheritParams add_spatial_ccc_graph_metrics
-#'
-#' @noRd
-add_spatial_ccc_graph_metrics_to_edges <-
-  function(sp_ccc_graph, from_scratch = TRUE) {
-    sp_ccc_graph_nodes_df <-
-      sp_ccc_graph %>%
-      tidygraph::activate("nodes") %>%
-      dplyr::as_tibble()
 
-    if (from_scratch) {
-      sp_ccc_graph %<>%
-        tidygraph::activate("edges") %>%
-        # clean up previous metrics
-        dplyr::select(-dplyr::starts_with("graph"),-dplyr::starts_with("group"))
-    }
 
-    sp_ccc_graph %>%
-      dplyr::left_join(
-        sp_ccc_graph_nodes_df %>%
-          dplyr::select(name, dplyr::starts_with("graph_"), group, dplyr::starts_with("group_")),
-        by = c("src" = "name")
-      )
-  }
 
 #' Convert CCC table to barebone spatial CCC graph
 #'
 #' @param ccc_tbl an output of [compute_spatial_ccc()]
 #'
-#' @return CCC graph (barebone)
+#' @returns CCC graph (barebone)
 #'
 #' @noRd
 to_barebone_spatial_ccc_graph <-
@@ -1022,3 +993,6 @@ to_barebone_spatial_ccc_graph <-
                     to = dst) %>%
       tidygraph::as_tbl_graph(directed = TRUE)
   }
+
+
+

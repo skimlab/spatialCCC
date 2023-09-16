@@ -35,6 +35,9 @@ If NA, keep the current value.}
 \item{clip}{if TRUE (dafault), tissue image will be cliped to the size to
 cover only the spots}
 }
+\value{
+ggplot object of spatial feature plot
+}
 \description{
 Visualize spatial features
 w/ or w/o tissue image

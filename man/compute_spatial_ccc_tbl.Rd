@@ -2,16 +2,17 @@
 % Please edit documentation in R/spatial_ccc.R
 \name{compute_spatial_ccc_tbl}
 \alias{compute_spatial_ccc_tbl}
-\title{Compute ligand-receptor interactions}
+\title{Compute spatial ligand-receptor interactions}
 \usage{
 compute_spatial_ccc_tbl(
   spe,
   assay_name = "logcounts",
-  LRdb,
+  ligand,
+  receptor,
   expression_min_prop = 0.05,
+  spot_dist = calc_spot_dist(spe),
   spot_dist_cutoff = 1.5,
-  LRscore_cutoff = 0.5,
-  workers = 1
+  LRscore_cutoff = 0.5
 )
 }
 \arguments{
@@ -19,10 +20,14 @@ compute_spatial_ccc_tbl(
 
 \item{assay_name}{assay name in string}
 
-\item{LRdb}{LRdb in data.frame (see \code{\link[=get_LRdb]{get_LRdb()}})}
+\item{ligand}{ligand}
+
+\item{receptor}{receptor}
 
 \item{expression_min_prop}{minimum proportion of samples
 with non-zero expression value (default: 0.05)}
+
+\item{spot_dist}{distances between spots, an output of \code{\link[=calc_spot_dist]{calc_spot_dist()}}}
 
 \item{spot_dist_cutoff}{cutoff value for norm.d in spot
 distances. Default cutoff is 1.5 and
@@ -30,9 +35,6 @@ it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 arranged, so by default, only computing nearest neighbors.}
 
 \item{LRscore_cutoff}{minimum LRscore to keep}
-
-\item{workers}{the number of processes to be used for parallel
-processing}
 }
 \value{
 LRscore table in data.frame with the following columns:
@@ -57,27 +59,4 @@ ligand (L) and receptor (R), and \eqn{C} is the average gene expression
 across all genes and all samples.
 
 source: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7261168/
-}
-\examples{
-\dontrun{
-# read Visium spatial transcriptomic data
-#   and log-normalize data
-spe <-
-  SpatialExperiment::read10xVisium(
-    samples = data_dir,
-    type = "HDF5",
-    data = "filtered") \%>\%
-    logNormCounts()
-
-# get built-in LR datbase for mouse
-LRdb_mouse <- get_LRdb("mouse")
-
-# calculate LRscores
-ccc_table <-
-  compute_spatial_ccc(
-    spe = spe,
-    assay_name = "logcounts",
-    LRdb = LRdb_mouse)#'
-}
-
 }
