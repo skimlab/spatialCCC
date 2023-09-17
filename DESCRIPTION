@@ -40,6 +40,7 @@ Imports:
     magrittr,
     purrr,
     RColorBrewer,
+    patchwork,
     scales,
     stats,
     tibble,

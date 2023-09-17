@@ -83,7 +83,7 @@ spe_brain <- scater::logNormCounts(spe_brain)
 ### Cell-cell communication analysis
 
   * Compute Cell-Cell Communications over ligand-receptor pairs
-```{r compute-spatial-ccc}
+```{r compute-spatial-ccc, message=FALSE}
 #future::plan(future::multisession, workers = 8)
 
 ccc_graph_list <-
@@ -151,8 +151,8 @@ wrap_plots(
     image_alpha = 0.75,
     #node_size = 1,
     node_color = "src.WLR_total",
-    node_alpha = 0,
     edge_color = "LRscore_perc_rank",
+    node_alpha = 0,
     which_on_top = "edge"
   ),
   plot_spatial_ccc_graph(
@@ -161,8 +161,8 @@ wrap_plots(
     image_alpha = 0.75,
     #node_size = 1,
     node_color = "src.WLR_total",
-    node_alpha = 0,
     edge_color = "LRscore",
+    node_alpha = 0,
     which_on_top = "edge"
   )
 )
@@ -176,13 +176,12 @@ In this case, graph layout can be "spatial" which keeps the original spatial loc
 or other graph layout algorithm supported by igraph package. 
 
 
-```{r spatial-ccc-with-spatial-layout, fig.width=8}
+```{r spatial-ccc-with-spatial-layout}
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   graph_layout = "spatial",
-  node_color =  "group_n_nodes",
-  # node_size = 1,
-  edge_color = "group_diameter",
+  edge_color = "LRscore",
+  node_color = "src.WLR_total",
   clip = TRUE,
   which_on_top = "edge"
 )
@@ -193,16 +192,17 @@ plot_spatial_ccc_graph(
 In this format and the one below,  one can see the distribution of cell-cell 
 communication clusters
 
-```{r spatial-ccc-with-kk-layout, warning=FALSE, fig.width=8}
+```{r spatial-ccc-with-kk-layout, warning=FALSE}
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
-  node_color = "group_n_nodes",
+  edge_color = "LRscore",
+  node_color = "src.WLR_total",
   node_size = 0.1,
-  edge_color = "group_diameter",
   edge_width = 0.1,
   which_on_top = "edge"
 )
 ```
+
 
   * Spatial CCC graph plot with "stress" layout
 
@@ -211,8 +211,8 @@ plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   # tissue_img = SpatialExperiment::imgRaster(spe_brain),
   graph_layout = "stress",
-  node_color = "group",
-  edge_color = "group_diameter",
+  edge_color = "LRscore",
+  node_color = "src.WLR_total",
   edge_width = 0.25,
   which_on_top = "edge"
 )
