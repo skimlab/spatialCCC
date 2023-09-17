@@ -43,16 +43,13 @@ LRdb <- LRdb_m
 
   * Load an example Visium spatial transcriptomic data
 ```{r visium-data-loading}
-data_dir <- file.path("..", "example", "visium_tutorial")
+data_dir <- file.path("example")
+
+spe_brain <-
+  SpatialExperiment::read10xVisium(samples = data_dir,
+                                   type = "HDF5",
+                                   data = "filtered")
+
+# Log-Normalize
+spe_brain <- scater::logNormCounts(spe_brain)
 ```
-
-
-
-```{r visium-data-loading-test}
-dir(".")
-```
-
-```{r visium-data-loading-test-2}
-dir("..")
-```
-

@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 ```{r, include = FALSE}
 # Since Rmd is stored in "vignette/article/", we need to move up two levels
 base_dir <-
-  file.path("..", "..")
+  file.path(".")
 ```
 
 
@@ -58,7 +58,7 @@ LRdb_m %>%
 ## Load Visium spatial transcriptomic data
 
 ```{r visium-data-loading}
-data_dir <- file.path(base_dir, "example", "visium_tutorial")
+data_dir <- file.path(base_dir, "example")
 
 spe_brain <-
   SpatialExperiment::read10xVisium(samples = data_dir,
