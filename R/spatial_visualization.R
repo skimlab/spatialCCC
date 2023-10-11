@@ -70,7 +70,7 @@ plot_spatial_ccc_graph <-
            cells_of_interest = NULL,
            edges_expanded_to_group = TRUE,
            edge_color = "LRscore",
-           node_color = "src.WLR_total",
+           node_color = "LRscore.sum.src",
            edge_color_range = NULL,
            node_color_range = NULL,
            edge_width = 0.5,
@@ -310,8 +310,8 @@ plot_spatial_ccc_graph <-
 
       gg +
         ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = node_size))) +
-        ggplot2::scale_alpha(range = node_alpha_range, guide = FALSE) +
-        ggplot2::scale_size(guide = FALSE)
+        ggplot2::scale_alpha(range = node_alpha_range, guide = "none") +
+        ggplot2::scale_size(guide = "none")
     }
 
     add_ggraph_edges <- function(gg) {
@@ -358,7 +358,7 @@ plot_spatial_ccc_graph <-
       }
 
       # return ggplot object
-      gg + ggraph::scale_edge_alpha(range = edge_alpha_range, guide = FALSE)
+      gg + ggraph::scale_edge_alpha(range = edge_alpha_range, guide = "none")
     }
 
     if (which_on_top == "edge") {
@@ -441,6 +441,8 @@ plot_spatial_feature <-
            image_alpha = NA,
            show_tissue_image = TRUE,
            clip = TRUE) {
+
+
     spatial_col_data <-
       get_spatial_data(spe)
 

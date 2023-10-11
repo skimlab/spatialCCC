@@ -48,6 +48,10 @@ This is a basic example which shows you a basic workflow of the package:
 
 ```{r message = FALSE}
 library(spatialCCC)
+```
+
+
+```{r message = FALSE}
 library(dplyr)
 library(ggplot2)
 library(patchwork)
@@ -74,7 +78,15 @@ spe_brain <-
   SpatialExperiment::read10xVisium(samples = data_dir,
                                    type = "HDF5",
                                    data = "filtered")
+```
 
+```{r}
+#spe_brain_org <- spe_brain
+#spe_brain <- spe_brain[spe_brain$array_row < 20, spe_brain$array_col < 40]
+```
+
+
+```{r visium-data-loading}
 # Log-Normalize
 spe_brain <- scater::logNormCounts(spe_brain)
 ```
@@ -126,7 +138,7 @@ gp_list <-
     plot_spatial_ccc_graph(
       ccc_graph = ccc_graph_list[[lr]],
       tissue_img = SpatialExperiment::imgRaster(spe_brain),
-      node_color = "src.WLR_total",
+      node_color = "LRscore.sum.src",
       edge_color = "LRscore_perc_rank",
       which_on_top = "node"
     ) + ggtitle(lr)
@@ -150,7 +162,7 @@ wrap_plots(
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
     image_alpha = 0.75,
     #node_size = 1,
-    node_color = "src.WLR_total",
+    node_color = "LRscore.sum.src",
     edge_color = "LRscore_perc_rank",
     node_alpha = 0,
     which_on_top = "edge"
@@ -160,7 +172,7 @@ wrap_plots(
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
     image_alpha = 0.75,
     #node_size = 1,
-    node_color = "src.WLR_total",
+    node_color = "LRscore.sum.src",
     edge_color = "LRscore",
     node_alpha = 0,
     which_on_top = "edge"
@@ -181,7 +193,7 @@ plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   graph_layout = "spatial",
   edge_color = "LRscore",
-  node_color = "src.WLR_total",
+  node_color = "LRscore.sum.src",
   clip = TRUE,
   which_on_top = "edge"
 )
@@ -196,7 +208,7 @@ communication clusters
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   edge_color = "LRscore",
-  node_color = "src.WLR_total",
+  node_color = "LRscore.sum",
   node_size = 0.1,
   edge_width = 0.1,
   which_on_top = "edge"
@@ -212,7 +224,7 @@ plot_spatial_ccc_graph(
   # tissue_img = SpatialExperiment::imgRaster(spe_brain),
   graph_layout = "stress",
   edge_color = "LRscore",
-  node_color = "src.WLR_total",
+  node_color = "LRscore.sum.src",
   edge_width = 0.25,
   which_on_top = "edge"
 )

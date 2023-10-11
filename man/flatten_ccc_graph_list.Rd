@@ -29,9 +29,9 @@ The following node parameters will be kept:
 
 The following node parameters will be aggregated over all LR pairs:
 \itemize{
-\item n, src.n, src.WLR_total, dst.n, and dst.WLR_total will be summed.
+\item n, n.src, n.dst, LRscore.sum.src, and LRscore.sum.dst will be summed.
 \item node_is_src and node_is_dst will be OR'd
-\item inflow.n and inflow.WLR_total will be summed.
+\item n.inflow and LRscore.sum.inflow will be summed.
 }
 }
 

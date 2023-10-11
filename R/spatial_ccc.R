@@ -297,9 +297,9 @@ compute_spatial_ccc_graph_list <-
 #'   * sizeFactor
 #'
 #' The following node parameters will be aggregated over all LR pairs:
-#'   * n, src.n, src.WLR_total, dst.n, and dst.WLR_total will be summed.
+#'   * n, n.src, n.dst, LRscore.sum.src, and LRscore.sum.dst will be summed.
 #'   * node_is_src and node_is_dst will be OR'd
-#'   * inflow.n and inflow.WLR_total will be summed.
+#'   * n.inflow and LRscore.sum.inflow will be summed.
 #'
 #' @export
 flatten_ccc_graph_list <- function(ccc_graph_ls) {
@@ -320,14 +320,17 @@ flatten_ccc_graph_list <- function(ccc_graph_ls) {
              sizeFactor) %>%
     summarise(
       n = n(),
-      src.n = sum(src.n),
-      src.WLR_total = sum(src.WLR_total),
-      dst.n = sum(dst.n),
-      dst.WLR_total = sum(dst.WLR_total),
+      n.src = sum(n.src),
+      LRscore.sum.src = sum(LRscore.sum.src),
+      # WLRscore.sum.src = sum(WLRscore.sum.src),
+      n.dst = sum(n.dst),
+      LRscore.sum.dst = sum(LRscore.sum.dst),
+      # WLRscore.sum.dst = sum(WLRscore.sum.dst),
       node_is_src = any(node_is_src),
       node_is_dst = any(node_is_dst),
-      inflow.n = sum(inflow.n),
-      inflow.WLR_total = sum(inflow.WLR_total),
+      n.inflow = sum(n.inflow),
+      LRscore.sum.inflow = sum(LRscore.sum.inflow),
+      # WLRscore.sum.inflow = sum(WLRscore.sum.inflow),
       .groups = "drop"
     ) %>%
     rename(cell_id = name)
@@ -343,11 +346,11 @@ flatten_ccc_graph_list <- function(ccc_graph_ls) {
     group_by(src, dst, d, norm.d) %>%
     summarise(n = n(),
               LRscore = max(LRscore),
-              WLRscore = max(WLRscore),
+              # WLRscore = max(WLRscore),
               LRscore.sum = sum(LRscore),
-              WLRscore.sum = sum(WLRscore),
+              # WLRscore.sum = sum(WLRscore),
               LRscore.sd = sd(LRscore),
-              WLRscore.sd = sd(WLRscore),
+              # WLRscore.sd = sd(WLRscore),
               .groups = "drop")
 
   ccog_edges %>%
@@ -712,9 +715,19 @@ get_spatial_data <- function(spe) {
   spe_col_data <- SingleCellExperiment::colData(spe)
   spe_spatial_coords <- SpatialExperiment::spatialCoords(spe)
 
+  # for some reasons, as_tibble() convert column names with checknames = TRUE
+  #   so, need to put them back
+  cnames_spe_col_data <- colnames(spe_col_data)
+  spe_col_data <- tibble::as_tibble(spe_col_data, rownames = "cell_id")
+  colnames(spe_col_data) <- c("cell_id", cnames_spe_col_data)
+
+  cnames_spe_spatial_coords <- colnames(spe_spatial_coords)
+  spe_spatial_coords <- tibble::as_tibble(spe_spatial_coords, rownames = "cell_id")
+  colnames(spe_spatial_coords) <- c("cell_id", cnames_spe_spatial_coords)
+
   dplyr::left_join(
-    tibble::as_tibble(spe_col_data, rownames = "cell_id"),
-    tibble::as_tibble(spe_spatial_coords, rownames = "cell_id"),
+    spe_col_data,
+    spe_spatial_coords,
     by = "cell_id"
   ) %>%
     dplyr::mutate(
@@ -945,8 +958,9 @@ summarise_ccc_by_cell <-
       ccc_tbl %>%
       dplyr::group_by(src) %>%
       dplyr::summarise(
-        src.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
-        src.WLR_total = sum(WLRscore),
+        n.src = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
+        LRscore.sum.src = sum(LRscore),
+        # WLRscore.sum.src = sum(WLRscore),
         .groups = "drop"
       ) %>%
       dplyr::rename(cell_id = src) %>%
@@ -956,8 +970,9 @@ summarise_ccc_by_cell <-
       ccc_tbl %>%
       dplyr::group_by(dst) %>%
       dplyr::summarise(
-        dst.n = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
-        dst.WLR_total = sum(WLRscore),
+        n.dst = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
+        LRscore.sum.dst = sum(LRscore),
+        # WLRscore.sum.dst = sum(WLRscore),
         .groups = "drop"
       ) %>%
       dplyr::rename(cell_id = dst) %>%
@@ -973,8 +988,9 @@ summarise_ccc_by_cell <-
 
     cell_summary %>%
       dplyr::relocate(node_is_src, node_is_dst, .after = dplyr::last_col()) %>%
-      dplyr::mutate(inflow.n = dst.n - src.n,
-                    inflow.WLR_total = dst.WLR_total - src.WLR_total)
+      dplyr::mutate(n.inflow = n.dst - n.src,
+                    # WLRscore.sum.inflow = WLRscore.sum.dst - WLRscore.sum.src,
+                    LRscore.sum.inflow = LRscore.sum.dst - LRscore.sum.src)
   }
 
 

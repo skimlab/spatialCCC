@@ -10,7 +10,7 @@ plot_spatial_ccc_graph(
   cells_of_interest = NULL,
   edges_expanded_to_group = TRUE,
   edge_color = "LRscore",
-  node_color = "src.WLR_total",
+  node_color = "LRscore.sum.src",
   edge_color_range = NULL,
   node_color_range = NULL,
   edge_width = 0.5,

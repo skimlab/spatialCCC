@@ -53,3 +53,283 @@ spe_brain <-
 # Log-Normalize
 spe_brain <- scater::logNormCounts(spe_brain)
 ```
+
+### Cell-cell communication analysis
+
+  * Compute Cell-Cell Communications over ligand-receptor pairs
+```{r compute-spatial-ccc, message=FALSE}
+#future::plan(future::multisession, workers = 8)
+
+ccc_graph_list <-
+  compute_spatial_ccc_graph_list(spe = spe_brain,
+                                 assay_name = "logcounts",
+                                 LRdb = LRdb,
+                                 workers = 8)
+
+#future::plan(future::sequential)
+```
+
+
+  * Summarize spatial CCC graphs by LR
+```{r}
+ccc_graph_summary_tbl <-
+  ccc_graph_list %>%
+  to_LR_summary_tbl() %>%
+  arrange(desc(perc_rank))
+
+ccc_graph_summary_tbl
+```
+
+
+
+
+```{r}
+top_LR <- 
+  ccc_graph_summary_tbl %>%
+  pull(LR) %>%
+  head(n = 1)
+
+bottom_LR <-
+  ccc_graph_summary_tbl %>%
+  pull(LR) %>%
+  tail(n = 1)
+```
+
+
+```{r}
+gp_ccc_graph_top_LR <-
+  plot_spatial_ccc_graph(ccc_graph_list[[top_LR]],
+                         graph_layout = "spatial",
+                         edge_color = "LRscore",
+                         node_color = "LRscore.sum.src") +
+  ggtitle(top_LR)
+
+gp_ccc_graph_bottom_LR <-
+  plot_spatial_ccc_graph(ccc_graph_list[[bottom_LR]],
+                         graph_layout = "spatial",
+                         edge_color = "LRscore",
+                         node_color = "LRscore.sum.src") +
+  ggtitle(bottom_LR)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_ccc_graph_top_LR, gp_ccc_graph_bottom_LR)
+```
+
+
+
+  * CCC graph summary table only with ligands or receptors with multiple occurrences
+
+```{r}
+L_high_freq <-
+  ccc_graph_summary_tbl %>%
+  group_by(L) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  dplyr::filter(n > 1) %>%
+  dplyr::arrange(desc(n)) %>% 
+  pull(L)
+
+L_high_freq
+```
+
+
+```{r}
+R_high_freq <-
+  ccc_graph_summary_tbl %>%
+  group_by(R) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  dplyr::filter(n > 1) %>%
+  dplyr::arrange(desc(n)) %>% 
+  pull(R)
+
+R_high_freq
+```
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  dplyr::filter(L %in% L_high_freq | R %in% R_high_freq)
+```
+
+
+  * Spatial CCC graph with ligand with multiple occurences
+```{r}
+high_L_LR_list <- 
+  ccc_graph_summary_tbl %>% 
+  dplyr::filter(L == L_high_freq[1]) %>% 
+  pull(LR) %>%
+  setNames(nm = .)
+
+gp_list <-
+  high_L_LR_list %>%
+  purrr::map(function(lr) {
+    plot_spatial_ccc_graph(
+      ccc_graph_list[[lr]],
+      graph_layout = "spatial",
+      edge_color = "LRscore",
+      clip = FALSE
+    ) +
+      ggtitle(lr)
+  })
+```
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+
+```{r}
+high_R_LR_list <- 
+  ccc_graph_summary_tbl %>% 
+  dplyr::filter(R == R_high_freq[1]) %>% 
+  pull(LR) %>%
+  setNames(nm = .)
+
+gp_list <-
+  high_R_LR_list %>%
+  purrr::map(function(lr) {
+    plot_spatial_ccc_graph(
+      ccc_graph_list[[lr]],
+      graph_layout = "spatial",
+      edge_color = "LRscore",
+      clip = FALSE
+    ) +
+      ggtitle(lr)
+  })
+```
+
+```{r, fig.width=12, fig.height=4}
+wrap_plots(gp_list)
+```
+
+
+```{r}
+ccog_diff_1 <-
+  ccc_graph_diff(ccc_graph_list[[high_L_LR_list[1]]],
+                 ccc_graph_list[[high_L_LR_list[2]]])
+
+ccog_diff_2 <-
+  ccc_graph_diff(ccc_graph_list[[high_L_LR_list[2]]],
+                 ccc_graph_list[[high_L_LR_list[1]]])
+```
+
+
+```{r}
+ccog_union <-
+  ccc_graph_union(ccc_graph_list[[high_L_LR_list[1]]],
+                  ccc_graph_list[[high_L_LR_list[2]]])
+
+ccog_intersect <-
+  ccc_graph_intersect(ccc_graph_list[[high_L_LR_list[1]]],
+                      ccc_graph_list[[high_L_LR_list[2]]])
+```
+
+
+```{r}
+gp_list <-
+  list(ccog_diff_1, ccog_diff_2) %>%
+  purrr::map(function(ccog) {
+    plot_spatial_ccc_graph(ccog,
+                           graph_layout = "spatial")
+  })
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+```{r}
+gp_list <-
+  list(ccog_diff_1, ccog_diff_2) %>%
+  purrr::map(function(ccog) {
+    plot_spatial_ccc_graph(ccog,
+                           graph_layout = "spatial")
+  })
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+```{r}
+gp_list <-
+  list(intersect = ccog_intersect, union = ccog_union) %>%
+  purrr::map(function(ccog) {
+    plot_spatial_ccc_graph(ccog,
+                           graph_layout = "spatial")
+  })
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+
+
+
+
+
+
+```{r}
+gp_list <-
+  list(ccog_diff_1, ccog_diff_2) %>%
+  purrr::map(function(ccog) {
+    plot_spatial_ccc_graph(ccog,
+                           graph_layout = "spatial",
+                           tissue_img = SpatialExperiment::imgRaster(spe_brain))
+  })
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+
+
+```{r}
+gp_list <-
+  list(intersect = ccog_intersect, union = ccog_union) %>%
+  purrr::map(function(ccog) {
+    plot_spatial_ccc_graph(ccog,
+                           graph_layout = "spatial",
+                           tissue_img = SpatialExperiment::imgRaster(spe_brain))
+  })
+```
+
+
+```{r, fig.width=10, fig.height=5}
+wrap_plots(gp_list)
+```
+
+
+
+
+
+```{r}
+ccog_flattened <-
+  flatten_ccc_graph_list(ccc_graph_ls = ccc_graph_list)
+```
+
+
+```{r, fig.height=6}
+plot_spatial_ccc_graph(
+  ccog_flattened,
+  tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  graph_layout = "spatial",
+  node_color = "LRscore.sum.src",
+  edge_color = "LRscore",
+  # node_size = 1.6,
+  node_alpha = 0,
+  which_on_top = "edge"
+) 
+```

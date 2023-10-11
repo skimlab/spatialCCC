@@ -136,8 +136,7 @@ ccc_tbl_between_clusters <-
   ccc_tbl %>%
   dplyr::group_by(mclust_8.src, mclust_8.dst, LR) %>%
   dplyr::summarise(n = dplyr::n(),
-                   LRscore.sum = sum(LRscore),
-                   WLRscore.sum = sum(WLRscore))
+                   LRscore.sum = sum(LRscore))
 
 ccc_tbl_between_clusters %>%
   dplyr::arrange(desc(n))
