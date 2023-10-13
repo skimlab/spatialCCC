@@ -160,8 +160,9 @@ wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    #node_size = 1,
+    image_alpha = 0.,
+    node_size = 1,
+    graph_layout = "spatial",
     node_color = "LRscore.sum.src",
     edge_color = "LRscore_perc_rank",
     node_alpha = 0,
@@ -170,8 +171,9 @@ wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    #node_size = 1,
+    image_alpha = 0,
+    node_size = 1,
+    graph_layout = "spatial",
     node_color = "LRscore.sum.src",
     edge_color = "LRscore",
     node_alpha = 0,
@@ -208,7 +210,7 @@ communication clusters
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   edge_color = "LRscore",
-  node_color = "LRscore.sum",
+  node_color = "LRscore.sum.src",
   node_size = 0.1,
   edge_width = 0.1,
   which_on_top = "edge"
@@ -230,4 +232,11 @@ plot_spatial_ccc_graph(
 )
 ```
 
+```{r}
+plot_spatial_feature(spe_brain, feature = "rid")
+```
+
+```{r}
+plot_spatial_feature(spe_brain, feature = "sizeFactor")
+```
 

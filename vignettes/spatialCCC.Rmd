@@ -43,7 +43,8 @@ LRdb <- LRdb_m
 
   * Load an example Visium spatial transcriptomic data
 ```{r visium-data-loading}
-data_dir <- file.path("example")
+# absolute path to "example" spatial transcriptomic data
+data_dir <- spatialCCC_example("example")
 
 spe_brain <-
   SpatialExperiment::read10xVisium(samples = data_dir,
