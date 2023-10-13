@@ -567,6 +567,23 @@ tag_cells_in_ccc_graph <- function(ccog, COIs, edges_expanded_to_group = FALSE) 
   ccog
 }
 
+#' List example files for spatialCCC package
+#'
+#' @param path path to an example file
+#'
+#' @returns a list of example files if called with no parameter, or
+#'   the absolute path to an example file if called with an example file
+#'
+#' @export
+spatialCCC_example <- function(path = NULL) {
+  if (is.null(path)) {
+    dir(system.file("extdata", package = "spatialCCC"))
+  } else {
+    system.file("extdata", path, package = "spatialCCC", mustWork = TRUE)
+  }
+}
+
+
 #
 # Internal functions =====
 #

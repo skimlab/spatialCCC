@@ -133,8 +133,8 @@ plot_spatial_ccc_graph <-
     # }
 
     # now, simplified; it should be given as factor; otherwise continuous
-    node_color_is_factor <- is.factor(node_color_values)
-    if (!node_color_is_factor) {
+    node_color_is_discrete <- is_discrete(node_color_values)
+    if (!node_color_is_discrete) {
       if (is.null(node_color_range)) {
         max_node_color <- max(node_color_values)
         min_node_color <- min(node_color_values)
@@ -165,8 +165,8 @@ plot_spatial_ccc_graph <-
     # }
 
     # now, simplified; it should be given as factor; otherwise continuous
-    edge_color_is_factor <- is.factor(edge_color_values)
-    if (!edge_color_is_factor) {
+    edge_color_is_discrete <- is_discrete(edge_color_values)
+    if (!edge_color_is_discrete) {
       if (is.null(edge_color_range)) {
         max_edge_color <- max(edge_color_values)
         min_edge_color <- min(edge_color_values)
@@ -283,7 +283,7 @@ plot_spatial_ccc_graph <-
           size = node_size
         )
 
-      if (node_color_is_factor) {
+      if (node_color_is_discrete) {
         unique_node_color_values <- sort(unique(node_color_values))
         node_color_discrete <-
           ccc_palette_discrete(n = length(unique_node_color_values))
@@ -335,7 +335,7 @@ plot_spatial_ccc_graph <-
           )
         )
 
-      if (edge_color_is_factor) {
+      if (edge_color_is_discrete) {
         unique_edge_color_values <- sort(unique(edge_color_values))
         edge_color_discrete <-
           ccc_palette_discrete(n = length(unique_edge_color_values))
@@ -518,7 +518,8 @@ plot_spatial_feature <-
       y_max <- y_max + margin
     }
 
-    gp_spatial +
+    gp_spatial <-
+      gp_spatial +
       ggplot2::geom_point(
         shape = 21,
         color = "grey15",
@@ -533,10 +534,21 @@ plot_spatial_feature <-
       ggplot2::coord_fixed(expand = FALSE) +
 
       # remove background
-      ggplot2::theme_void() +
+      ggplot2::theme_void()
 
-      scale_fill_continuous(type = "viridis") +
-      scale_color_continuous(type = "viridis")
+      # if (class(spatial_col_data[[feature]]) %in% c("logical", "factor", "character")) {
+      #   gp_spatial <-
+      #     gp_spatial +
+      #     scale_fill_discrete(type = "gradient") +
+      #     scale_color_discrete(type = "gradient")
+      # } else {
+      #   gp_spatial <-
+      #     gp_spatial +
+      #     scale_fill_continuous(type = "gradient") +
+      #     scale_color_continuous(type = "gradient")
+      # }
+
+    gp_spatial
   }
 
 #' A ggplot2 layer for visualizing the Visium histology
@@ -616,5 +628,13 @@ modify_alpha_image <- function(raster, image.alpha = NA) {
          byrow = TRUE)
 }
 
+#' TRUE if object is 'discrete'
+#'
+#' @param obj an object
+#'
+#' @noRd
+is_discrete <- function(obj) {
+  all(class(obj) %in% c("logical", "factor", "character"))
+}
 
 

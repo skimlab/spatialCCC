@@ -51,7 +51,7 @@ library(spatialCCC)
 ```
 
 
-```{r message = FALSE}
+```{r message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(patchwork)
@@ -73,7 +73,8 @@ LRdb <- LRdb_m
 
   * Load an example Visium spatial transcriptomic data
 ```{r visium-data-loading}
-data_dir <- file.path("example", "visium_tutorial")
+data_dir <- spatialCCC_example("example")
+
 spe_brain <-
   SpatialExperiment::read10xVisium(samples = data_dir,
                                    type = "HDF5",
@@ -160,8 +161,9 @@ wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    #node_size = 1,
+    image_alpha = 0.,
+    node_size = 1,
+    graph_layout = "spatial",
     node_color = "LRscore.sum.src",
     edge_color = "LRscore_perc_rank",
     node_alpha = 0,
@@ -170,8 +172,9 @@ wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.75,
-    #node_size = 1,
+    image_alpha = 0,
+    node_size = 1,
+    graph_layout = "spatial",
     node_color = "LRscore.sum.src",
     edge_color = "LRscore",
     node_alpha = 0,
@@ -208,7 +211,7 @@ communication clusters
 plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   edge_color = "LRscore",
-  node_color = "LRscore.sum",
+  node_color = "LRscore.sum.src",
   node_size = 0.1,
   edge_width = 0.1,
   which_on_top = "edge"
