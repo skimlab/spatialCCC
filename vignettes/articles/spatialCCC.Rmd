@@ -59,8 +59,7 @@ spe_brain <- scater::logNormCounts(spe_brain)
 ccc_graph_list <-
   compute_spatial_ccc_graph_list(spe = spe_brain,
                                  assay_name = "logcounts",
-                                 LRdb = LRdb,
-                                 workers = 8)
+                                 LRdb = LRdb)
 
 #future::plan(future::sequential)
 ```
