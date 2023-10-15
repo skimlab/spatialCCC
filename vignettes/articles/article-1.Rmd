@@ -107,6 +107,16 @@ tictoc::toc()
 
 
 ```{r}
+ccc_graph_list <-
+  ccc_graph_list %>%
+  purrr::map(function(ccog) {
+    ccog %>%
+      add_node_annot_to_edges(c("mclust_8", "mclust_9", "mclust_10"))
+  })
+```
+
+
+```{r}
 ccc_tbl <-
   ccc_graph_list %>%
   purrr::map(function(ccog) {
@@ -118,20 +128,6 @@ ccc_tbl <-
 ```
 
 
-```{r}
-x <-
-  ccc_tbl %>%
-  left_join(cell_annot_df %>%
-              select(cell_id, starts_with("mclust_")),
-            by = c("src" = "cell_id")) %>%
-  dplyr::rename_with(~paste0(.x, "_src"),
-                     starts_with("mclust_")) %>%
-  left_join(cell_annot_df %>%
-              select(cell_id, starts_with("mclust_")),
-            by = c("dst" = "cell_id")) %>%
-  dplyr::rename_with(~paste0(.x, "_dst"),
-                     starts_with("mclust_") & !ends_with("_src"))
-```
 
 
 
@@ -139,9 +135,10 @@ x <-
 ```{r}
 ccc_tbl_between_clusters <-
   ccc_tbl %>%
-  dplyr::group_by(mclust_8.src, mclust_8.dst, LR) %>%
+  dplyr::group_by(mclust_8_src, mclust_8_dst, LR) %>%
   dplyr::summarise(n = dplyr::n(),
-                   LRscore.sum = sum(LRscore))
+                   LRscore.sum = sum(LRscore),
+                   .groups = "drop")
 
 ccc_tbl_between_clusters %>%
   dplyr::arrange(desc(n))
@@ -149,28 +146,13 @@ ccc_tbl_between_clusters %>%
 
 ```{r}
 ccc_tbl_between_clusters %>%
-  dplyr::filter(mclust_8.dst != mclust_8.src) %>%
+  dplyr::filter(mclust_8_dst != mclust_8_src) %>%
   dplyr::arrange(desc(n))
 ```
 
 
 
 ### Convert CCC table to CCC graph
-
-The conversion also adds various graph metrics to each CCC graph.
-
-```{r to-spatial-ccc-graph}
-tictoc::tic("to_spatical_ccc_graph ...")
-
-sp_col_data <- get_spatial_data(spe_brain)
-
-ccc_graph_list <-
-  to_spatial_ccc_graph_list(ccc_tbl, sp_col_data, workers = 6)
-
-tictoc::toc()
-```
-
-
 
 summarize_ccc_graph_metrics() summarize those graph metrics for each LR pair.
 
@@ -254,7 +236,7 @@ wrap_plots(gp_spccc, gp_spccc_0, ncol = 2)
 ccc_graph_temp <-
   ccc_graph_list[[LR_of_interest]] %>%
   tidygraph::activate("edges") %>%
-  tidygraph::filter(mclust_8.src != mclust_8.dst) %>%
+  tidygraph::filter(mclust_8_src != mclust_8_dst) %>%
   tidy_up_ccc_graph()
 
 cells_of_interest <-
@@ -268,7 +250,7 @@ gp_spccc <-
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_temp,
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    node_color = "inflow.n",
+    node_color = "n.inflow",
     node_size = 1.25,
     node_alpha = 1,
     edge_color = "group",
