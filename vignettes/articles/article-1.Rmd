@@ -99,8 +99,7 @@ tictoc::tic()
 ccc_graph_list <-
   compute_spatial_ccc_graph_list(spe = spe_brain,
                                  assay_name = "logcounts",
-                                 LRdb = LRdb_m,
-                                 workers = 8)
+                                 LRdb = LRdb_m)
 
 tictoc::toc()
 ```
