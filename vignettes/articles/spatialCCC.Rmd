@@ -1,10 +1,5 @@
 ---
 title: "spatialCCC"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{spatialCCC}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
 ---
 
 ```{r, include = FALSE}

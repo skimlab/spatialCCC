@@ -233,11 +233,3 @@ plot_spatial_ccc_graph(
 )
 ```
 
-```{r}
-plot_spatial_feature(spe_brain, feature = "rid")
-```
-
-```{r}
-plot_spatial_feature(spe_brain, feature = "sizeFactor")
-```
-
