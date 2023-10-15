@@ -18,7 +18,10 @@
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="active nav-item">
+      <ul class="navbar-nav me-auto"><li class="nav-item">
+  <a class="nav-link" href="../articles/spatialCCC.html">Get started</a>
+</li>
+<li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">Reference</a>
 </li>
 <li class="nav-item dropdown">
@@ -26,7 +29,6 @@
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/article-1.html">article-1</a>
     <a class="dropdown-item" href="../articles/article-2.html">article-2</a>
-    <a class="dropdown-item" href="../articles/vignette-1.html">vignette-1</a>
     <a class="dropdown-item" href="../articles/vignette-2.html">vignette-2</a>
   </div>
 </li>
@@ -72,24 +74,74 @@
         <dd>Ligand-receptor database (mouse)</dd>
       </dl><dl><dt>
           
+          <code><a href="add_annots_to_nodes.html">add_annots_to_nodes()</a></code> 
+        </dt>
+        <dd>Add annotations to nodes</dd>
+      </dl><dl><dt>
+          
+          <code><a href="add_node_annot_to_edges.html">add_node_annot_to_edges()</a></code> 
+        </dt>
+        <dd>Add node annotations to edges</dd>
+      </dl><dl><dt>
+          
           <code><a href="amend_ccc_tbl_with_cell_annots.html">amend_ccc_tbl_with_cell_annots()</a></code> 
         </dt>
         <dd>Amend CCC table with annotations for source and destination cells</dd>
       </dl><dl><dt>
           
+          <code><a href="calc_spot_dist.html">calc_spot_dist()</a></code> 
+        </dt>
+        <dd>Calculate distance between spots</dd>
+      </dl><dl><dt>
+          
+          <code><a href="calculate_LR_percent_rank.html">calculate_LR_percent_rank()</a></code> 
+        </dt>
+        <dd>Calculate (combined) percent rank of n and LRscore</dd>
+      </dl><dl><dt>
+          
+          <code><a href="ccc_graph_diff.html">ccc_graph_diff()</a></code> 
+        </dt>
+        <dd>Subtract a spatial CCC graph (ccog2) from another (ccog1)</dd>
+      </dl><dl><dt>
+          
+          <code><a href="ccc_graph_intersect.html">ccc_graph_intersect()</a></code> 
+        </dt>
+        <dd>Create a new spatial CCC graph with common edges</dd>
+      </dl><dl><dt>
+          
+          <code><a href="ccc_graph_union.html">ccc_graph_union()</a></code> 
+        </dt>
+        <dd>Combine two CCC graphs</dd>
+      </dl><dl><dt>
+          
+          <code><a href="compute_spatial_ccc_graph.html">compute_spatial_ccc_graph()</a></code> 
+        </dt>
+        <dd>Compute a spatial CCC graph</dd>
+      </dl><dl><dt>
+          
           <code><a href="compute_spatial_ccc_graph_list.html">compute_spatial_ccc_graph_list()</a></code> 
         </dt>
-        <dd>Compute cell-cell communication graphs</dd>
+        <dd>Compute spatial CCC graphs over a list of LR pairs</dd>
       </dl><dl><dt>
           
           <code><a href="compute_spatial_ccc_tbl.html">compute_spatial_ccc_tbl()</a></code> 
         </dt>
-        <dd>Compute ligand-receptor interactions</dd>
+        <dd>Compute spatial ligand-receptor interactions</dd>
       </dl><dl><dt>
           
           <code><a href="dist_cell_overlap_ccc_tbl.html">dist_cell_overlap_ccc_tbl()</a></code> 
         </dt>
         <dd>Compute cell overlap distance</dd>
+      </dl><dl><dt>
+          
+          <code><a href="extract_spatial_ccc_graph_edges.html">extract_spatial_ccc_graph_edges()</a></code> 
+        </dt>
+        <dd>Convert spatial CCC graphs to spatial CCC table</dd>
+      </dl><dl><dt>
+          
+          <code><a href="flatten_ccc_graph_list.html">flatten_ccc_graph_list()</a></code> 
+        </dt>
+        <dd>Flatten multiple CCC graphs into aggregate one</dd>
       </dl><dl><dt>
           
           <code><a href="get_LRdb.html">get_LRdb()</a></code> 
@@ -127,9 +179,24 @@
         <dd>Set default cluster in CCC table</dd>
       </dl><dl><dt>
           
+          <code><a href="spatialCCC_example.html">spatialCCC_example()</a></code> 
+        </dt>
+        <dd>List example files for spatialCCC package</dd>
+      </dl><dl><dt>
+          
+          <code><a href="split_ccc_tbl_LR.html">split_ccc_tbl_LR()</a></code> 
+        </dt>
+        <dd>Split LR into L and R</dd>
+      </dl><dl><dt>
+          
+          <code><a href="summarise_ccc_by_cell.html">summarise_ccc_by_cell()</a></code> 
+        </dt>
+        <dd>Summarize CCC table by (cell, LR)</dd>
+      </dl><dl><dt>
+          
           <code><a href="summarize_ccc_graph_metrics.html">summarize_ccc_graph_metrics()</a></code> 
         </dt>
-        <dd>Summarize spatial CCC graph list to table</dd>
+        <dd>Summarize spatial CCC graph list to graph/group metrics table</dd>
       </dl><dl><dt>
           
           <code><a href="tag_cells_in_ccc_graph.html">tag_cells_in_ccc_graph()</a></code> 
@@ -142,14 +209,14 @@
         <dd>Tidy up CCC graph by removing isolated nodes</dd>
       </dl><dl><dt>
           
-          <code><a href="to_spatial_ccc_graph_list.html">to_spatial_ccc_graph_list()</a></code> 
+          <code><a href="to_LR_summary_tbl.html">to_LR_summary_tbl()</a></code> 
         </dt>
-        <dd>Convert CCC table to a list of spatial CCC graphs</dd>
+        <dd>Summarize spatial CCC graph for LR</dd>
       </dl><dl><dt>
           
-          <code><a href="to_spatial_ccc_tbl.html">to_spatial_ccc_tbl()</a></code> 
+          <code><a href="to_spatial_ccc_graph.html">to_spatial_ccc_graph()</a></code> 
         </dt>
-        <dd>Convert spatial CCC graphs to spatial CCC table</dd>
+        <dd>Convert CCC table to CCC graph</dd>
       </dl></div>
   </main></div>
 

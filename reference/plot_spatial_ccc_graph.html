@@ -20,7 +20,10 @@ w/ or w/o tissue image"><meta property="og:image" content="https://skimlab.githu
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="active nav-item">
+      <ul class="navbar-nav me-auto"><li class="nav-item">
+  <a class="nav-link" href="../articles/spatialCCC.html">Get started</a>
+</li>
+<li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">Reference</a>
 </li>
 <li class="nav-item dropdown">
@@ -28,7 +31,6 @@ w/ or w/o tissue image"><meta property="og:image" content="https://skimlab.githu
   <div class="dropdown-menu" aria-labelledby="dropdown-articles">
     <a class="dropdown-item" href="../articles/article-1.html">article-1</a>
     <a class="dropdown-item" href="../articles/article-2.html">article-2</a>
-    <a class="dropdown-item" href="../articles/vignette-1.html">vignette-1</a>
     <a class="dropdown-item" href="../articles/vignette-2.html">vignette-2</a>
   </div>
 </li>
@@ -65,8 +67,8 @@ w/ or w/o tissue image</p>
 <span>  graph_layout <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  cells_of_interest <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  edges_expanded_to_group <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  edge_color <span class="op">=</span> <span class="st">"group_n_edges"</span>,</span>
-<span>  node_color <span class="op">=</span> <span class="st">"group_n_nodes"</span>,</span>
+<span>  edge_color <span class="op">=</span> <span class="st">"LRscore"</span>,</span>
+<span>  node_color <span class="op">=</span> <span class="st">"LRscore.sum.src"</span>,</span>
 <span>  edge_color_range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  node_color_range <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  edge_width <span class="op">=</span> <span class="fl">0.5</span>,</span>
@@ -144,6 +146,12 @@ active cell-cell communications</p></dd>
 <dd><p>if TRUE, arrow is added to edge.  Default is FALSE.</p></dd>
 
 </dl></div>
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    
+
+<p>ggplot object of spatial CCC graph</p>
+    </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     
