@@ -10,12 +10,6 @@ knitr::opts_chunk$set(
 ```
 
 
-```{r, include = FALSE}
-# Since Rmd is stored in "vignette/article/", we need to move up two levels
-base_dir <-
-  file.path(".")
-```
-
 
 ## Example
 
@@ -58,7 +52,7 @@ LRdb_m %>%
 ## Load Visium spatial transcriptomic data
 
 ```{r visium-data-loading}
-data_dir <- file.path(base_dir, "example")
+data_dir <- spatialCCC_example("example")
 
 spe_brain <-
   SpatialExperiment::read10xVisium(samples = data_dir,
@@ -99,35 +93,46 @@ plot_spatial_feature(spe = spe_brain, feature = "mclust_8")
 
 ## Compute Cell-Cell Communications over ligand-receptor pairs
 
-```{r compute-spatial-ccc}
-# For full LRdb analysis, future::plan can be used 
-#   for parallelization
-# future::plan(future::multisession, workers = 4)
-
+```{r compute-spatial-ccc, message=FALSE, warning=FALSE}
 tictoc::tic()
-ccc_tbl <- compute_spatial_ccc_tbl(spe = spe_brain, 
-                                   assay_name = "logcounts",
-                                   LRdb = LRdb_m)
+
+ccc_graph_list <-
+  compute_spatial_ccc_graph_list(spe = spe_brain,
+                                 assay_name = "logcounts",
+                                 LRdb = LRdb_m,
+                                 workers = 8)
+
 tictoc::toc()
-
-# future::plan(future::sequential)
 ```
 
 
-
-```{r spatial-ccc-table-inspection}
-ccc_tbl %>% 
-  dplyr::arrange(desc(LRscore))
-```
-
-
-### Add cluster lables to CCC table.
 ```{r}
 ccc_tbl <-
-  ccc_tbl %>%
-  amend_ccc_tbl_with_cell_annots(spe = spe_brain, annot_cols = c("mclust_8", "mclust_10")) %>%
-  set_ccc_tbl_default_cluster("mclust_8")
+  ccc_graph_list %>%
+  purrr::map(function(ccog) {
+    ccog %>%
+      tidygraph::activate("edges") %>%
+      as_tibble()
+  }) %>%
+  dplyr::bind_rows(.id = "LR")
 ```
+
+
+```{r}
+x <-
+  ccc_tbl %>%
+  left_join(cell_annot_df %>%
+              select(cell_id, starts_with("mclust_")),
+            by = c("src" = "cell_id")) %>%
+  dplyr::rename_with(~paste0(.x, "_src"),
+                     starts_with("mclust_")) %>%
+  left_join(cell_annot_df %>%
+              select(cell_id, starts_with("mclust_")),
+            by = c("dst" = "cell_id")) %>%
+  dplyr::rename_with(~paste0(.x, "_dst"),
+                     starts_with("mclust_") & !ends_with("_src"))
+```
+
 
 
 ### Summarize cell-cell communication between cell clusters

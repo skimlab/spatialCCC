@@ -8,7 +8,7 @@
 \description{
 \if{html}{\figure{logo.png}{options: style='float: right' alt='logo' width='120'}}
 
-Investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
+Analyze ligand-receptor interactions over spatial graph, using spatial transcriptomic data.
 }
 \seealso{
 Useful links:

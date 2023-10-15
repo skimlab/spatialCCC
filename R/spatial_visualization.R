@@ -84,7 +84,7 @@ plot_spatial_ccc_graph <-
            show_arrow = FALSE) {
 
     if (is.null(ccc_graph)) {
-      return(ggplot() + theme_void())
+      return(ggplot2::ggplot() + ggplot2::theme_void())
     }
 
 
@@ -258,7 +258,7 @@ plot_spatial_ccc_graph <-
             x = spot_x,
             y = spot_y
           ) %>%
-          ggraph::ggraph() + scale_y_reverse()
+          ggraph::ggraph() + ggplot2::scale_y_reverse()
       } else {
         # some layout alg. does not work
         # so, default back to stress

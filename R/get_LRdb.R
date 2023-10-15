@@ -58,6 +58,6 @@ get_LRdb_small <- function(species = c("human", "mouse")) {
     "Jam3_Itgam",
     "Cx3cl1_Itga4")
 
-  rbind(LRdb_small, dplyr::filter(LRdb, LR %in% LR_pair_list)) %>%
+  rbind(LRdb_small, dplyr::filter(LRdb, .data$LR %in% LR_pair_list)) %>%
     dplyr::distinct()
 }

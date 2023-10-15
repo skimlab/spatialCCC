@@ -4,7 +4,8 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Seungchan", "Kim", , "dolchan@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-4183-4338"))
-Description: Investigate cell-cell signaling, by analyzing ligand-receptor interactions in spatial transcriptomic data.
+Description: Analyze ligand-receptor interactions over spatial graph,
+  using spatial transcriptomic data.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -17,6 +18,7 @@ Suggests:
     fastcluster,
     ggtree,
     knitr,
+    patchwork,
     rmarkdown,
     scater,
     testthat (>= 3.0.0),
@@ -25,10 +27,11 @@ Config/testthat/edition: 3
 Depends: 
     R (>= 2.10),
     ggplot2,
-    tidygraph,
-    ggraph
+    ggraph,
+    tidygraph
 LazyData: true
 Imports: 
+    rlang,
     SingleCellExperiment,
     SpatialExperiment,
     SummarizedExperiment,
@@ -40,10 +43,11 @@ Imports:
     magrittr,
     purrr,
     RColorBrewer,
-    patchwork,
     scales,
     stats,
     tibble,
     tidyr,
-    utils
+    tidyselect,
+    utils,
+    grid
 VignetteBuilder: knitr
