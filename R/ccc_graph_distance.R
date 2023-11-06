@@ -70,7 +70,7 @@ lf_to_dist <- function(lf) {
 #' Prepare CCC table for distance calcuation
 #'
 #' Reorganize CCC table into a list where each element is a CCC graph,
-#' an edge list where each edge, (src, dst) pair, is not concatenated
+#' an edge list where each edge, (src, dst) pair, is concatenated
 #' into src_dst string for easy enumeration later.
 #'
 #' @param ccc_tbl CCC table
@@ -154,21 +154,21 @@ lf_cell_overlap_edgesets <- function(edgeset_list) {
   cell_overlap_lf <-
     cell_overlap_lf %>%
     dplyr::mutate(
-      n1 = furrr::future_map_int(.$lr1,
+      n1 = furrr::future_map_int(.data$lr1,
                                  function(lr_1) {
                                    length(edgeset_list[[lr_1]])
                                  }),
-      n2 = furrr::future_map_int(.$lr2,
+      n2 = furrr::future_map_int(.data$lr2,
                                  function(lr_2) {
                                    length(edgeset_list[[lr_2]])
                                  }),
       intersect =
-        furrr::future_map2_int(.$lr1, .$lr2,
+        furrr::future_map2_int(.data$lr1, .data$lr2,
                                function(lr_1, lr_2) {
                                  length(intersect(edgeset_list[[lr_1]], edgeset_list[[lr_2]]))
                                }),
       union =
-        furrr::future_map2_int(.$lr1, .$lr2,
+        furrr::future_map2_int(.data$lr1, .data$lr2,
                                function(lr_1, lr_2) {
                                  length(union(edgeset_list[[lr_1]], edgeset_list[[lr_2]]))
                                })

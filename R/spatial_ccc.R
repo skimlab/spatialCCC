@@ -93,11 +93,12 @@ compute_spatial_ccc_tbl <-
         dplyr::mutate(weight = ifelse(.data$norm.d == 0, 1, 1 / .data$norm.d ^ 2)) %>%
         dplyr::mutate(WLRscore = .data$LRscore * .data$weight) %>%
 
+        # percent rank before cutoff, probably more informative?
+        dplyr::mutate(LRscore_perc_rank = dplyr::percent_rank(.data$LRscore)) %>%
+
         # temporarily disable the line below to calculate "p-value"?
         # now back to LRscore filtering
         dplyr::filter(.data$LRscore > LRscore_cutoff) %>%
-
-        dplyr::mutate(LRscore_perc_rank = dplyr::percent_rank(.data$LRscore)) %>%
 
         # keep as many as possible, except LRscore = 0
         # dplyr::filter(LRscore > 0) %>%
@@ -705,15 +706,57 @@ calculate_LR_percent_rank <- function(ccc_graph_ls) {
     ccc_graph_ls %>%
     extract_spatial_ccc_graph_edges()
 
-  ccc_graph_el_tbl %>%
-    dplyr::group_by(.data$LR) %>%
-    dplyr::summarise(n = dplyr::n(),
-              LRscore = median(.data$LRscore)) %>%
-    dplyr::mutate(n_perc_rank = dplyr::percent_rank(.data$n),
-           LRscore_perc_rank = dplyr::percent_rank(.data$LRscore)) %>%
+  qprank <- function(pranks, vals, prank_cutoff = 0.5) {
+    dd <-
+      data.frame(prank = pranks, val = vals) %>%
+      dplyr::filter(.data$prank > prank_cutoff)
+
+    min(dd$val)
+  }
+
+  LRs <- setNames(nm = names(ccc_graph_ls))
+  LR_tbl <-
+    purrr::map(LRs,
+               function(lr) {
+                 dd <- ccc_graph_el_tbl %>% dplyr::filter(.data$LR == lr)
+                 tibble_row(
+                   n = nrow(dd),
+                   LRscore = qprank(dd$LRscore_perc_rank,
+                                    dd$LRscore,
+                                    prank_cutoff = 0.5),
+                   LRscore_75 = qprank(dd$LRscore_perc_rank,
+                                       dd$LRscore,
+                                       prank_cutoff = 0.75),
+                   LRscore_95 = qprank(dd$LRscore_perc_rank,
+                                       dd$LRscore,
+                                       prank_cutoff = 0.95)
+                 )
+               }) %>%
+    bind_rows(.id = "LR")
+
+  ####
+  ## not sure why the follow codes do not work
+  ####
+  # ccc_graph_el_tbl %>%
+  #   dplyr::group_by(.data$LR) %>%
+  #   dplyr::summarise(
+  #     n = dplyr::n(),
+  #     LRscore = qprank(LRscore_perc_rank, LRscore,
+  #                      prank_cutoff = 0.5),
+  #     LRscore_75 = qprank(LRscore_perc_rank, LRscore,
+  #                         prank_cutoff = 0.75),
+  #     LRscore_95 = qprank(LRscore_perc_rank, LRscore,
+  #                         prank_cutoff = 0.95)
+  #   ) %>%
+
+  LR_tbl %>%
+    dplyr::mutate(
+      n_pRank = dplyr::percent_rank(.data$n),
+      LRscore_pRank = dplyr::percent_rank(.data$LRscore)
+    ) %>%
     # geometric mean of percent ranks of n and LRscore
-    dplyr::mutate(perc_rank = sqrt(.data$n_perc_rank * .data$LRscore_perc_rank)) %>%
-    mutate(perc_group = sprintf("perc_%02d", floor(.data$perc_rank * 10) * 10))
+    dplyr::mutate(pRank = sqrt(.data$n_pRank * .data$LRscore_pRank)) %>%
+    dplyr::mutate(pRank_group = sprintf("pRank_%02d", floor(.data$pRank * 10) * 10))
 }
 
 
