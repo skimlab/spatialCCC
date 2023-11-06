@@ -26,13 +26,13 @@ library(patchwork)
 set.seed(100)
 
 LRdb_m <- 
-  get_LRdb("mouse", n_samples = 100)
+  get_LRdb("mouse", n_samples = 20) 
 
 LRdb_full <-
   get_LRdb("mouse")
 
-LRdb <- LRdb_m
-#LRdb <- LRdb_full
+LRdb <- LRdb_m; n_workers = 1
+#LRdb <- LRdb_full; n_workers = 8
 ```
 
 
@@ -58,6 +58,9 @@ spe_brain <- scater::logNormCounts(spe_brain)
 
 ccc_graph_list <-
   compute_spatial_ccc_graph_list(spe = spe_brain,
+                                 # uncomment the line below when testing
+                                 # comment the line before uploading to github
+                                 workers = n_workers,
                                  assay_name = "logcounts",
                                  LRdb = LRdb)
 
@@ -70,7 +73,7 @@ ccc_graph_list <-
 ccc_graph_summary_tbl <-
   ccc_graph_list %>%
   to_LR_summary_tbl() %>%
-  arrange(desc(perc_rank))
+  arrange(desc(pRank))
 
 ccc_graph_summary_tbl
 ```
@@ -195,20 +198,24 @@ gp_list <-
   })
 ```
 
-```{r, fig.width=12, fig.height=4}
+```{r, fig.width=10, fig.height=5}
 wrap_plots(gp_list)
 ```
 
 
 ```{r}
-ccog_diff_1 <-
+ccog_1_minus_2 <-
+  ccc_graph_subtract(ccc_graph_list[[high_L_LR_list[1]]],
+                     ccc_graph_list[[high_L_LR_list[2]]])
+
+ccog_2_minus_1 <-
+  ccc_graph_subtract(ccc_graph_list[[high_L_LR_list[2]]],
+                     ccc_graph_list[[high_L_LR_list[1]]])
+ccog_diff <-
   ccc_graph_diff(ccc_graph_list[[high_L_LR_list[1]]],
                  ccc_graph_list[[high_L_LR_list[2]]])
-
-ccog_diff_2 <-
-  ccc_graph_diff(ccc_graph_list[[high_L_LR_list[2]]],
-                 ccc_graph_list[[high_L_LR_list[1]]])
 ```
+
 
 
 ```{r}
@@ -222,9 +229,10 @@ ccog_intersect <-
 ```
 
 
+
 ```{r}
 gp_list <-
-  list(ccog_diff_1, ccog_diff_2) %>%
+  list(ccog_1_minus_2, ccog_2_minus_1, ccog_diff) %>%
   purrr::map(function(ccog) {
     plot_spatial_ccc_graph(ccog,
                            graph_layout = "spatial")
@@ -232,24 +240,10 @@ gp_list <-
 ```
 
 
-```{r, fig.width=10, fig.height=5}
+```{r, fig.width=15, fig.height=5}
 wrap_plots(gp_list)
 ```
 
-
-```{r}
-gp_list <-
-  list(ccog_diff_1, ccog_diff_2) %>%
-  purrr::map(function(ccog) {
-    plot_spatial_ccc_graph(ccog,
-                           graph_layout = "spatial")
-  })
-```
-
-
-```{r, fig.width=10, fig.height=5}
-wrap_plots(gp_list)
-```
 
 
 ```{r}
@@ -275,7 +269,7 @@ wrap_plots(gp_list)
 
 ```{r}
 gp_list <-
-  list(ccog_diff_1, ccog_diff_2) %>%
+  list(ccog_1_minus_2, ccog_2_minus_1, ccog_diff) %>%
   purrr::map(function(ccog) {
     plot_spatial_ccc_graph(ccog,
                            graph_layout = "spatial",
@@ -284,7 +278,7 @@ gp_list <-
 ```
 
 
-```{r, fig.width=10, fig.height=5}
+```{r, fig.width=15, fig.height=5}
 wrap_plots(gp_list)
 ```
 
