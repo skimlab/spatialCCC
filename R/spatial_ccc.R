@@ -450,7 +450,7 @@ extract_spatial_ccc_graph_edges <-
 #' Extract spatial CCC graph metrics
 #'
 #' @param ccc_graph spatial CCC graph, in `tidygraph` format,
-#'                  an element in the output of [to_spatial_ccc_graph_list()]
+#'                  an element in the output of [to_spatial_ccc_graph()]
 #'                  or [compute_spatial_ccc_graph_list()]
 #' @inheritParams summarize_ccc_graph_metrics
 #'
@@ -693,24 +693,31 @@ add_annots_to_nodes <- function(ccog, node_annots, id_column = "name") {
 #' @param ccog CCC graph
 #' @param node_annot_colname column names for annotations to be added to edges
 #'
-#' @returns CCC graph with revised annotations for edges
+#' @returns CCC graph with revised annotations for edges.
+#'   Returns null If CCC graph is null.
+#'
 #'
 #' @export
 transfer_node_annots_to_edges <- function(ccog, node_annot_colname) {
-  node_annot <-
-    ccog %>%
-    tidygraph::activate("nodes") %>%
-    tibble::as_tibble() %>%
-    dplyr::select(tidyselect::all_of(c("name", node_annot_colname)))
+  if (!is.null(ccog)) {
+    node_annot <-
+      ccog %>%
+      tidygraph::activate("nodes") %>%
+      tibble::as_tibble() %>%
+      dplyr::select(tidyselect::all_of(c("name", node_annot_colname)))
 
-  ccog %>%
-    tidygraph::activate("edges") %>%
-    tidygraph::left_join(node_annot %>%
-                           dplyr::rename_with( ~ paste0(.x, "_src"),!tidyselect::all_of("name")),
-                         by = c("src" = "name")) %>%
-    tidygraph::left_join(node_annot %>%
-                           dplyr::rename_with( ~ paste0(.x, "_dst"),!tidyselect::all_of("name")),
-                         by = c("dst" = "name"))
+    ccog %>%
+      tidygraph::activate("edges") %>%
+      tidygraph::left_join(node_annot %>%
+                             dplyr::rename_with( ~ paste0(.x, "_src"),!tidyselect::all_of("name")),
+                           by = c("src" = "name")) %>%
+      tidygraph::left_join(node_annot %>%
+                             dplyr::rename_with( ~ paste0(.x, "_dst"),!tidyselect::all_of("name")),
+                           by = c("dst" = "name"))
+
+  } else {
+    ccog
+  }
 }
 
 
