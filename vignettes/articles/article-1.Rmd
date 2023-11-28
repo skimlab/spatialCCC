@@ -1,5 +1,5 @@
 ---
-title: "article-1"
+title: "Basic Workflow"
 ---
 
 ```{r, include = FALSE}
@@ -99,6 +99,9 @@ tictoc::tic()
 ccc_graph_list <-
   compute_spatial_ccc_graph_list(spe = spe_brain,
                                  assay_name = "logcounts",
+                                 # below should be commented before submitting it to GitHub; 
+                                 # otherwise, GitHub will fail.
+                                 workers = 8,
                                  LRdb = LRdb_m)
 
 tictoc::toc()
@@ -137,11 +140,18 @@ ccc_tbl_between_clusters <-
   dplyr::group_by(mclust_8_src, mclust_8_dst, LR) %>%
   dplyr::summarise(n = dplyr::n(),
                    LRscore.sum = sum(LRscore),
+                   LRscore.median = median(LRscore),
                    .groups = "drop")
 
 ccc_tbl_between_clusters %>%
-  dplyr::arrange(desc(n))
+  dplyr::arrange(LR, desc(LRscore.median))
 ```
+
+```{r}
+ccc_tbl_between_clusters %>%
+  dplyr::arrange(mclust_8_src, mclust_8_dst, desc(n))
+```
+
 
 ```{r}
 ccc_tbl_between_clusters %>%
