@@ -31,8 +31,8 @@ LRdb_m <-
 LRdb_full <-
   get_LRdb("mouse")
 
-LRdb <- LRdb_m; n_workers = 1
-#LRdb <- LRdb_full; n_workers = 8
+#LRdb <- LRdb_m; n_workers = 1
+LRdb <- LRdb_full; n_workers = 8
 ```
 
 
@@ -50,6 +50,33 @@ spe_brain <-
 spe_brain <- scater::logNormCounts(spe_brain)
 ```
 
+
+
+## Cell cluster data
+
+Now, let's read cell cluster data, obtained using [GraphST](https://deepst-tutorials.readthedocs.io/).
+```{r}
+cell_clusters <-
+  read.csv(file.path(data_dir, "outs", "graphST.csv"), row.names = 1)
+
+# Make sure the rows of cell_clusters are in the same order of spe_brain.
+cell_clusters <- cell_clusters[colnames(spe_brain), ]
+
+cluster_ids <- colnames(cell_clusters)
+cluster_ids <- cluster_ids[grep("mclust_", cluster_ids)]
+
+for (cid in cluster_ids) {
+  spe_brain[[cid]] <- factor(cell_clusters[[cid]])
+}
+```
+
+
+```{r}
+plot_spatial_feature(spe = spe_brain, feature = "mclust_8")
+```
+
+
+
 ### Cell-cell communication analysis
 
   * Compute Cell-Cell Communications over ligand-receptor pairs
@@ -66,6 +93,165 @@ ccc_graph_list <-
 
 #future::plan(future::sequential)
 ```
+
+
+
+```{r}
+ccc_graph_list <-
+  ccc_graph_list %>%
+  purrr::map(function(ccog) {
+    ccog %>%
+      transfer_node_annots_to_edges(c("mclust_8", "mclust_9", "mclust_10"))
+  })
+```
+
+
+
+```{r}
+ccc_graph_tbl <-
+  ccc_graph_list %>%
+  purrr::map(function(cg) {
+    cg %>%
+      activate("edges") %>%
+      as_tibble()
+  }) %>%
+  bind_rows(.id = "LR")
+```
+
+
+
+# Build cluster-cluster interface
+```{r}
+c2c_dist <-
+  calc_spot_dist(spe = spe_brain)
+
+c2c_dist[["mclust_8_src"]] <- cell_clusters[c2c_dist$src, "mclust_8"]
+c2c_dist[["mclust_8_dst"]] <- cell_clusters[c2c_dist$dst, "mclust_8"]
+
+c2c_n <-
+  c2c_dist %>%
+  group_by(mclust_8_src, mclust_8_dst) %>%
+  summarize(N = n(), .groups = "drop") %>%
+  mutate(mclust_8_src = factor(mclust_8_src), mclust_8_dst = factor(mclust_8_dst))
+```
+
+
+
+```{r}
+ccc_tbl <-
+  ccc_graph_list %>%
+  purrr::map(function(ccog) {
+    ccog %>%
+      tidygraph::activate("edges") %>%
+      as_tibble()
+  }) %>%
+  dplyr::bind_rows(.id = "LR")
+```
+
+
+### Summarize cell-cell communication between cell clusters
+```{r}
+ccc_tbl_between_clusters <-
+  ccc_tbl %>%
+  dplyr::group_by(mclust_8_src, mclust_8_dst, LR) %>%
+  dplyr::summarise(n = dplyr::n(),
+                   LRscore.sum = sum(LRscore),
+                   LRscore.median = median(LRscore),
+                   .groups = "drop") %>%
+  dplyr::left_join(c2c_n, by = c("mclust_8_src", "mclust_8_dst")) %>%
+  dplyr::mutate(r = n/N)
+```
+
+
+```{r}
+ccc_tbl_between_clusters %>%
+  dplyr::filter(N > 10) %>%
+  dplyr::group_by(mclust_8_src, mclust_8_dst) %>%
+  dplyr::arrange(desc(r)) %>%
+  dplyr::slice_head(n = 2) %>%
+  dplyr::ungroup() 
+```
+
+
+```{r}
+ccc_tbl_between_clusters %>%
+  dplyr::filter(N > 10, r > 0.5) %>%
+  dplyr::arrange(mclust_8_src, mclust_8_dst, desc(r)) 
+```
+
+
+```{r}
+LR_of_interest <- "App_Lrp1"
+
+ccc_graph_temp <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate("edges") %>%
+  tidygraph::filter(mclust_8_src == 1, mclust_8_dst == 6) %>%
+  tidy_up_ccc_graph()
+
+cells_of_interest <-
+  ccc_graph_temp %>%
+  tidygraph::activate("nodes") %>%
+  dplyr::pull("name")
+```
+
+
+```{r}
+gp_spccc <-
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_temp,
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    node_color = "mclust_8",
+    # node_size = 1.25,
+    node_alpha = 1,
+    edge_color = "LRscore",
+    edge_width = 1.5,
+    show_arrow = TRUE,
+    clip = TRUE,
+    which_on_top = "node"
+  )
+
+gp_spccc
+```
+
+
+```{r}
+LRs <- unique(ccc_tbl_between_clusters$LR)
+
+names(LRs) <- LRs
+
+xx <-
+  LRs %>%
+  purrr::map(function(lr) {
+    x <- ccc_tbl_between_clusters %>% filter(LR == lr)
+    x %>%
+      arrange(desc(LRscore.median)) %>%
+      filter(n > 10) %>%
+      filter(mclust_8_src != mclust_8_dst) %>%
+      head(n = 2)
+  }) %>%
+  bind_rows(.id = "LR")
+  
+xx
+```
+
+
+```{r}
+xxx <-
+  purrr::map2(rep(1:8, times = 8), rep(1:8, each = 8), function(c1, c2) {
+    x <- ccc_tbl_between_clusters %>% filter(mclust_8_src == c1, mclust_8_dst == c2)
+    x %>%
+      arrange(desc(LRscore.median)) %>%
+      filter(n > 10) %>%
+      filter(mclust_8_src != mclust_8_dst) %>%
+      filter(LR != "App_Lrp1") %>%
+      head(n = 1)
+  }) %>%
+  bind_rows()
+  
+xxx
+```
+
 
 
   * Summarize spatial CCC graphs by LR
@@ -117,115 +303,29 @@ wrap_plots(gp_ccc_graph_top_LR, gp_ccc_graph_bottom_LR)
 
 
 
-  * CCC graph summary table only with ligands or receptors with multiple occurrences
-
-```{r}
-L_high_freq <-
-  ccc_graph_summary_tbl %>%
-  group_by(L) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  dplyr::filter(n > 1) %>%
-  dplyr::arrange(desc(n)) %>% 
-  pull(L)
-
-L_high_freq
-```
-
-
-```{r}
-R_high_freq <-
-  ccc_graph_summary_tbl %>%
-  group_by(R) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  dplyr::filter(n > 1) %>%
-  dplyr::arrange(desc(n)) %>% 
-  pull(R)
-
-R_high_freq
-```
-
-
-```{r}
-ccc_graph_summary_tbl %>%
-  dplyr::filter(L %in% L_high_freq | R %in% R_high_freq)
-```
-
-
-  * Spatial CCC graph with ligand with multiple occurences
-```{r}
-high_L_LR_list <- 
-  ccc_graph_summary_tbl %>% 
-  dplyr::filter(L == L_high_freq[1]) %>% 
-  pull(LR) %>%
-  setNames(nm = .)
-
-gp_list <-
-  high_L_LR_list %>%
-  purrr::map(function(lr) {
-    plot_spatial_ccc_graph(
-      ccc_graph_list[[lr]],
-      graph_layout = "spatial",
-      edge_color = "LRscore",
-      clip = FALSE
-    ) +
-      ggtitle(lr)
-  })
-```
-
-```{r, fig.width=10, fig.height=5}
-wrap_plots(gp_list)
-```
-
-
-
-```{r}
-high_R_LR_list <- 
-  ccc_graph_summary_tbl %>% 
-  dplyr::filter(R == R_high_freq[1]) %>% 
-  pull(LR) %>%
-  setNames(nm = .)
-
-gp_list <-
-  high_R_LR_list %>%
-  purrr::map(function(lr) {
-    plot_spatial_ccc_graph(
-      ccc_graph_list[[lr]],
-      graph_layout = "spatial",
-      edge_color = "LRscore",
-      clip = FALSE
-    ) +
-      ggtitle(lr)
-  })
-```
-
-```{r, fig.width=10, fig.height=5}
-wrap_plots(gp_list)
-```
-
-
 ```{r}
 ccog_1_minus_2 <-
-  ccc_graph_subtract(ccc_graph_list[[high_L_LR_list[1]]],
-                     ccc_graph_list[[high_L_LR_list[2]]])
+  ccc_graph_subtract(ccc_graph_list[[top_LR]],
+                     ccc_graph_list[[bottom_LR]])
 
 ccog_2_minus_1 <-
-  ccc_graph_subtract(ccc_graph_list[[high_L_LR_list[2]]],
-                     ccc_graph_list[[high_L_LR_list[1]]])
+  ccc_graph_subtract(ccc_graph_list[[bottom_LR]],
+                     ccc_graph_list[[top_LR]])
 ccog_diff <-
-  ccc_graph_diff(ccc_graph_list[[high_L_LR_list[1]]],
-                 ccc_graph_list[[high_L_LR_list[2]]])
+  ccc_graph_diff(ccc_graph_list[[top_LR]],
+                 ccc_graph_list[[bottom_LR]])
 ```
 
 
 
 ```{r}
 ccog_union <-
-  ccc_graph_union(ccc_graph_list[[high_L_LR_list[1]]],
-                  ccc_graph_list[[high_L_LR_list[2]]])
+  ccc_graph_union(ccc_graph_list[[top_LR]],
+                  ccc_graph_list[[bottom_LR]])
 
 ccog_intersect <-
-  ccc_graph_intersect(ccc_graph_list[[high_L_LR_list[1]]],
-                      ccc_graph_list[[high_L_LR_list[2]]])
+  ccc_graph_intersect(ccc_graph_list[[top_LR]],
+                      ccc_graph_list[[bottom_LR]])
 ```
 
 
@@ -322,3 +422,41 @@ plot_spatial_ccc_graph(
   which_on_top = "edge"
 ) 
 ```
+
+```{r}
+# top_x <-
+#   extract_ccc_graph_metrics(ccc_graph = ccc_graph_list[[top_LR]], level = "group")
+# bottom_x <-
+#   extract_ccc_graph_metrics(ccc_graph = ccc_graph_list[[bottom_LR]], level = "group")
+# top_x <-
+#   summarize_ccc_graph_metrics(ccc_graph = ccc_graph_list[top_LR], level = "group")
+# bottom_x <-
+#   summarize_ccc_graph_metrics(ccc_graph = ccc_graph_list[bottom_LR], level = "group")
+top_x <-
+  extract_ccc_graph_metrics(ccc_graph = ccc_graph_list[[top_LR]], level = "group") %>%
+  select(-contains("LR"))
+bottom_x <-
+  extract_ccc_graph_metrics(ccc_graph = ccc_graph_list[[bottom_LR]], level = "group") %>%
+  select(-any_of("LR"))
+
+# compute 
+xz <-
+  purrr::map(setNames(nm = colnames(top_x)), function(i) {
+    x <-
+      ks.test(top_x[[i]], bottom_x[[i]])
+    x[c("statistic", "p.value", "alternative", "method", "exact")] %>%
+      as_tibble()
+  }) %>%
+  bind_rows(.id = "name")
+```
+
+
+```{r}
+ccc_graph_metrics_tbl <-
+  ccc_graph_list %>%
+  purrr::map(function(cg) {
+    extract_ccc_graph_metrics(cg, level = "group")
+  }) %>%
+  bind_rows(.id = "LR")
+```
+
