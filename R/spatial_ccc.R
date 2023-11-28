@@ -22,6 +22,7 @@
 #'    distances. Default cutoff is 1.5 and
 #'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 #'    arranged, so by default, only computing nearest neighbors.
+#' @param LRpvalue_cutoff LRpvalue cutoff
 #' @param LRscore_cutoff minimum LRscore to keep
 #'
 #'
@@ -43,6 +44,7 @@ compute_spatial_ccc_tbl <-
            expression_min_prop = 0.05,
            spot_dist = calc_spot_dist(spe),
            spot_dist_cutoff = 1.5,
+           LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5) {
     #
     # spot_dist <- calc_spot_dist(spe)
@@ -60,6 +62,9 @@ compute_spatial_ccc_tbl <-
 
     # background/baseline expression
     c_mean <- mean(gexp)
+    c_sd <- sd(gexp)
+
+
 
     compute_LRscore <- function(lig, rec) {
 
@@ -82,7 +87,9 @@ compute_spatial_ccc_tbl <-
       sqrt.prod <-
         sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
 
-      tibble::tibble(spot_dist, LRscore = sqrt.prod / (sqrt.prod + c_mean)) %>%
+      tibble::tibble(spot_dist,
+                     LRscore = sqrt.prod / (sqrt.prod + c_mean),
+                     LRpvalue = pnorm(sqrt.prod, c_mean, c_sd, lower.tail = FALSE)) %>%
         # Weighted LR score to account for
         #   the attenuation of cell signaling due to
         #   traveling distance.
@@ -98,7 +105,8 @@ compute_spatial_ccc_tbl <-
 
         # temporarily disable the line below to calculate "p-value"?
         # now back to LRscore filtering
-        dplyr::filter(.data$LRscore > LRscore_cutoff) %>%
+        dplyr::filter(.data$LRscore > LRscore_cutoff,
+                      .data$LRpvalue < LRpvalue_cutoff) %>%
 
         # keep as many as possible, except LRscore = 0
         # dplyr::filter(LRscore > 0) %>%
@@ -154,18 +162,28 @@ compute_spatial_ccc_graph <-
            expression_min_prop = 0.05,
            spot_dist = calc_spot_dist(spe),
            spot_dist_cutoff = 1.5,
+           LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5) {
-    compute_spatial_ccc_tbl(
-      spe,
-      assay_name,
-      ligand,
-      receptor,
-      expression_min_prop,
-      spot_dist,
-      spot_dist_cutoff,
-      LRscore_cutoff
-    ) %>%
-      to_spatial_ccc_graph(get_spatial_data(spe))
+    ct <-
+      compute_spatial_ccc_tbl(
+        spe,
+        assay_name,
+        ligand,
+        receptor,
+        expression_min_prop,
+        spot_dist,
+        spot_dist_cutoff,
+        LRpvalue_cutoff,
+        LRscore_cutoff
+      )
+
+    if (nrow(ct) == 0) {
+      # empty graph
+      tidygraph::tbl_graph()
+    } else {
+      ct %>%
+        to_spatial_ccc_graph(get_spatial_data(spe))
+    }
   }
 
 
@@ -177,6 +195,10 @@ compute_spatial_ccc_graph <-
 #'
 #' @returns A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
+#'
+#' The data frame will only contain the spots with the distance (`norm.d`)
+#'   less than `spot_dist_cutoff`.  The default cutoff (`spot_dist_cutoff` = 1.5)
+#'   will leave only those with immediate neighboring cells.
 #'
 #' @export
 calc_spot_dist <-
@@ -192,6 +214,9 @@ calc_spot_dist <-
     spot_dist %>%
       dplyr::filter(.data$norm.d < spot_dist_cutoff)
   }
+
+
+
 
 
 #' Compute spatial CCC graphs over a list of LR pairs
@@ -212,6 +237,7 @@ compute_spatial_ccc_graph_list <-
            LRdb,
            expression_min_prop = 0.05,
            spot_dist_cutoff = 1.5,
+           LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5,
            workers = 1) {
 
@@ -248,37 +274,55 @@ compute_spatial_ccc_graph_list <-
       future::plan(future::multisession, workers = workers)
       on.exit(future::plan(future::sequential), add = TRUE)
 
-      furrr::future_map(Ks,
-                        function(k) {
-                          compute_spatial_ccc_graph(
-                            spe,
-                            assay_name,
-                            ligand = LRdb$ligand_gene_symbol[k],
-                            receptor = LRdb$receptor_gene_symbol[k],
-                            expression_min_prop,
-                            spot_dist,
-                            spot_dist_cutoff,
-                            LRscore_cutoff
-                          )
-                        },
-                        # making sure "dplyr" package is attached to future parallel processes
-                        .options = furrr::furrr_options(seed = TRUE,
-                                                        packages = c("dplyr")))
+      res <-
+        furrr::future_map(Ks,
+                          function(k) {
+                            compute_spatial_ccc_graph(
+                              spe,
+                              assay_name,
+                              ligand = LRdb$ligand_gene_symbol[k],
+                              receptor = LRdb$receptor_gene_symbol[k],
+                              expression_min_prop,
+                              spot_dist,
+                              spot_dist_cutoff,
+                              LRpvalue_cutoff,
+                              LRscore_cutoff
+                            )
+                          },
+                          # making sure "dplyr" package is attached to future parallel processes
+                          .options = furrr::furrr_options(seed = TRUE,
+                                                          packages = c("dplyr")))
     } else {
-      purrr::map(Ks,
-                 function(k) {
-                   compute_spatial_ccc_graph(
-                     spe,
-                     assay_name,
-                     ligand = LRdb$ligand_gene_symbol[k],
-                     receptor = LRdb$receptor_gene_symbol[k],
-                     expression_min_prop,
-                     spot_dist,
-                     spot_dist_cutoff,
-                     LRscore_cutoff
-                   )
-                 })
+      res <-
+        purrr::map(Ks,
+                   function(k) {
+                     compute_spatial_ccc_graph(
+                       spe,
+                       assay_name,
+                       ligand = LRdb$ligand_gene_symbol[k],
+                       receptor = LRdb$receptor_gene_symbol[k],
+                       expression_min_prop,
+                       spot_dist,
+                       spot_dist_cutoff,
+                       LRpvalue_cutoff,
+                       LRscore_cutoff
+                     )
+                   })
     }
+
+    n_edges <-
+      res %>%
+      purrr::map(function(r) {
+        if (is.null(r)) {
+          0
+        } else {
+          activate(r, "edges") %>%
+            as_tibble() %>%
+            nrow()
+        }
+      })
+
+    res[n_edges > 0]
   }
 
 
@@ -403,6 +447,46 @@ extract_spatial_ccc_graph_edges <-
 
 
 
+#' Extract spatial CCC graph metrics
+#'
+#' @param ccc_graph spatial CCC graph, in `tidygraph` format,
+#'                  an element in the output of [to_spatial_ccc_graph_list()]
+#'                  or [compute_spatial_ccc_graph_list()]
+#' @inheritParams summarize_ccc_graph_metrics
+#'
+#' @returns one row data.frame with graph metrics
+#'
+#' @export
+extract_ccc_graph_metrics <- function(ccc_graph,
+                                      level = c("graph", "group")) {
+
+  if (length(level) > 1) {
+    level <- level[1]
+  }
+
+  level_option <- c("graph", "group")
+
+  if (length(level) != 1 ||
+      is.na(pmatch(level, level_option))) {
+    cli::cli_abort(message = "{.var level} should be a string, either 'graph' or 'group'")
+  }
+
+  level <- level_option[pmatch(level, level_option)]
+
+  if (level == "graph") {
+    ccc_graph %>%
+      tidygraph::activate("nodes") %>%
+      tibble::as_tibble() %>%
+      dplyr::select(tidyselect::starts_with("graph_")) %>%
+      dplyr::slice_head(n = 1)
+  } else {
+    ccc_graph %>%
+      tidygraph::activate("nodes") %>%
+      tibble::as_tibble() %>%
+      dplyr::select(.data$group, tidyselect::starts_with("group_")) %>%
+      dplyr::distinct()
+  }
+}
 
 
 #' Summarize spatial CCC graph list to graph/group metrics table
@@ -603,7 +687,7 @@ add_annots_to_nodes <- function(ccog, node_annots, id_column = "name") {
 
 #' Add node annotations to edges
 #'
-#' Annotations are added to 'src' and 'dst' nodes, and
+#' Note annotations are transferred to edges, and
 #'   those are suffixed with "_src" and "_dst", respectively.
 #'
 #' @param ccog CCC graph
@@ -612,7 +696,7 @@ add_annots_to_nodes <- function(ccog, node_annots, id_column = "name") {
 #' @returns CCC graph with revised annotations for edges
 #'
 #' @export
-add_node_annot_to_edges <- function(ccog, node_annot_colname) {
+transfer_node_annots_to_edges <- function(ccog, node_annot_colname) {
   node_annot <-
     ccog %>%
     tidygraph::activate("nodes") %>%
@@ -628,12 +712,6 @@ add_node_annot_to_edges <- function(ccog, node_annot_colname) {
                            dplyr::rename_with( ~ paste0(.x, "_dst"),!tidyselect::all_of("name")),
                          by = c("dst" = "name"))
 }
-
-#
-# Internal functions =====
-#
-
-
 
 
 
@@ -670,7 +748,9 @@ to_spatial_ccc_graph <-
     }
 
     ccc_by_cell <-
+      # summarize LRscores (edges) to cell (node)
       summarise_ccc_by_cell(ccc_tbl) %>%
+      #
       add_spatial_data(spatial_data)
 
     ccc_tbl %>%
@@ -683,6 +763,35 @@ to_spatial_ccc_graph <-
       #
       add_spatial_ccc_graph_metrics()
   }
+
+
+
+#' Convert CCC graph to CCC table
+#'
+#'
+#' @param ccc_graph an output of [compute_spatial_ccc_graph()]
+#'
+#' @returns spatial CCC table -- `tibble`
+#'
+#' @export
+to_spatial_ccc_tbl <-
+  function(ccc_graph) {
+
+    ccc_graph %>%
+      tidygraph::activate("edges") %>%
+      tibble::as_tibble() %>%
+      dplyr::select(-to, -from)
+  }
+
+
+
+
+#
+# Internal functions =====
+#
+
+
+
 
 
 #' Calculate (combined) percent rank of n and LRscore
@@ -1008,51 +1117,18 @@ add_spatial_ccc_graph_metrics_to_edges <-
   }
 
 
-#' Extract spatial CCC graph metrics
-#'
-#' @param ccc_graph spatial CCC graph, in `tidygraph` format,
-#'                  an element in the output of [to_spatial_ccc_graph_list()]
-#'                  or [compute_spatial_ccc_graph_list()]
-#' @inheritParams summarize_ccc_graph_metrics
-#'
-#' @returns one row data.frame with graph metrics
-#'
-#' @noRd
-extract_ccc_graph_metrics <- function(ccc_graph,
-                                      level = c("graph", "group")) {
-
-  if (length(level) > 1) {
-    level <- level[1]
-  }
-
-  level_option <- c("graph", "group")
-
-  if (length(level) != 1 ||
-      is.na(pmatch(level, level_option))) {
-    cli::cli_abort(message = "{.var level} should be a string, either 'graph' or 'group'")
-  }
-
-  level <- level_option[pmatch(level, level_option)]
-
-  if (level == "graph") {
-    ccc_graph %>%
-      tidygraph::activate("nodes") %>%
-      tibble::as_tibble() %>%
-      dplyr::select(tidyselect::starts_with("graph_")) %>%
-      dplyr::slice_head(n = 1)
-  } else {
-    ccc_graph %>%
-      tidygraph::activate("nodes") %>%
-      tibble::as_tibble() %>%
-      dplyr::select(.data$group, tidyselect::starts_with("group_")) %>%
-      dplyr::distinct()
-  }
-}
 
 
 #' Summarize CCC table by (cell, LR)
 #'
 #' internal function
+#'
+#' summarize LRscores (edge) to cell (node) by
+#'   1) adding LRscores in all the edges connected to the cell as `src` or `dst`
+#'        LRscore.sum.src, LRscore.sum.dst
+#'        n.src, n.dst
+#'   2) n.inflow = n.dst - n.src
+#'   3) LRscore.sum.inflow = LRscore.sum.dst - LRscore.sum.src
 #'
 #' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc_tbl()].
 #'
