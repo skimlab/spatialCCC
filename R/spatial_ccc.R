@@ -757,11 +757,11 @@ to_spatial_ccc_graph <-
       to_barebone_spatial_ccc_graph() %>%
       tidygraph::activate("nodes") %>%
       dplyr::left_join(ccc_by_cell,
-                       by = c("name" = "cell_id")) %>%
+                       by = c("name" = "cell_id"))
       #
       # add various graph metrics to ccc_graph
       #
-      add_spatial_ccc_graph_metrics()
+      # add_spatial_ccc_graph_metrics()
   }
 
 
@@ -782,6 +782,125 @@ to_spatial_ccc_tbl <-
       tibble::as_tibble() %>%
       dplyr::select(-to, -from)
   }
+
+
+#' Add various graph metrics to spatial CCC graph
+#'
+#' See below and [tidygraph::graph_measures] for how these metrics are computed.
+#'
+#' @param sp_ccc_graph an output of [to_spatial_ccc_graph()]
+#' @param from_scratch if TRUE, the existing metrics are wiped clean.
+#'
+#' @export
+#'
+add_spatial_ccc_graph_metrics <-
+  function(sp_ccc_graph, from_scratch = TRUE) {
+
+    #
+    # clean up previous metrics
+    #
+    if (from_scratch) {
+      sp_ccc_graph %<>%
+        # clean up nodes
+        tidygraph::activate("nodes") %>%
+        dplyr::select(-tidyselect::starts_with("graph"), -tidyselect::starts_with("group")) %>%
+
+        # clean up edges
+        tidygraph::activate("edges") %>%
+        dplyr::select(-tidyselect::starts_with("graph"), -tidyselect::starts_with("group"))
+    }
+
+    #
+    # first compute graph metrics for nodes
+    #   then, later copy those to edges
+    sp_ccc_graph %<>%
+
+      # assign graph metrics to node
+      tidygraph::activate("nodes") %>%
+      ## overall graph
+      tidygraph::mutate(
+        graph_n_nodes = tidygraph::graph_order(),
+        graph_n_edges = tidygraph::graph_size(),
+
+        graph_component_count = tidygraph::graph_component_count(),
+        graph_motif_count = tidygraph::graph_motif_count(),
+        graph_diameter = tidygraph::graph_diameter(directed = TRUE),
+        graph_un_diameter = tidygraph::graph_diameter(directed = FALSE),
+
+        # maybe not useful for differentiating
+        graph_mean_dist = tidygraph::graph_mean_dist(),
+
+        graph_circuit_rank = .data$graph_n_edges - .data$graph_n_nodes + graph_component_count,
+        graph_reciprocity = tidygraph::graph_reciprocity()
+      ) %>%
+      tidygraph::morph(tidygraph::to_undirected) %>%
+      tidygraph::mutate(graph_clique_num = tidygraph::graph_clique_num(),
+                        graph_clique_count = tidygraph::graph_clique_count()) %>%
+      tidygraph::unmorph() %>%
+
+      ## find subgraphs
+      tidygraph::mutate(group = tidygraph::group_components()) %>%
+      tidygraph::morph(tidygraph::to_components) %>%
+
+      ### for each subgraph
+      tidygraph::mutate(
+        group_n_nodes = tidygraph::graph_order(),
+        group_n_edges = tidygraph::graph_size(),
+
+        group_adhesion = tidygraph::graph_adhesion(),
+
+        group_motif_count = tidygraph::graph_motif_count(),
+        group_diameter = tidygraph::graph_diameter(directed = TRUE),
+        group_un_diameter = tidygraph::graph_diameter(directed = FALSE),
+
+        # maybe not useful for differentiating
+        group_mean_dist = tidygraph::graph_mean_dist(),
+
+        # probably not informative
+        group_girth = tidygraph::graph_girth(),
+
+        # group_n_edges - group_n_nodes + group_componet_count (=1)
+        group_circuit_rank = .data$group_n_edges - .data$group_n_nodes + 1,
+        group_reciprocity = tidygraph::graph_reciprocity()
+
+      ) %>%
+      tidygraph::unmorph()
+
+    sp_ccc_graph %>%
+      add_spatial_ccc_graph_metrics_to_edges()
+  }
+
+
+#' Copy graph metrics from nodes to edges
+#'
+#' Internal function
+#' @inheritParams add_spatial_ccc_graph_metrics
+#'
+#' @export
+#'
+add_spatial_ccc_graph_metrics_to_edges <-
+  function(sp_ccc_graph, from_scratch = TRUE) {
+    sp_ccc_graph_nodes_df <-
+      sp_ccc_graph %>%
+      tidygraph::activate("nodes") %>%
+      tibble::as_tibble()
+
+    if (from_scratch) {
+      sp_ccc_graph %<>%
+        tidygraph::activate("edges") %>%
+        # clean up previous metrics
+        dplyr::select(-tidyselect::starts_with("graph"),-tidyselect::starts_with("group"))
+    }
+
+    sp_ccc_graph %>%
+      dplyr::left_join(
+        sp_ccc_graph_nodes_df %>%
+          dplyr::select(.data$name, tidyselect::starts_with("graph_"),
+                        .data$group, tidyselect::starts_with("group_")),
+        by = c("src" = "name")
+      )
+  }
+
 
 
 
@@ -999,122 +1118,6 @@ add_spatial_data <-
   }
 
 
-
-#' Add various graph metrics to spatial CCC graph
-#'
-#' See below and [tidygraph::graph_measures] for how these metrics are computed.
-#'
-#' @param sp_ccc_graph an output of [to_spatial_ccc_graph()]
-#' @param from_scratch if TRUE, the existing metrics are wiped clean.
-#'
-#' @noRd
-#'
-add_spatial_ccc_graph_metrics <-
-  function(sp_ccc_graph, from_scratch = TRUE) {
-
-    #
-    # clean up previous metrics
-    #
-    if (from_scratch) {
-      sp_ccc_graph %<>%
-        # clean up nodes
-        tidygraph::activate("nodes") %>%
-        dplyr::select(-tidyselect::starts_with("graph"), -tidyselect::starts_with("group")) %>%
-
-        # clean up edges
-        tidygraph::activate("edges") %>%
-        dplyr::select(-tidyselect::starts_with("graph"), -tidyselect::starts_with("group"))
-    }
-
-    #
-    # first compute graph metrics for nodes
-    #   then, later copy those to edges
-    sp_ccc_graph %<>%
-
-      # assign graph metrics to node
-      tidygraph::activate("nodes") %>%
-      ## overall graph
-      tidygraph::mutate(
-        graph_n_nodes = tidygraph::graph_order(),
-        graph_n_edges = tidygraph::graph_size(),
-
-        graph_component_count = tidygraph::graph_component_count(),
-        graph_motif_count = tidygraph::graph_motif_count(),
-        graph_diameter = tidygraph::graph_diameter(directed = TRUE),
-        graph_un_diameter = tidygraph::graph_diameter(directed = FALSE),
-
-        # maybe not useful for differentiating
-        graph_mean_dist = tidygraph::graph_mean_dist(),
-
-        graph_circuit_rank = .data$graph_n_edges - .data$graph_n_nodes + graph_component_count,
-        graph_reciprocity = tidygraph::graph_reciprocity()
-      ) %>%
-      tidygraph::morph(tidygraph::to_undirected) %>%
-      tidygraph::mutate(graph_clique_num = tidygraph::graph_clique_num(),
-                        graph_clique_count = tidygraph::graph_clique_count()) %>%
-      tidygraph::unmorph() %>%
-
-      ## find subgraphs
-      tidygraph::mutate(group = tidygraph::group_components()) %>%
-      tidygraph::morph(tidygraph::to_components) %>%
-
-      ### for each subgraph
-      tidygraph::mutate(
-        group_n_nodes = tidygraph::graph_order(),
-        group_n_edges = tidygraph::graph_size(),
-
-        group_adhesion = tidygraph::graph_adhesion(),
-
-        group_motif_count = tidygraph::graph_motif_count(),
-        group_diameter = tidygraph::graph_diameter(directed = TRUE),
-        group_un_diameter = tidygraph::graph_diameter(directed = FALSE),
-
-        # maybe not useful for differentiating
-        group_mean_dist = tidygraph::graph_mean_dist(),
-
-        # probably not informative
-        group_girth = tidygraph::graph_girth(),
-
-        # group_n_edges - group_n_nodes + group_componet_count (=1)
-        group_circuit_rank = .data$group_n_edges - .data$group_n_nodes + 1,
-        group_reciprocity = tidygraph::graph_reciprocity()
-
-      ) %>%
-      tidygraph::unmorph()
-
-    sp_ccc_graph %>%
-      add_spatial_ccc_graph_metrics_to_edges()
-  }
-
-
-#' Copy graph metrics from nodes to edges
-#'
-#' Internal function
-#' @inheritParams add_spatial_ccc_graph_metrics
-#'
-#' @noRd
-add_spatial_ccc_graph_metrics_to_edges <-
-  function(sp_ccc_graph, from_scratch = TRUE) {
-    sp_ccc_graph_nodes_df <-
-      sp_ccc_graph %>%
-      tidygraph::activate("nodes") %>%
-      tibble::as_tibble()
-
-    if (from_scratch) {
-      sp_ccc_graph %<>%
-        tidygraph::activate("edges") %>%
-        # clean up previous metrics
-        dplyr::select(-tidyselect::starts_with("graph"),-tidyselect::starts_with("group"))
-    }
-
-    sp_ccc_graph %>%
-      dplyr::left_join(
-        sp_ccc_graph_nodes_df %>%
-          dplyr::select(.data$name, tidyselect::starts_with("graph_"),
-                        .data$group, tidyselect::starts_with("group_")),
-        by = c("src" = "name")
-      )
-  }
 
 
 

@@ -26,13 +26,13 @@ library(patchwork)
 set.seed(100)
 
 LRdb_m <- 
-  get_LRdb("mouse", n_samples = 20) 
+  get_LRdb("mouse", n_samples = 50) 
 
 LRdb_full <-
   get_LRdb("mouse")
 
-#LRdb <- LRdb_m; n_workers = 1
-LRdb <- LRdb_full; n_workers = 8
+LRdb <- LRdb_m; n_workers = 1
+#LRdb <- LRdb_full; n_workers = 8
 ```
 
 
@@ -116,6 +116,39 @@ ccc_graph_tbl <-
       as_tibble()
   }) %>%
   bind_rows(.id = "LR")
+```
+
+
+```{r}
+ccc_graph_tbl %>%
+  group_by(LR) %>% 
+  summarise(n = n()) %>%
+  arrange(desc(n))
+```
+
+
+```{r, fig.width=8}
+LR_of_interest <- "App_Lrp1"
+
+ccc_graph_interfacing <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate("edges") %>%
+  tidygraph::filter(mclust_8_src != mclust_8_dst) %>%
+  tidy_up_ccc_graph()
+
+
+plot_spatial_ccc_graph(
+  ccc_graph = ccc_graph_interfacing,
+  tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  graph_layout = "spatial",
+  edges_expanded_to_group = TRUE,
+  node_color = "mclust_8",
+  node_size = 2.6,
+  edge_color = "LRscore",
+  show_arrow = TRUE,
+  clip = TRUE,
+  which_on_top = "node"
+) 
 ```
 
 
