@@ -20,6 +20,10 @@ arranged, so by default, only computing nearest neighbors.}
 \value{
 A data fame with computed distance including both \code{d} and \code{norm.d}.
 \code{norm.d} is a multiple of the shortest distance between spots.
+
+The data frame will only contain the spots with the distance (\code{norm.d})
+less than \code{spot_dist_cutoff}.  The default cutoff (\code{spot_dist_cutoff} = 1.5)
+will leave only those with immediate neighboring cells.
 }
 \description{
 Calculate distance between spots

@@ -31,7 +31,13 @@ LRdb_m <-
 LRdb_full <-
   get_LRdb("mouse")
 
+
+# comment the line below when testing
+# uncomment the line before uploading to github
 LRdb <- LRdb_m; n_workers = 1
+
+# uncomment the line below when testing
+# comment the line before uploading to github
 #LRdb <- LRdb_full; n_workers = 8
 ```
 
@@ -50,6 +56,10 @@ spe_brain <-
 spe_brain <- scater::logNormCounts(spe_brain)
 ```
 
+
+```{r}
+
+```
 
 
 ## Cell cluster data
@@ -123,7 +133,7 @@ ccc_graph_tbl <-
 ccc_graph_tbl %>%
   group_by(LR) %>% 
   summarise(n = n()) %>%
-  arrange(desc(n))
+  arrange(desc(n)) 
 ```
 
 
@@ -143,12 +153,38 @@ plot_spatial_ccc_graph(
   graph_layout = "spatial",
   edges_expanded_to_group = TRUE,
   node_color = "mclust_8",
-  node_size = 2.6,
+  node_size = 1.6,
+  edge_color = "LRscore",
+  edge_width = 1,
+  show_arrow = TRUE,
+  clip = TRUE,
+  which_on_top = "edge"
+) 
+```
+
+
+```{r, fig.width=8}
+LR_of_interest <- "App_Lrp1"
+
+ccc_graph_interfacing <-
+  ccc_graph_list[[LR_of_interest]] %>%
+  tidygraph::activate("edges") %>%
+  tidygraph::filter(mclust_8_src != mclust_8_dst) %>%
+  tidy_up_ccc_graph()
+
+
+plot_spatial_ccc_graph(
+  ccc_graph = ccc_graph_list[[LR_of_interest]],
+  tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  graph_layout = "spatial",
+  edges_expanded_to_group = TRUE,
+  node_color = "LRscore.sum.inflow",
+  node_size = 2,
   edge_color = "LRscore",
   show_arrow = TRUE,
   clip = TRUE,
   which_on_top = "node"
-) 
+)  
 ```
 
 

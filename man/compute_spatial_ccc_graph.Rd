@@ -12,6 +12,7 @@ compute_spatial_ccc_graph(
   expression_min_prop = 0.05,
   spot_dist = calc_spot_dist(spe),
   spot_dist_cutoff = 1.5,
+  LRpvalue_cutoff = 0.05,
   LRscore_cutoff = 0.5
 )
 }
@@ -33,6 +34,8 @@ with non-zero expression value (default: 0.05)}
 distances. Default cutoff is 1.5 and
 it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 arranged, so by default, only computing nearest neighbors.}
+
+\item{LRpvalue_cutoff}{LRpvalue cutoff}
 
 \item{LRscore_cutoff}{minimum LRscore to keep}
 }

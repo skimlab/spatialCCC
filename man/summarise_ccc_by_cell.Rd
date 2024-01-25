@@ -12,3 +12,13 @@ summarise_ccc_by_cell(ccc_tbl)
 \description{
 internal function
 }
+\details{
+summarize LRscores (edge) to cell (node) by
+\enumerate{
+\item adding LRscores in all the edges connected to the cell as \code{src} or \code{dst}
+LRscore.sum.src, LRscore.sum.dst
+n.src, n.dst
+\item n.inflow = n.dst - n.src
+\item LRscore.sum.inflow = LRscore.sum.dst - LRscore.sum.src
+}
+}

@@ -61,10 +61,13 @@ compute_spatial_ccc_tbl <-
     rowAnnots <- subset(rowAnnots, subset = subset_idx)
 
     # background/baseline expression
-    c_mean <- mean(gexp)
-    c_sd <- sd(gexp)
+    # c_mean <- mean(gexp)
+    # c_sd <- sd(gexp)
 
-
+    # background/baseline expression,
+    #   corrected by removing all zero expressions
+    c_mean <- mean(gexp[gexp > 0])
+    c_sd <- sd(gexp[gexp > 0 ])
 
     compute_LRscore <- function(lig, rec) {
 
@@ -87,9 +90,11 @@ compute_spatial_ccc_tbl <-
       sqrt.prod <-
         sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
 
+
       tibble::tibble(spot_dist,
                      LRscore = sqrt.prod / (sqrt.prod + c_mean),
                      LRpvalue = pnorm(sqrt.prod, c_mean, c_sd, lower.tail = FALSE)) %>%
+        mutate(LRpvalue.adj = p.adjust(LRpvalue)) %>%
         # Weighted LR score to account for
         #   the attenuation of cell signaling due to
         #   traveling distance.
@@ -320,9 +325,28 @@ compute_spatial_ccc_graph_list <-
             as_tibble() %>%
             nrow()
         }
-      })
+      }) %>%
+      unlist()
 
-    res[n_edges > 0]
+    # remove LR with no result
+    res <- res[n_edges > 0]
+
+
+    n_edges <-
+      res %>%
+      purrr::map(function(r) {
+        if (is.null(r)) {
+          0
+        } else {
+          activate(r, "edges") %>%
+            as_tibble() %>%
+            nrow()
+        }
+      }) %>%
+      unlist()
+
+    # order CCC graph in descending order
+    res[rev(order(n_edges))]
   }
 
 
