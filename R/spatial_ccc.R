@@ -1,3 +1,44 @@
+#' Normalize gene expression data
+#'
+#' Normalize gene expression data via
+#' term frequency-inverse document frequency (TF-IDF) transformation
+#' to maximize LR specificity.
+#'
+#' Gene expression itself cannot represent the specificity of
+#' ligand/receptor binding. Zhang et al. proposed
+#' term frequency-inverse document frequency (TF-IDF) transformation
+#' to improve the specificity of ligand/receptor binding.
+#'
+#'    \deqn{E = e_{i,j} / \sum_{i=j}^m e_{i,j} \cdot \log(1 + n/e_{i,j}) \cdot m}
+#'
+#' where \eqn{e_{i,j}} is the expression value of gene \eqn{i} in cell \eqn{j},
+#' with \eqn{m} genes and \eqn{n} cells.
+#'
+#' [Ref:] 2.4 Pipeline for intercellular communication analysis
+#'      In [Zhang et al., Bioinformatics 37(14): 2025-2032](https://doi.org/10.1093/bioinformatics/btab036)
+#'
+#' @param spe SpatialExperiment object
+#' @param assay_name assay name in string
+#'
+#' @param gexp gene expression matrix
+#'
+#' @returns SpatialExperiment object
+#'          in `normalize_for_LR_specificity(...)`
+#'
+#' @rdname normalize_for_LR_specificity
+#' @export
+normalize_for_LR_specificity <- function(spe, assay_name = "logcounts") {
+  gexp <-
+    as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
+
+  SummarizedExperiment::assay(spe, "tdidf") <-
+    normalize_gexp_for_LR_specificity(gexp)
+
+  spe
+}
+
+
+
 #' Compute spatial ligand-receptor interactions
 #'
 #' Compute ligand-receptor interactions (LRscore) between neighboring spots.
@@ -22,6 +63,7 @@
 #'    distances. Default cutoff is 1.5 and
 #'    it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
 #'    arranged, so by default, only computing nearest neighbors.
+#' @param LRscore_type LRscore type: "sqrt.prod" or "sqrt.additive"
 #' @param LRpvalue_cutoff LRpvalue cutoff
 #' @param LRscore_cutoff minimum LRscore to keep
 #'
@@ -44,6 +86,7 @@ compute_spatial_ccc_tbl <-
            expression_min_prop = 0.05,
            spot_dist = calc_spot_dist(spe),
            spot_dist_cutoff = 1.5,
+           LRscore_type = "sqrt.additive",
            LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5) {
     #
@@ -51,6 +94,7 @@ compute_spatial_ccc_tbl <-
 
     gexp <-
       as.matrix(SummarizedExperiment::assays(spe)[[assay_name]])
+
     rowAnnots <- SingleCellExperiment::rowData(spe)
 
     # first remove genes with no expression at all
@@ -60,21 +104,24 @@ compute_spatial_ccc_tbl <-
     gexp <- gexp[subset_idx, ]
     rowAnnots <- subset(rowAnnots, subset = subset_idx)
 
-    # background/baseline expression
+    # background/baseline expression,
     # c_mean <- mean(gexp)
     # c_sd <- sd(gexp)
 
     # background/baseline expression,
     #   corrected by removing all zero expressions
-    c_mean <- mean(gexp[gexp > 0])
-    c_sd <- sd(gexp[gexp > 0 ])
+    # c_mean <- mean(gexp[gexp > 0])
+    # c_sd <- sd(gexp[gexp > 0 ])
 
-    compute_LRscore <- function(lig, rec) {
+    # LRscore_type: sqrt.prod or sqrt.additive
+    compute_LRscore <- function(lig, rec, LRscore_type = "sqrt.prod") {
 
       # ligand and receptor expression values
       lig_ids <- which(rowAnnots$symbol == lig)
       rec_ids <- which(rowAnnots$symbol == rec)
 
+      # use average expression
+      #   if multiple genes corresponding to ligands or receptors exist
       if (length(lig_ids) > 1) {
         lig_exp <- colMeans(gexp[lig_ids, ])
       } else {
@@ -87,13 +134,37 @@ compute_spatial_ccc_tbl <-
         rec_exp <- gexp[rec_ids, ]
       }
 
-      sqrt.prod <-
-        sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
+      # background/baseline expression
+      #   for ligand and receptor
+      lig_exp_mean <- mean(lig_exp)
+      rec_exp_mean <- mean(rec_exp)
 
+      #
+      # sqrt.prod <-
+      #   sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
+
+      LRscore_res <-
+        case_when (
+          LRscore_type == "sqrt.prod" ~
+            comp_LRscore_sqrt_prod(lig_exp[spot_dist$src],
+                                   rec_exp[spot_dist$dst],
+                                   lig_exp_mean, rec_exp_mean),
+          LRscore_type == "sqrt.additive" ~
+            comp_LRscore_sqrt_additive(lig_exp[spot_dist$src],
+                                       rec_exp[spot_dist$dst],
+                                       lig_exp_mean, rec_exp_mean),
+          .default =
+            comp_LRscore_sqrt_prod(lig_exp[spot_dist$src],
+                                   rec_exp[spot_dist$dst],
+                                   lig_exp_mean, rec_exp_mean)
+        )
 
       tibble::tibble(spot_dist,
-                     LRscore = sqrt.prod / (sqrt.prod + c_mean),
-                     LRpvalue = pnorm(sqrt.prod, c_mean, c_sd, lower.tail = FALSE)) %>%
+                     LRscore_type = LRscore_type,
+                     LRscore = LRscore_res$LR_score,
+                     LRscore_base = LRscore_res$LR_score_base,
+                     # ignore LRpvalue for now (temporarily)
+                     LRpvalue = 0.01) %>%
         mutate(LRpvalue.adj = p.adjust(LRpvalue)) %>%
         # Weighted LR score to account for
         #   the attenuation of cell signaling due to
@@ -119,7 +190,9 @@ compute_spatial_ccc_tbl <-
         dplyr::mutate(ligand = lig, receptor = rec)
     }
 
-    compute_LRscore(lig = ligand, rec = receptor) %>%
+    compute_LRscore(lig = ligand,
+                    rec = receptor,
+                    LRscore_type = LRscore_type) %>%
       dplyr::relocate(.data$ligand, .data$receptor, .after = "norm.d")
   }
 
@@ -167,6 +240,7 @@ compute_spatial_ccc_graph <-
            expression_min_prop = 0.05,
            spot_dist = calc_spot_dist(spe),
            spot_dist_cutoff = 1.5,
+           LRscore_type = "sqrt.additive",
            LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5) {
     ct <-
@@ -178,6 +252,7 @@ compute_spatial_ccc_graph <-
         expression_min_prop,
         spot_dist,
         spot_dist_cutoff,
+        LRscore_type,
         LRpvalue_cutoff,
         LRscore_cutoff
       )
@@ -203,7 +278,7 @@ compute_spatial_ccc_graph <-
 #'
 #' The data frame will only contain the spots with the distance (`norm.d`)
 #'   less than `spot_dist_cutoff`.  The default cutoff (`spot_dist_cutoff` = 1.5)
-#'   will leave only those with immediate neighboring cells.
+#'   will leave only those with immediately neighboring cells.
 #'
 #' @export
 calc_spot_dist <-
@@ -242,6 +317,7 @@ compute_spatial_ccc_graph_list <-
            LRdb,
            expression_min_prop = 0.05,
            spot_dist_cutoff = 1.5,
+           LRscore_type = "sqrt.additive",
            LRpvalue_cutoff = 0.05,
            LRscore_cutoff = 0.5,
            workers = 1) {
@@ -290,6 +366,7 @@ compute_spatial_ccc_graph_list <-
                               expression_min_prop,
                               spot_dist,
                               spot_dist_cutoff,
+                              LRscore_type,
                               LRpvalue_cutoff,
                               LRscore_cutoff
                             )
@@ -309,6 +386,7 @@ compute_spatial_ccc_graph_list <-
                        expression_min_prop,
                        spot_dist,
                        spot_dist_cutoff,
+                       LRscore_type,
                        LRpvalue_cutoff,
                        LRscore_cutoff
                      )
@@ -703,10 +781,19 @@ spatialCCC_example <- function(path = NULL) {
 #' @returns CCC graph with revised annotations for nodes
 #'
 #' @export
-add_annots_to_nodes <- function(ccog, node_annots, id_column = "name") {
+add_annots_to_nodes <- function(ccog, node_annots, id_column = "") {
+
+  if (id_column == "") {
+    node_annots <-
+      as_tibble(node_annots, rownames = "name")
+  } else {
+    node_annots <-
+      rename(name = id_column)
+  }
+
   ccog %>%
     tidygraph::activate("nodes") %>%
-    tidygraph::left_join(node_annots, by = c("name" = id_column))
+    tidygraph::left_join(node_annots, by = "name")
 }
 
 #' Add node annotations to edges
@@ -722,7 +809,7 @@ add_annots_to_nodes <- function(ccog, node_annots, id_column = "name") {
 #'
 #'
 #' @export
-transfer_node_annots_to_edges <- function(ccog, node_annot_colname) {
+transfer_node_annots_to_edges <- function(ccog, node_annot_colname, target_name = node_annot_colname) {
   if (!is.null(ccog)) {
     node_annot <-
       ccog %>%
@@ -822,6 +909,8 @@ to_spatial_ccc_tbl <-
 #' @param sp_ccc_graph an output of [to_spatial_ccc_graph()]
 #' @param from_scratch if TRUE, the existing metrics are wiped clean.
 #'
+#' @return spatical_ccc_graph
+#'
 #' @export
 #'
 add_spatial_ccc_graph_metrics <-
@@ -852,25 +941,40 @@ add_spatial_ccc_graph_metrics <-
       tidygraph::mutate(
         graph_n_nodes = tidygraph::graph_order(),
         graph_n_edges = tidygraph::graph_size(),
-
         graph_component_count = tidygraph::graph_component_count(),
-        graph_motif_count = tidygraph::graph_motif_count(),
+
+        # all zero, so not informative
+        # graph_adhesion = tidygraph::graph_adhesion(),
+
+        # these two metrics are similar
         graph_diameter = tidygraph::graph_diameter(directed = TRUE),
-        graph_un_diameter = tidygraph::graph_diameter(directed = FALSE),
-
-        # maybe not useful for differentiating
         graph_mean_dist = tidygraph::graph_mean_dist(),
+        graph_reciprocity = tidygraph::graph_reciprocity(),
 
-        graph_circuit_rank = .data$graph_n_edges - .data$graph_n_nodes + graph_component_count,
-        graph_reciprocity = tidygraph::graph_reciprocity()
+        # probably not informative
+        # graph_radius = tidygraph::graph_radius(mode = "out"),
+        # graph_un_diameter = tidygraph::graph_diameter(directed = FALSE),
+        # graph_girth = tidygraph::graph_girth(),
+
+        # the following metrics are similar to LRscore_sum
+        graph_motif_count = tidygraph::graph_motif_count(),
+        graph_asym_count = unlist(tidygraph::graph_asym_count()),
+        # circuit_rank = n_edges - n_nodes + componet_count
+        graph_circuit_rank = .data$graph_n_edges - .data$graph_n_nodes + graph_component_count
+
       ) %>%
       tidygraph::morph(tidygraph::to_undirected) %>%
-      tidygraph::mutate(graph_clique_num = tidygraph::graph_clique_num(),
-                        graph_clique_count = tidygraph::graph_clique_count()) %>%
+      tidygraph::mutate(graph_clique_count = tidygraph::graph_clique_count()) %>%
       tidygraph::unmorph() %>%
 
       ## find subgraphs
       tidygraph::mutate(group = tidygraph::group_components()) %>%
+
+      # can be estimated only after group is identified
+      tidygraph::mutate(
+        graph_modularity = tidygraph::graph_modularity(group)
+      ) %>%
+
       tidygraph::morph(tidygraph::to_components) %>%
 
       ### for each subgraph
@@ -878,21 +982,25 @@ add_spatial_ccc_graph_metrics <-
         group_n_nodes = tidygraph::graph_order(),
         group_n_edges = tidygraph::graph_size(),
 
-        group_adhesion = tidygraph::graph_adhesion(),
+        # all zero, so not informative
+        # group_adhesion = tidygraph::graph_adhesion(),
 
-        group_motif_count = tidygraph::graph_motif_count(),
         group_diameter = tidygraph::graph_diameter(directed = TRUE),
-        group_un_diameter = tidygraph::graph_diameter(directed = FALSE),
-
-        # maybe not useful for differentiating
         group_mean_dist = tidygraph::graph_mean_dist(),
+        group_reciprocity = tidygraph::graph_reciprocity(),
 
         # probably not informative
-        group_girth = tidygraph::graph_girth(),
+        # group_girth = tidygraph::graph_girth(),
+        # group_radius = tidygraph::graph_radius(mode = "out"),
+        # group_un_diameter = tidygraph::graph_diameter(directed = FALSE),
 
-        # group_n_edges - group_n_nodes + group_componet_count (=1)
-        group_circuit_rank = .data$group_n_edges - .data$group_n_nodes + 1,
-        group_reciprocity = tidygraph::graph_reciprocity()
+        # not applicable here
+        # group_modularity = tidygraph::graph_modularity(),
+
+        group_motif_count = tidygraph::graph_motif_count(),
+        group_asym_count = unlist(tidygraph::graph_asym_count()),
+        # circuit_rank = n_edges - n_nodes + componet_count (=1)
+        group_circuit_rank = .data$group_n_edges - .data$group_n_nodes + 1
 
       ) %>%
       tidygraph::unmorph()
@@ -904,8 +1012,9 @@ add_spatial_ccc_graph_metrics <-
 
 #' Copy graph metrics from nodes to edges
 #'
-#' Internal function
 #' @inheritParams add_spatial_ccc_graph_metrics
+#'
+#' This is run internally by [add_spatial_ccc_graph_metrics()]
 #'
 #' @export
 #'
@@ -933,6 +1042,35 @@ add_spatial_ccc_graph_metrics_to_edges <-
   }
 
 
+#' Add metadata to an object
+#'
+#' @param spe SpatialExperiment object
+#' @param mdata additional metadata to be added [data frame]
+#' @param replace existing columns are replaced if TRUE, and
+#'  the function stops if FALSE, when there is a conflict in column headings.
+#'
+#' @return SpatialExperiment object
+#'
+#' @export
+#'
+addMetadata <- function(spe, mdata, replace = FALSE) {
+  cData <- SummarizedExperiment::colData(spe)
+  colnames_cData <- colnames(cData)
+  colnames_mdata <- colnames(mdata)
+
+  if (all(length(intersect(colnames_cData, colnames_mdata)) > 0, !replace)) {
+    cli_abort(paste("column names conflicts with the existing column names:",
+                    paste(intersect(colnames_cData, colnames_mdata), collapse = ", ")))
+  }
+
+  mdata <- mdata[rownames(cData), ]
+
+  cData[, colnames_mdata] <- mdata
+
+  SummarizedExperiment::colData(spe) <- cData
+
+  spe
+}
 
 
 
@@ -941,6 +1079,78 @@ add_spatial_ccc_graph_metrics_to_edges <-
 #
 
 
+#' @rdname normalize_for_LR_specificity
+#'
+#' @returns TF-IDF normalized gene expression matrix
+#'          in `normalize_gexp_for_LR_specificity(...)`
+normalize_gexp_for_LR_specificity <- function(gexp) {
+  m <- nrow(gexp)  # m genes
+  n <- ncol(gexp)  # n cells
+
+  gexp_norm <- gexp
+
+  rsums <- rowSums(gexp)
+  csums <- colSums(gexp)
+
+  for (ii in 1:m) {
+    for (jj in 1:n) {
+      gexp_norm[ii, jj] <-
+        gexp[ii, jj] / csums[ii] * log(1 + n/rsums[jj]) * m
+    }
+  }
+
+  # when expression value is 0, log(...) returns Inf
+  #  and Inf * ... becomes NaN, which are replaced by ZERO.
+  gexp_norm[is.nan(gexp_norm) | is.na(gexp_norm) | is.infinite(gexp_norm)] <- 0
+
+  gexp_norm
+}
+
+
+# compute LRscore as sqrt(LR)/(sqrt(LR) + mean)
+# l_exp - expressions of ligand at source cells/spots
+# r_exp - expressions of receptor at target cells/spots
+comp_LRscore_sqrt_prod_1 <- function(l_exp, r_exp, c_mean, c_sd) {
+  sqrt.prod <- sqrt(l_exp * r_exp)
+  LR_scores <- sqrt.prod / (sqrt.prod + c_mean)
+  LR_scores_pvals <- pnorm(sqrt.prod, c_mean, c_sd, lower.tail = FALSE)
+
+  list(LR_score = LR_scores,
+       p.value = LR_scores_pvals)
+}
+
+comp_LRscore_sqrt_prod <- function(l_exp, r_exp, l_mean_exp, r_mean_exp) {
+  sqrt.prod <- sqrt(l_exp * r_exp)
+  mean_sqrt.prod <- sqrt(l_mean_exp * r_mean_exp)
+
+  LR_scores <- sqrt.prod / (sqrt.prod + mean_sqrt.prod)
+
+  list(LR_score = LR_scores,
+       LR_score_base = mean_sqrt.prod)
+  # LR_scores is (0, 1)
+}
+
+
+# compute LRscore as sqrt(L^2 + R^2)
+comp_LRscore_sqrt_additive_1 <- function(l_exp, r_exp, c_mean, c_sd) {
+  LR_scores <- sqrt(l_exp^2 + r_exp^2)  # sqrt.additive
+  LR_scores_pvals <- pnorm(LR_scores, c_mean, c_sd, lower.tail = FALSE)
+
+  list(LR_score = LR_scores,
+       p.value = LR_scores_pvals)
+}
+
+comp_LRscore_sqrt_additive <- function(l_exp, r_exp, l_mean_exp, r_mean_exp) {
+  sse <- sqrt(l_exp^2 + r_exp^2)  # sqrt.additive
+  mean_sse <- sqrt(l_mean_exp^2 + r_mean_exp^2)
+
+  LR_scores <- sse/(sse + mean_sse)
+
+  list(LR_score = LR_scores,
+       LR_score_base = mean_sse)
+
+  #(sigmoid::sigmoid(LR_scores) - 0.5)*2
+}
 
 
 
@@ -980,7 +1190,9 @@ calculate_LR_percent_rank <- function(ccc_graph_ls) {
                  dd <- ccc_graph_el_tbl %>% dplyr::filter(.data$LR == lr)
                  tibble_row(
                    n = nrow(dd),
-                   LRscore = qprank(dd$LRscore_perc_rank,
+                   LRscore_type = dd$LRscore_type[1],
+                   LRscore_mean = mean(dd$LRscore),
+                   LRscore_50 = qprank(dd$LRscore_perc_rank,
                                     dd$LRscore,
                                     prank_cutoff = 0.5),
                    LRscore_75 = qprank(dd$LRscore_perc_rank,
@@ -1011,7 +1223,7 @@ calculate_LR_percent_rank <- function(ccc_graph_ls) {
   LR_tbl %>%
     dplyr::mutate(
       n_pRank = dplyr::percent_rank(.data$n),
-      LRscore_pRank = dplyr::percent_rank(.data$LRscore)
+      LRscore_pRank = dplyr::percent_rank(.data$LRscore_mean)
     ) %>%
     # geometric mean of percent ranks of n and LRscore
     dplyr::mutate(pRank = sqrt(.data$n_pRank * .data$LRscore_pRank)) %>%

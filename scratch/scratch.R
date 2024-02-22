@@ -41,3 +41,19 @@ sqrt.prod_all <- sqrt(lig_exp * rec_exp)
 sqrt.prod <-
   sqrt(lig_exp[spot_dist$src] * rec_exp[spot_dist$dst])
 
+
+
+
+counts_rsums <-
+  rowSums(as.matrix(SummarizedExperiment::assay(spe_brain, "counts")))
+spe_x <- spe_brain[counts_rsums > 0, ]
+
+rowAnnots <- SingleCellExperiment::rowData(spe_x)
+gene_set <- rowAnnots$symbol
+
+
+LRdb_filtered <-
+  LRdb %>%
+  dplyr::filter(ligand_gene_symbol %in% gene_set,
+                receptor_gene_symbol %in% gene_set)
+

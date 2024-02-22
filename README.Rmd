@@ -57,6 +57,12 @@ library(ggplot2)
 library(patchwork)
 ```
 
+
+```{r}
+options(future.globals.maxSize = 4*1024^3)
+```
+
+
   * Then, load built-in LR database.
 ```{r LRdb-loading}
 set.seed(100)
@@ -67,8 +73,8 @@ LRdb_m <-
 LRdb_full <-
   get_LRdb("mouse")
 
-LRdb <- LRdb_m
-#LRdb <- LRdb_full
+#LRdb <- LRdb_m
+LRdb <- LRdb_full
 ```
 
   * Load an example Visium spatial transcriptomic data
@@ -81,6 +87,39 @@ spe_brain <-
                                    data = "filtered")
 ```
 
+
+```{r}
+graphST <-
+  readr::read_csv(file.path(data_dir, "outs", "graphST.csv"), show_col_types = FALSE) 
+
+graphST <-
+  graphST %>%
+  mutate(across(c(starts_with("mclust"), "domain"), factor))
+
+graphST <-
+  data.frame(graphST, row.names = graphST$cell_id) %>%
+  select(-cell_id)
+```
+
+
+```{r}
+spe_brain <-
+  spe_brain %>%
+  addMetadata(graphST %>%
+                select(-in_tissue, -array_row, -array_col))
+```
+
+
+```{r}
+# remove genes with no expression in all cells
+counts_rsums <-
+  rowSums(as.matrix(SummarizedExperiment::assay(spe_brain, "counts")))
+
+spe_brain <- spe_brain[counts_rsums > 0, ]
+```
+
+
+
 ```{r}
 #spe_brain_org <- spe_brain
 #spe_brain <- spe_brain[spe_brain$array_row < 20, spe_brain$array_col < 40]
@@ -90,6 +129,9 @@ spe_brain <-
 ```{r visium-data-loading}
 # Log-Normalize
 spe_brain <- scater::logNormCounts(spe_brain)
+
+# Normalize for maximizing LR specificity
+# spe_brain <- normalize_for_LR_specificity(spe_brain)
 ```
 
 
@@ -97,16 +139,655 @@ spe_brain <- scater::logNormCounts(spe_brain)
 
   * Compute Cell-Cell Communications over ligand-receptor pairs
 ```{r compute-spatial-ccc, message=FALSE}
-#future::plan(future::multisession, workers = 8)
-
 ccc_graph_list <-
-  compute_spatial_ccc_graph_list(spe = spe_brain,
-                                 assay_name = "logcounts",
-                                 LRdb = LRdb,
-                                 workers = 8)
-
-#future::plan(future::sequential)
+  compute_spatial_ccc_graph_list(
+    spe = spe_brain,
+    assay_name = "logcounts",
+    LRdb = LRdb,
+    expression_min_prop = 0,
+    LRscore_type = "sqrt.prod",
+    LRscore_cutoff = 0.5,
+    LRpvalue_cutoff = 1,
+    workers = 8
+  )
 ```
+
+
+```{r}
+ccc_graph_list <-
+  ccc_graph_list %>%
+  purrr::map(function(cog) {
+    add_spatial_ccc_graph_metrics(cog)
+  })
+```
+
+
+```{r}
+ccc_graph_list <-
+  ccc_graph_list %>%
+  purrr::map(function(cog) {
+    transfer_node_annots_to_edges(cog, "mclust")
+  })
+```
+
+
+```{r}
+ccc_graph_tbl <-
+  ccc_graph_list %>%
+  purrr::map(function(c) {
+    to_spatial_ccc_tbl(c)
+  }) %>%
+  bind_rows(.id = "LR")
+```
+
+
+
+```{r}
+# x <-
+#   ccc_graph_tbl %>%
+#   summarize_ccc_graph_tbl_by_LR()
+```
+
+
+
+
+```{r}
+spot_dist <-
+  calc_spot_dist(spe_brain)
+
+spot_dist[["mclust_src"]] <-
+  graphST[spot_dist$src, "mclust"]
+spot_dist[["mclust_dst"]] <-
+  graphST[spot_dist$dst, "mclust"]
+```
+
+
+```{r}
+z_merged_pval_LR <- 
+  calc_ccc_graph_pval_LR(cog_tbl = ccc_graph_tbl, 
+                         sp_dist = spot_dist)
+```
+
+
+```{r}
+z1_merged_pval <- 
+  calc_ccc_graph_pval(cog_tbl = ccc_graph_tbl, 
+                      sp_dist = spot_dist)
+```
+
+
+```{r}
+# y_base
+# spot_dist_base_by_cluster <-
+#   spot_dist %>%
+#   # filter(mclust_src != mclust_dst) %>%
+#   group_by(mclust_src, mclust_dst) %>%
+#   summarize_ccc_graph_tbl() %>%
+#   select(-n_clust, -n_edges_between, -n_edges_within)
+
+# y_base_interface
+# spot_dist_base_by_cluster_between_cluster <-
+#   spot_dist %>%
+#   filter(mclust_src != mclust_dst) %>%
+#   group_by(mclust_src) %>%
+#   summarise(n_nodes_interface = length(unique(dst)),  # number of interacting nodes in a group 
+#             n_edges_interface = n()) %>%              # number of interacting edges in a group
+#   rename(mclust = mclust_src)
+```
+
+
+```{r}
+# this is overall summary -- no grouping at all
+# spot_dist_base <-
+#   spot_dist %>%
+#   summarize_ccc_graph_tbl() %>%
+#   select(-n_clust, -n_edges_between, -n_edges_within)
+
+# spot_dist_base_within <-
+#   spot_dist %>%
+#   filter(mclust_src == mclust_dst) %>%
+#   summarize_ccc_graph_tbl() %>%
+#   select(-n_clust, -n_edges_between, -n_edges_within)
+# 
+# spot_dist_base_between <-
+#   spot_dist %>%
+#   filter(mclust_src != mclust_dst) %>%
+#   summarize_ccc_graph_tbl() %>%
+#   select(-n_clust, -n_edges_between, -n_edges_within)
+```
+
+
+
+
+
+```{r}
+# summary by (LR, mclust_src, mclust_dst) 
+# z <-
+#   ccc_graph_tbl %>%
+#   group_by(LR, mclust_src, mclust_dst) %>%
+#   summarize_ccc_graph_tbl()
+
+# summary by LR
+# z1 <-
+#   ccc_graph_tbl %>%
+#   group_by(LR) %>%
+#   summarize_ccc_graph_tbl()
+
+# summary within cluster by LR
+# z1_within <-
+#   ccc_graph_tbl %>%
+#   filter(mclust_src == mclust_dst) %>%
+#   group_by(LR) %>%
+#   summarize_ccc_graph_tbl()
+
+# summary between clusters by LR
+# z1_between <-
+#   ccc_graph_tbl %>%
+#   filter(mclust_src != mclust_dst) %>%
+#   group_by(LR) %>%
+#   summarize_ccc_graph_tbl()
+```
+
+
+```{r}
+# z_avg <-
+#   z %>% 
+#   group_by(mclust_src, mclust_dst) %>%
+#   average_ccc_graph_tbl_summary()
+
+# z1_avg <-
+#   z1 %>% 
+#   average_ccc_graph_tbl_summary()
+
+# z1_between_avg <-
+#   z1_between %>% 
+#   average_ccc_graph_tbl_summary()
+# 
+# z1_within_avg <-
+#   z1_within %>% 
+#   average_ccc_graph_tbl_summary()
+```
+
+
+
+```{r}
+# y_base
+# base x average; forms a base for null distribution
+# z_base <-
+#   spot_dist_base_by_cluster %>% 
+#   left_join(z_avg, 
+#             by = c("mclust_src", "mclust_dst"),
+#             suffix = c(".base", ".avg")) 
+```
+
+
+
+```{r}
+# z_merged <-
+#   z %>% 
+#   left_join(z_base,
+#             by = c("mclust_src", "mclust_dst"))
+```
+
+
+```{r}
+# z1_within_merged <-
+#   z1_within %>%
+#   bind_cols(spot_dist_base_within %>% 
+#               rename_with( ~ paste0(.x, ".base"))) %>%
+#   bind_cols(z1_within_avg %>% 
+#               rename_with( ~ paste0(.x, ".avg")))
+```
+
+```{r}
+# z1_between_merged <-
+#   z1_between %>%
+#   bind_cols(spot_dist_base_between %>% 
+#               rename_with( ~ paste0(.x, ".base"))) %>%
+#   bind_cols(z1_between_avg %>% 
+#               rename_with( ~ paste0(.x, ".avg")))
+```
+
+
+```{r}
+# z_merged_pval <-
+#   z_merged %>%
+#   mutate(
+#     p_val_edges = pbinom(
+#       q = n_edges,
+#       size = n_edges.base,
+#       prob = n_edges.avg / n_edges.base,
+#       lower.tail = FALSE
+#     ),
+#     p_val_nodes = pbinom(
+#       q = n_nodes,
+#       size = n_nodes.base,
+#       prob = n_nodes.avg / n_nodes.base,
+#       lower.tail = FALSE
+#     )
+#   ) %>%
+#   mutate(
+#     adj_p_val_edges = p.adjust(p_val_edges),
+#     adj_p_val_nodes = p.adjust(p_val_nodes)
+#   ) %>%
+#   relocate(p_val_edges, 
+#            adj_p_val_edges, 
+#            .before = "n_edges") %>%
+#   relocate(p_val_nodes, 
+#            adj_p_val_nodes, 
+#            .before = "n_nodes") 
+```
+
+
+```{r}
+# z1_merged <-
+#   z1 %>%
+#   bind_cols(spot_dist_base %>%
+#               rename_with(~ paste0(.x, ".base"))) %>%
+#   bind_cols(z1_avg %>%
+#               rename_with(~ paste0(.x, ".avg")))
+```
+
+
+```{r}
+# z1_merged_pval <-
+#   z1_merged %>%
+#   mutate(
+#     p_val_edges = pbinom(
+#       q = n_edges,
+#       size = n_edges.base,
+#       prob = n_edges.avg / n_edges.base,
+#       lower.tail = FALSE
+#     ),
+#     p_val_nodes = pbinom(
+#       q = n_nodes,
+#       size = n_nodes.base,
+#       prob = n_nodes.avg / n_nodes.base,
+#       lower.tail = FALSE
+#     )
+#   ) %>%
+#   mutate(
+#     adj_p_val_edges = p.adjust(p_val_edges),
+#     adj_p_val_nodes = p.adjust(p_val_nodes)
+#   ) %>%
+#   relocate(p_val_edges, 
+#            adj_p_val_edges, 
+#            .before = "n_edges") %>%
+#   relocate(p_val_nodes, 
+#            adj_p_val_nodes, 
+#            .before = "n_nodes") 
+```
+
+
+```{r}
+# z1_within_merged_pval <-
+#   z1_within_merged %>%
+#   mutate(
+#     p_val_edges = pbinom(
+#       q = n_edges,
+#       size = n_edges.base,
+#       prob = n_edges.avg / n_edges.base,
+#       lower.tail = FALSE
+#     ),
+#     p_val_nodes = pbinom(
+#       q = n_nodes,
+#       size = n_nodes.base,
+#       prob = n_nodes.avg / n_nodes.base,
+#       lower.tail = FALSE
+#     )
+#   ) %>%
+#   mutate(
+#     adj_p_val_edges = p.adjust(p_val_edges),
+#     adj_p_val_nodes = p.adjust(p_val_nodes)
+#   ) %>%
+#   relocate(p_val_edges, 
+#            adj_p_val_edges, 
+#            .before = "n_edges") %>%
+#   relocate(p_val_nodes, 
+#            adj_p_val_nodes, 
+#            .before = "n_nodes") 
+```
+
+
+
+```{r}
+# z1_between_merged_pval <-
+#   z1_between_merged %>%
+#   mutate(
+#     p_val_edges = pbinom(
+#       q = n_edges,
+#       size = n_edges.base,
+#       prob = n_edges.avg / n_edges.base,
+#       lower.tail = FALSE
+#     ),
+#     p_val_nodes = pbinom(
+#       q = n_nodes,
+#       size = n_nodes.base,
+#       prob = n_nodes.avg / n_nodes.base,
+#       lower.tail = FALSE
+#     )
+#   ) %>%
+#   mutate(
+#     adj_p_val_edges = p.adjust(p_val_edges),
+#     adj_p_val_nodes = p.adjust(p_val_nodes)
+#   ) %>%
+#   relocate(p_val_edges, 
+#            adj_p_val_edges, 
+#            .before = "n_edges") %>%
+#   relocate(p_val_nodes, 
+#            adj_p_val_nodes, 
+#            .before = "n_nodes") 
+```
+
+
+
+```{r}
+# z_merged_pval_filtered <-
+#   z_merged_pval %>% 
+#   filter(
+#     adj_p_val_edges < 0.05, 
+#     n_nodes.base > 20  # a bit arbitrary, but probably reasonable; 
+#   )
+```
+
+
+```{r}
+# z_merged_pval_LR_within <-
+#   z_merged_pval %>%
+#   filter(mclust_src == mclust_dst) %>%
+#   group_by(LR) %>%
+#   summarise(
+#     # is taking weighted average a reasonable method to aggregate p-values?
+#     p_val_nodes_mean = sum(n_nodes * p_val_nodes) / sum(n_nodes),  # weighted average
+#     p_val_edges_mean = sum(n_edges * p_val_edges) / sum(n_edges)   # weighted average
+#   ) %>%
+#   arrange(p_val_edges_mean)
+
+# z_merged_pval_LR_within
+```
+
+
+```{r}
+# z_merged_pval_LR_between <-
+#   z_merged_pval %>%
+#   filter(mclust_src != mclust_dst) %>%
+#   group_by(LR) %>%
+#   summarise(
+#     p_val_nodes_mean = sum(n_nodes * p_val_nodes) / sum(n_nodes),
+#     p_val_edges_mean = sum(n_edges * p_val_edges) / sum(n_edges)
+#   ) %>%
+#   arrange(p_val_edges_mean)
+
+# z_merged_pval_LR_between
+```
+
+
+```{r}
+# the difference between z_merged_pval_LR and z1_merged_pval is that
+#   z
+# z_merged_pval_LR <-
+#   left_join(
+#     z_merged_pval_LR_between,
+#     z_merged_pval_LR_within,
+#     by = "LR",
+#     suffix = c("_between", "_within")
+#   )
+
+# z_merged_pval_LR %>%
+#   arrange(p_val_edges_mean_between)
+```
+
+
+```{r}
+pval_merged <- merge_ccc_graph_pval(
+  z_m_pv_LR = z_merged_pval_LR,
+  z1_m_pv = z1_merged_pval
+)
+# pval_merged <-
+#   left_join(
+#     z_merged_pval_LR, 
+#     z1_merged_pval %>%
+#       select(LR, starts_with("adj_p")),
+#     by = "LR"
+#   )
+# 
+# p_val_nodes <-
+#   pval_merged %>%
+#   select(starts_with("p_val_nodes")) %>%
+#   apply(MARGIN = 1,
+#         function(x) {
+#           r <- metap::sumlog(x)
+#           r$p
+#         })
+# 
+# p_val_edges <-
+#   pval_merged %>%
+#   select(starts_with("p_val_edges")) %>%
+#   apply(MARGIN = 1,
+#         function(x) {
+#           r <- metap::sumlog(x)
+#           r$p
+#         })
+# 
+# pval_merged$p_value_nodes <- p_val_nodes
+# pval_merged$p_value_edges <- p_val_edges
+```
+
+
+```{r}
+# pval_merged 
+```
+
+
+
+```{r, fig.width=8, fig.height=8}
+pval_merged_tbl <-
+  readr::read_csv("scratch/pval_merged.csv", show_col_types = FALSE)
+
+pval_merged_graph <-
+  pval_merged_tbl %>%
+  dplyr::mutate(from = src, to = dst) %>%
+  tidygraph::as_tbl_graph(directed = TRUE)
+
+graph_layout <- "auto"
+ggraph_pval_merged <-
+  ggraph::create_layout(graph = pval_merged_graph,
+                        # sugiyama - hierarchical layout
+                        layout = "sugiyama") %>%
+  ggraph::ggraph() +
+  ggraph::geom_node_point(shape = 1,
+                          color = "black",
+                          size = 3) +
+  ggraph::geom_edge_link(arrow = grid::arrow(angle = 10,
+                                             type = "closed")) +
+  ggraph::geom_node_label(aes(label = name), repel = TRUE) +
+  ggraph::theme_graph()
+
+ggraph_pval_merged
+
+ggsave(
+  "./scratch/pval_merged.pdf",
+  ggraph_pval_merged,
+  width = 8,
+  height = 8
+)
+```
+
+```{r, fig.width=6, fig.height=8}
+z_merged_pval_tbl <-
+  readr::read_csv("scratch/z_merged_pval.csv", show_col_types = FALSE)
+
+z_merged_pval_graph <-
+  z_merged_pval_tbl %>%
+  dplyr::mutate(from = src, to = dst) %>%
+  tidygraph::as_tbl_graph(directed = TRUE)
+
+graph_layout <- "auto"
+ggraph_z_merged_pval <-
+  ggraph::create_layout(graph = z_merged_pval_graph,
+                        # sugiyama - hierarchical layout
+                        layout = "sugiyama") %>%
+  ggraph::ggraph() +
+  ggraph::geom_node_point(shape = 1,
+                          color = "black",
+                          size = 3) +
+  ggraph::geom_edge_link(arrow = grid::arrow(angle = 10,
+                                             type = "closed")) +
+  ggraph::geom_node_label(aes(label = name), repel = TRUE) +
+  ggraph::theme_graph()
+
+ggraph_z_merged_pval
+
+ggsave(
+  "./scratch/z_merged_pval.pdf",
+  ggraph_z_merged_pval,
+  width = 6,
+  height = 8
+)
+```
+
+
+## Visualization
+
+```{r, fig.width=8}
+plot_spatial_feature(
+  spe_brain,
+  "mclust",
+  cells_of_interest = colnames(spe_brain)[spe_brain$mclust %in% c(3, 5)],
+  clip = FALSE
+)
+```
+
+
+
+
+```{r}
+pval_merged %>%
+  arrange(p_value_edges)
+```
+
+
+```{r}
+cog_x <-
+  ccc_graph_list$S100a1_Ryr2
+  
+```
+
+```{r, fig.width=8}
+plot_spatial_ccc_graph(
+  cog_x, 
+  tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  
+  cells_of_interest = colnames(spe_brain)[spe_brain$mclust %in% c(3, 5)],
+  edges_expanded_to_group = FALSE,
+  
+  clip = FALSE,
+  
+  graph_layout = "spatial",
+  node_size = 1.5,
+  
+  node_color = "mclust",
+  # node_color = "group_diameter",
+  edge_color = "LRscore",
+  
+  # hide edges
+  edge_alpha = 1,
+  # show_arrow = TRUE,
+
+  which_on_top = "edge"  
+)
+```
+
+
+```{r}
+y <-
+  cog_x %>% 
+  activate("edges") %>%
+  tidygraph::filter(mclust_src != mclust_dst) %>%
+  tidygraph::filter(mclust_src == 1 | mclust_dst == 1) %>%
+  tidy_up_ccc_graph()
+
+z <-
+  x %>% 
+  activate("edges") %>%
+  tidygraph::filter(mclust_src == 1, mclust_dst == 1) %>%
+  tidy_up_ccc_graph()
+
+gp_list <-
+  list(y, z) %>%
+  purrr::map(function(cc) {
+    plot_spatial_ccc_graph(
+      ccc_graph = cc,
+      tissue_img = SpatialExperiment::imgRaster(spe_brain),
+      clip = FALSE,
+      graph_layout = "spatial",
+      
+      node_size = 1.5,
+      
+      node_color = "mclust",
+      # node_color = "group_diameter",
+      edge_color = "LRscore",
+      
+      # hide edges
+      edge_alpha = 1,
+
+      which_on_top = "node"
+    ) + ggtitle(lr)
+  })
+```
+
+
+```{r, fig.width=12, fig.height=6}
+wrap_plots(gp_list)
+```
+
+
+```{r}
+x_edges <-
+  x %>% to_spatial_ccc_tbl()
+
+x_nodes <-
+  x %>% activate("nodes") %>% as_tibble()
+```
+
+
+```{r}
+x_edges_tbl <- 
+  x_edges %>% group_by(mclust_src, mclust_dst) %>% summarize(n = n(), .groups = "drop")
+
+x_edges_tbl %>%
+  filter(mclust_src != mclust_dst)
+```
+
+
+```{r}
+LRdb_shuffled <-
+  shuffle_LRdb(LRdb, reverse = FALSE) %>%
+  distinct(LR, .keep_all = TRUE)
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+shuffled_ccc_graph_list <-
+  compute_spatial_ccc_graph_list(
+    spe = spe_brain,
+    assay_name = "logcounts",
+    LRdb = LRdb_shuffled,
+    LRscore_type = "sqrt.prod",
+    LRscore_cutoff = 0,
+    LRpvalue_cutoff = 1,
+    workers = 8
+  )
+
+shuffled_ccc_graph_tbl <-
+  shuffled_ccc_graph_list %>%
+  purrr::map(function(c) {
+    to_spatial_ccc_tbl(c)
+  }) %>%
+  bind_rows(.id = "LR")
+```
+
 
 
   * Summarize spatial CCC graphs by LR
@@ -114,11 +795,108 @@ ccc_graph_list <-
 ccc_graph_summary_tbl <-
   ccc_graph_list %>%
   to_LR_summary_tbl() %>%
-  arrange(desc(perc_rank))
+  mutate(LRscore_sum = n * LRscore_mean) %>%
+  relocate(LRscore_sum, .before = "LRscore_mean")
 
-ccc_graph_summary_tbl
+ccc_graph_summary_tbl %>%
+  arrange(desc(graph_mean_dist))
 ```
 
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  arrange(desc(LRscore_sum))
+```
+
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  arrange(desc(graph_modularity)) %>%
+  select(-LRscore_50, -LRscore_75, -LRscore_95, -contains("pRank")) %>%
+  relocate("graph_modularity", .before = "graph_n_nodes")
+```
+
+
+```{r}
+gp2_list <-
+  list(
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_diameter"),
+        y = get("graph_mean_dist")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_reciprocity"),
+        y = get("graph_mean_dist")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("LRscore_sum"),
+        y = get("graph_circuit_rank")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("LRscore_sum"),
+        y = get("graph_asym_count")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_clique_count"),
+        y = get("graph_motif_count")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_clique_count"),
+        y = get("graph_modularity")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt()
+  )
+
+wrap_plots(gp2_list, ncol = 3)
+```
+
+```{r}
+ccc_graph_summary_tbl %>%
+  select(graph_diameter, graph_circuit_rank, graph_mean_dist, graph_reciprocity, graph_asym_count, LRscore_sum) %>%
+  cor(use = "pairwise.complete.obs", method = "spearman")
+```
+
+```{r}
+ccc_graph_summary_tbl %>%
+  select(graph_diameter, graph_circuit_rank, graph_mean_dist, graph_reciprocity, graph_asym_count, LRscore_sum) %>%
+  cor(use = "pairwise.complete.obs")
+```
+
+
+
+```{r}
+shuffled_ccc_graph_summary_tbl <-
+  shuffled_ccc_graph_list %>%
+  to_LR_summary_tbl() %>%
+  arrange(desc(pRank))
+
+shuffled_ccc_graph_summary_tbl
+```
 
 ### Cell-cell commuication visualization
 
@@ -127,7 +905,8 @@ ccc_graph_summary_tbl
 ```{r spatial-ccc-with-tissue-image, warning=FALSE}
 LR_of_interest_list <- 
   ccc_graph_summary_tbl %>% 
-  arrange(desc(perc_rank)) %>% 
+  filter(graph_modularity > 0.9) %>% 
+  arrange(desc(LRscore_sum)) %>%
   pull(LR) 
 ```
 
@@ -139,20 +918,29 @@ gp_list <-
     plot_spatial_ccc_graph(
       ccc_graph = ccc_graph_list[[lr]],
       tissue_img = SpatialExperiment::imgRaster(spe_brain),
+      clip = FALSE,
+      
+      node_size = 1.5,
+      
       node_color = "LRscore.sum.src",
-      edge_color = "LRscore_perc_rank",
-      which_on_top = "node"
+      # node_color = "group_diameter",
+      edge_color = "group_diameter",
+      
+      # hide edges
+      node_alpha = 0.5,
+      
+      which_on_top = "edge"
     ) + ggtitle(lr)
   })
 ```
 
-```{r, fig.width=12, fig.height=8}
-wrap_plots(gp_list, ncol = 3)
+```{r, fig.width=12, fig.height=15}
+wrap_plots(gp_list, ncol = 2)
 ```
 
 
 ```{r}
-LR_of_interest <- LR_of_interest_list[4]
+LR_of_interest <- LR_of_interest_list[6]
 ```
 
 
@@ -161,23 +949,23 @@ wrap_plots(
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0.,
+    # image_alpha = 0.,
     node_size = 1,
     graph_layout = "spatial",
     node_color = "LRscore.sum.src",
-    edge_color = "LRscore_perc_rank",
-    node_alpha = 0,
+    edge_color = "group_diameter",
+    edge_alpha = 0.5,
     which_on_top = "edge"
   ),
   plot_spatial_ccc_graph(
     ccc_graph = ccc_graph_list[[LR_of_interest]],
     tissue_img = SpatialExperiment::imgRaster(spe_brain),
-    image_alpha = 0,
+    # image_alpha = 0,
     node_size = 1,
     graph_layout = "spatial",
-    node_color = "LRscore.sum.src",
-    edge_color = "LRscore",
-    node_alpha = 0,
+    node_color = "LRscore.sum.dst",
+    edge_color = "group_diameter",
+    edge_alpha = 0.5,
     which_on_top = "edge"
   )
 )
@@ -212,8 +1000,9 @@ plot_spatial_ccc_graph(
   ccc_graph = ccc_graph_list[[LR_of_interest]],
   edge_color = "LRscore",
   node_color = "LRscore.sum.src",
-  node_size = 0.1,
-  edge_width = 0.1,
+
+  # node_size = 1,
+  # edge_width = 0.5,
   which_on_top = "edge"
 )
 ```
