@@ -14,7 +14,7 @@
 #' where \eqn{e_{i,j}} is the expression value of gene \eqn{i} in cell \eqn{j},
 #' with \eqn{m} genes and \eqn{n} cells.
 #'
-#' [Ref:] 2.4 Pipeline for intercellular communication analysis
+#' **Ref:** 2.4 Pipeline for intercellular communication analysis
 #'      In [Zhang et al., Bioinformatics 37(14): 2025-2032](https://doi.org/10.1093/bioinformatics/btab036)
 #'
 #' @param spe SpatialExperiment object
@@ -272,6 +272,9 @@ compute_spatial_ccc_graph <-
 #' @inheritParams compute_spatial_ccc_tbl
 #' @param long_format if TRUE (default), return long format data.frame.
 #'   Otherwise, matrix format.
+#' @param include_cluster if TRUE, include *cluster_src* and *cluster_dst*
+#'   in the output data frame.
+#' @param spot_dist_cutoff maximum distance allowed between spots
 #'
 #' @returns A data fame with computed distance including both `d` and `norm.d`.
 #'   `norm.d` is a multiple of the shortest distance between spots.
@@ -284,6 +287,7 @@ compute_spatial_ccc_graph <-
 calc_spot_dist <-
   function(spe,
            long_format = TRUE,
+           include_cluster = TRUE,
            spot_dist_cutoff = 1.5) {
     spe_cd <- get_spatial_data(spe)
 
@@ -291,8 +295,31 @@ calc_spot_dist <-
       calc_spot_dist0(spe_cd[c("cell_id", "pxl_col_in_fullres", "pxl_row_in_fullres")],
                       long_format = long_format)
 
-    spot_dist %>%
-      dplyr::filter(.data$norm.d < spot_dist_cutoff)
+    if (long_format) {
+      if (include_cluster) {
+        if (!("cluster" %in% colnames(spe_cd))) {
+          cli::cli_abort(message = "{.var spd_cd} should contain 'cluster' column")
+        }
+        spot_dist <-
+          spot_dist %>%
+          left_join(spe_cd %>%
+                      select(cell_id, cluster) %>%
+                      rename(cluster_src = cluster),
+                    by = c("src" = "cell_id")) %>%
+          left_join(spe_cd %>%
+                      select(cell_id, cluster) %>%
+                      rename(cluster_dst = cluster),
+                    by = c("dst" = "cell_id"))
+      }
+
+      if (spot_dist_cutoff > 0) {
+        spot_dist <-
+          spot_dist %>%
+          dplyr::filter(.data$norm.d < spot_dist_cutoff)
+      }
+    }
+
+    spot_dist
   }
 
 
@@ -803,6 +830,7 @@ add_annots_to_nodes <- function(ccog, node_annots, id_column = "") {
 #'
 #' @param ccog CCC graph
 #' @param node_annot_colname column names for annotations to be added to edges
+#' @param target_name if specified, node_annot_colname will be renamed to target_name
 #'
 #' @returns CCC graph with revised annotations for edges.
 #'   Returns null If CCC graph is null.
@@ -909,7 +937,7 @@ to_spatial_ccc_tbl <-
 #' @param sp_ccc_graph an output of [to_spatial_ccc_graph()]
 #' @param from_scratch if TRUE, the existing metrics are wiped clean.
 #'
-#' @return spatical_ccc_graph
+#' @returns spatical_ccc_graph
 #'
 #' @export
 #'
@@ -1012,9 +1040,10 @@ add_spatial_ccc_graph_metrics <-
 
 #' Copy graph metrics from nodes to edges
 #'
-#' @inheritParams add_spatial_ccc_graph_metrics
+#' @description
+#' This is run internally by `add_spatial_ccc_graph_metrics()`.
 #'
-#' This is run internally by [add_spatial_ccc_graph_metrics()]
+#' @inheritParams add_spatial_ccc_graph_metrics
 #'
 #' @export
 #'
@@ -1045,7 +1074,7 @@ add_spatial_ccc_graph_metrics_to_edges <-
 #' Add metadata to an object
 #'
 #' @param spe SpatialExperiment object
-#' @param mdata additional metadata to be added [data frame]
+#' @param mdata additional metadata to be added [data.frame]
 #' @param replace existing columns are replaced if TRUE, and
 #'  the function stops if FALSE, when there is a conflict in column headings.
 #'
@@ -1053,7 +1082,7 @@ add_spatial_ccc_graph_metrics_to_edges <-
 #'
 #' @export
 #'
-addMetadata <- function(spe, mdata, replace = FALSE) {
+add_metadata <- function(spe, mdata, replace = FALSE) {
   cData <- SummarizedExperiment::colData(spe)
   colnames_cData <- colnames(cData)
   colnames_mdata <- colnames(mdata)
@@ -1071,6 +1100,101 @@ addMetadata <- function(spe, mdata, replace = FALSE) {
 
   spe
 }
+
+
+#' Get spatial coordinates
+#'
+#' Returns default spatial coordinates and scaled coordinates,
+#'   `spot_x` and `spot_y`.
+#'
+#' @param spe SpatialExperiment object
+#'
+#' @returns spatial coordinates in data.frame with
+#'   `cell_id`, ... (from `spatialCoords(spe)`),
+#'   `spot_x`, `spot_y`.
+#'
+#' @export
+get_spatial_data <- function(spe) {
+  spe_col_data <- SingleCellExperiment::colData(spe)
+  spe_spatial_coords <- SpatialExperiment::spatialCoords(spe)
+
+  # for some reasons, as_tibble() convert column names with checknames = TRUE
+  #   so, need to put them back
+  cnames_spe_col_data <- colnames(spe_col_data)
+  spe_col_data <- tibble::as_tibble(spe_col_data, rownames = "cell_id")
+  colnames(spe_col_data) <- c("cell_id", cnames_spe_col_data)
+
+  cnames_spe_spatial_coords <- colnames(spe_spatial_coords)
+  spe_spatial_coords <- tibble::as_tibble(spe_spatial_coords, rownames = "cell_id")
+  colnames(spe_spatial_coords) <- c("cell_id", cnames_spe_spatial_coords)
+
+  dplyr::left_join(
+    spe_col_data,
+    spe_spatial_coords,
+    by = "cell_id"
+  ) %>%
+    dplyr::mutate(
+      spot_x = .data$pxl_col_in_fullres * SpatialExperiment::scaleFactors(spe),
+      spot_y = .data$pxl_row_in_fullres * SpatialExperiment::scaleFactors(spe)
+    )
+}
+
+#' Summarize CCC table by (cell, LR)
+#'
+#' internal function
+#'
+#' summarize LRscores (edge) to cell (node) by
+#'   1) adding LRscores in all the edges connected to the cell as `src` or `dst`
+#'        LRscore.sum.src, LRscore.sum.dst
+#'        n.src, n.dst
+#'   2) n.inflow = n.dst - n.src
+#'   3) LRscore.sum.inflow = LRscore.sum.dst - LRscore.sum.src
+#'
+#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc_tbl()].
+#'
+#' @export
+summarise_ccc_by_cell <-
+  function(ccc_tbl) {
+    src_summary <-
+      ccc_tbl %>%
+      dplyr::group_by(.data$src) %>%
+      dplyr::summarise(
+        n.src = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
+        LRscore.sum.src = sum(.data$LRscore),
+        # WLRscore.sum.src = sum(WLRscore),
+        .groups = "drop"
+      ) %>%
+      dplyr::rename(cell_id = .data$src) %>%
+      dplyr::mutate(node_is_src = TRUE)
+
+    dst_summary <-
+      ccc_tbl %>%
+      dplyr::group_by(.data$dst) %>%
+      dplyr::summarise(
+        n.dst = dplyr::n(),
+        # to avoid confusion between tidygraph::n() and dplyr::n()
+        LRscore.sum.dst = sum(.data$LRscore),
+        # WLRscore.sum.dst = sum(WLRscore),
+        .groups = "drop"
+      ) %>%
+      dplyr::rename(cell_id = .data$dst) %>%
+      dplyr::mutate(node_is_dst = TRUE)
+
+    cell_summary <-
+      dplyr::full_join(src_summary,
+                       dst_summary,
+                       by = c("cell_id"))
+
+    # replace all NAs with 0
+    cell_summary[is.na(cell_summary)] <- 0
+
+    cell_summary %>%
+      dplyr::relocate(.data$node_is_src, .data$node_is_dst, .after = dplyr::last_col()) %>%
+      dplyr::mutate(n.inflow = .data$n.dst - .data$n.src,
+                    # WLRscore.sum.inflow = WLRscore.sum.dst - WLRscore.sum.src,
+                    LRscore.sum.inflow = .data$LRscore.sum.dst - .data$LRscore.sum.src)
+  }
+
 
 
 
@@ -1169,6 +1293,7 @@ comp_LRscore_sqrt_additive <- function(l_exp, r_exp, l_mean_exp, r_mean_exp) {
 #'   * LRscore_perc_rank: percent rank of LRscore (median)
 #'   * perc_rank: combined percent rank (geometric mean of n_perc_rank and LRscore_perc_rank)
 #'   * perc_group: binned perc_rank
+#'
 #'
 calculate_LR_percent_rank <- function(ccc_graph_ls) {
   ccc_graph_el_tbl <-
@@ -1274,47 +1399,25 @@ calc_spot_dist0 <- function(coords, long_format = TRUE) {
 }
 
 
-#' Get spatial coordinates
+#' Calculate interaction strength
 #'
-#' Returns default spatial coordinates and scaled coordinates,
-#'   `spot_x` and `spot_y`.
+#' @param x distance
+#' @param eps scaling factor for calculating diffusion/interaction strength.
+#'   default value = 1/(1.73*2) corresponds that the spots with ~200nm retain
+#'   ~50% of cell signal,
 #'
-#' @param spe SpatialExperiment object
+#' @return interaction strength
 #'
-#' @returns spatial coordinates in data.frame with
-#'   `cell_id`, ... (from `spatialCoords(spe)`),
-#'   `spot_x`, `spot_y`.
-#'
-#' @export
-get_spatial_data <- function(spe) {
-  spe_col_data <- SingleCellExperiment::colData(spe)
-  spe_spatial_coords <- SpatialExperiment::spatialCoords(spe)
-
-  # for some reasons, as_tibble() convert column names with checknames = TRUE
-  #   so, need to put them back
-  cnames_spe_col_data <- colnames(spe_col_data)
-  spe_col_data <- tibble::as_tibble(spe_col_data, rownames = "cell_id")
-  colnames(spe_col_data) <- c("cell_id", cnames_spe_col_data)
-
-  cnames_spe_spatial_coords <- colnames(spe_spatial_coords)
-  spe_spatial_coords <- tibble::as_tibble(spe_spatial_coords, rownames = "cell_id")
-  colnames(spe_spatial_coords) <- c("cell_id", cnames_spe_spatial_coords)
-
-  dplyr::left_join(
-    spe_col_data,
-    spe_spatial_coords,
-    by = "cell_id"
-  ) %>%
-    dplyr::mutate(
-      spot_x = .data$pxl_col_in_fullres * SpatialExperiment::scaleFactors(spe),
-      spot_y = .data$pxl_row_in_fullres * SpatialExperiment::scaleFactors(spe)
-    )
+interaction_strength <- function(x, eps = 1/(1.73*2)) {
+  exp(-(eps*x)^2)
 }
+
 
 #' Split LR into L and R
 #'
 #' @param ccc_tbl an output of [extract_spatial_ccc_graph_edges()] or
 #'                any table with "LR" column which should be in "$L_$R" format
+#' @noRd
 split_ccc_tbl_LR <- function(ccc_tbl) {
   ccc_tbl %>%
     mutate(L = sub("_.+", "", .data$LR),
@@ -1363,62 +1466,6 @@ add_spatial_data <-
 
 
 
-
-
-#' Summarize CCC table by (cell, LR)
-#'
-#' internal function
-#'
-#' summarize LRscores (edge) to cell (node) by
-#'   1) adding LRscores in all the edges connected to the cell as `src` or `dst`
-#'        LRscore.sum.src, LRscore.sum.dst
-#'        n.src, n.dst
-#'   2) n.inflow = n.dst - n.src
-#'   3) LRscore.sum.inflow = LRscore.sum.dst - LRscore.sum.src
-#'
-#' @param ccc_tbl CCC graph table.  see [compute_spatial_ccc_tbl()].
-#'
-#' @export
-summarise_ccc_by_cell <-
-  function(ccc_tbl) {
-    src_summary <-
-      ccc_tbl %>%
-      dplyr::group_by(.data$src) %>%
-      dplyr::summarise(
-        n.src = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
-        LRscore.sum.src = sum(.data$LRscore),
-        # WLRscore.sum.src = sum(WLRscore),
-        .groups = "drop"
-      ) %>%
-      dplyr::rename(cell_id = .data$src) %>%
-      dplyr::mutate(node_is_src = TRUE)
-
-    dst_summary <-
-      ccc_tbl %>%
-      dplyr::group_by(.data$dst) %>%
-      dplyr::summarise(
-        n.dst = dplyr::n(),  # to avoid confusion between tidygraph::n() and dplyr::n()
-        LRscore.sum.dst = sum(.data$LRscore),
-        # WLRscore.sum.dst = sum(WLRscore),
-        .groups = "drop"
-      ) %>%
-      dplyr::rename(cell_id = .data$dst) %>%
-      dplyr::mutate(node_is_dst = TRUE)
-
-    cell_summary <-
-      dplyr::full_join(src_summary,
-                       dst_summary,
-                       by = c("cell_id"))
-
-    # replace all NAs with 0
-    cell_summary[is.na(cell_summary)] <- 0
-
-    cell_summary %>%
-      dplyr::relocate(.data$node_is_src, .data$node_is_dst, .after = dplyr::last_col()) %>%
-      dplyr::mutate(n.inflow = .data$n.dst - .data$n.src,
-                    # WLRscore.sum.inflow = WLRscore.sum.dst - WLRscore.sum.src,
-                    LRscore.sum.inflow = .data$LRscore.sum.dst - .data$LRscore.sum.src)
-  }
 
 
 

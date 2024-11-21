@@ -40,6 +40,36 @@ get_LRdb <- function(species = c("human", "mouse"), n_samples = 0) {
   LRdb
 }
 
+#' Shuffle LRdb data frame
+#'
+#' Shuffle ligand and receptor pairing, utilized mainly to generate
+#' NULL distribution of LRscore, which later can be used to compute
+#' p-value.
+#'
+#' @param lrdb LRdb table in data frame
+#' @param reverse LR pairing is reversed if TRUE.
+#'        If FALSE, LR pairing is shuffled.
+#'
+#' @return LRdb table in data frame
+#'
+#' @export
+shuffle_LRdb <- function(lrdb, reverse = TRUE) {
+  if (reverse) {
+    indices <- rev(1:nrow(lrdb))
+  } else {
+    indices <- sample(1:nrow(lrdb))
+  }
+
+  lrdb$receptor_gene_symbol <- lrdb$receptor_gene_symbol[indices]
+  lrdb$receptor_gene_id <- lrdb$receptor_gene_id[indices]
+  lrdb$receptor_ensembl_protein_id <- lrdb$receptor_ensembl_protein_id[indices]
+  lrdb$receptor_ensembl_gene_id <- lrdb$receptor_ensembl_gene_id[indices]
+  lrdb$evidence <- "random"
+
+  lrdb %>%
+    mutate(LR = paste(ligand_gene_symbol, receptor_gene_symbol, sep = "_"))
+}
+
 #'
 #' @noRd
 #'
