@@ -1,0 +1,111 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+
+```{r, fig.width=8, fig.height=8}
+pval_merged_tbl <-
+  readr::read_csv("pval_merged.csv", show_col_types = FALSE)
+
+pval_merged_graph <-
+  pval_merged_tbl %>%
+  dplyr::mutate(from = src, to = dst) %>%
+  tidygraph::as_tbl_graph(directed = TRUE)
+
+graph_layout <- "auto"
+ggraph_pval_merged <-
+  ggraph::create_layout(graph = pval_merged_graph,
+                        # sugiyama - hierarchical layout
+                        layout = "sugiyama") %>%
+  ggraph::ggraph() +
+  ggraph::geom_node_point(shape = 1,
+                          color = "black",
+                          size = 3) +
+  ggraph::geom_edge_link(arrow = grid::arrow(angle = 10,
+                                             type = "closed")) +
+  ggraph::geom_node_label(aes(label = name), repel = TRUE) +
+  ggraph::theme_graph()
+
+ggraph_pval_merged
+
+ggsave(
+  "pval_merged.pdf",
+  ggraph_pval_merged,
+  width = 8,
+  height = 8
+)
+```
+
+
+```{r, fig.width=8, fig.height=8}
+pval_merged_tbl <-
+  readr::read_csv("pval_merged_v2.csv", show_col_types = FALSE) %>%
+  # remove spe_brain
+  dplyr::filter(src != "spe_brain") %>%
+  dplyr::filter(src != "ccc_graph_list")
+
+pval_merged_graph <-
+  pval_merged_tbl %>%
+  dplyr::mutate(from = src, to = dst) %>%
+  tidygraph::as_tbl_graph(directed = TRUE)
+
+graph_layout <- "auto"
+ggraph_pval_merged <-
+  ggraph::create_layout(graph = pval_merged_graph,
+                        # sugiyama - hierarchical layout
+                        layout = "sugiyama") %>%
+  ggraph::ggraph() +
+  ggraph::geom_node_point(shape = 1,
+                          color = "black",
+                          size = 3) +
+  ggraph::geom_edge_link(arrow = grid::arrow(angle = 10,
+                                             type = "closed")) +
+  ggraph::geom_node_label(aes(label = name), repel = TRUE) +
+  ggraph::theme_graph()
+
+ggraph_pval_merged
+
+ggsave(
+  "pval_merged_v2.pdf",
+  ggraph_pval_merged,
+  width = 8,
+  height = 8
+)
+```
+
+
+
+```{r, fig.width=6, fig.height=8}
+z_merged_pval_tbl <-
+  readr::read_csv("z_merged_pval.csv", show_col_types = FALSE)
+
+z_merged_pval_graph <-
+  z_merged_pval_tbl %>%
+  dplyr::mutate(from = src, to = dst) %>%
+  tidygraph::as_tbl_graph(directed = TRUE)
+
+graph_layout <- "auto"
+ggraph_z_merged_pval <-
+  ggraph::create_layout(graph = z_merged_pval_graph,
+                        # sugiyama - hierarchical layout
+                        layout = "sugiyama") %>%
+  ggraph::ggraph() +
+  ggraph::geom_node_point(shape = 1,
+                          color = "black",
+                          size = 3) +
+  ggraph::geom_edge_link(arrow = grid::arrow(angle = 10,
+                                             type = "closed")) +
+  ggraph::geom_node_label(aes(label = name), repel = TRUE) +
+  ggraph::theme_graph()
+
+ggraph_z_merged_pval
+
+ggsave(
+  "z_merged_pval.pdf",
+  ggraph_z_merged_pval,
+  width = 6,
+  height = 8
+)
+```

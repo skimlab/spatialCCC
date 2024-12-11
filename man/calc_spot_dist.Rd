@@ -4,7 +4,12 @@
 \alias{calc_spot_dist}
 \title{Calculate distance between spots}
 \usage{
-calc_spot_dist(spe, long_format = TRUE, spot_dist_cutoff = 1.5)
+calc_spot_dist(
+  spe,
+  long_format = TRUE,
+  include_cluster = TRUE,
+  spot_dist_cutoff = 1.5
+)
 }
 \arguments{
 \item{spe}{SpatialExperiment object}
@@ -12,10 +17,10 @@ calc_spot_dist(spe, long_format = TRUE, spot_dist_cutoff = 1.5)
 \item{long_format}{if TRUE (default), return long format data.frame.
 Otherwise, matrix format.}
 
-\item{spot_dist_cutoff}{cutoff value for norm.d in spot
-distances. Default cutoff is 1.5 and
-it comes from sqrt(3) ~ 1.73, based on how Visium spot-array is
-arranged, so by default, only computing nearest neighbors.}
+\item{include_cluster}{if TRUE, include \emph{cluster_src} and \emph{cluster_dst}
+in the output data frame.}
+
+\item{spot_dist_cutoff}{maximum distance allowed between spots}
 }
 \value{
 A data fame with computed distance including both \code{d} and \code{norm.d}.
@@ -23,7 +28,7 @@ A data fame with computed distance including both \code{d} and \code{norm.d}.
 
 The data frame will only contain the spots with the distance (\code{norm.d})
 less than \code{spot_dist_cutoff}.  The default cutoff (\code{spot_dist_cutoff} = 1.5)
-will leave only those with immediate neighboring cells.
+will leave only those with immediately neighboring cells.
 }
 \description{
 Calculate distance between spots

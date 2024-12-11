@@ -4,7 +4,7 @@
 \alias{add_annots_to_nodes}
 \title{Add annotations to nodes}
 \usage{
-add_annots_to_nodes(ccog, node_annots, id_column = "name")
+add_annots_to_nodes(ccog, node_annots, id_column = "")
 }
 \arguments{
 \item{ccog}{CCC graph}

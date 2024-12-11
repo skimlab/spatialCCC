@@ -11,6 +11,9 @@ add_spatial_ccc_graph_metrics(sp_ccc_graph, from_scratch = TRUE)
 
 \item{from_scratch}{if TRUE, the existing metrics are wiped clean.}
 }
+\value{
+spatical_ccc_graph
+}
 \description{
 See below and \link[tidygraph:graph_measures]{tidygraph::graph_measures} for how these metrics are computed.
 }

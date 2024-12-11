@@ -1,0 +1,674 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+## Example
+
+This is a basic example which shows you a basic workflow of the package:
+
+  * First, load required R packages.
+```{r just-FYI, include=FALSE}
+# Looks like ggraph might have some issue importing 'guide_edge_colourbar'.
+#   @importFrom didn't work.
+#  @importFrom & @export, a.k.a. didn't work, either.
+# adding ggraph to 'Depends' worked.
+# library(ggraph)
+```
+
+```{r message = FALSE}
+library(spatialCCC)
+```
+
+
+```{r message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+```
+
+
+```{r}
+# 4GB
+options(future.globals.maxSize = 4*1024^3)
+```
+
+
+  * Then, load built-in LR database.
+```{r LRdb-loading}
+set.seed(100)
+
+LRdb_m <- 
+  get_LRdb("mouse", n_samples = 100)
+
+LRdb_full <-
+  get_LRdb("mouse")
+
+LRdb <- LRdb_m
+#LRdb <- LRdb_full
+```
+
+  * Load an example Visium spatial transcriptomic data
+```{r visium-data-loading}
+data_dir <- spatialCCC_example("example")
+
+spe_brain <-
+  SpatialExperiment::read10xVisium(samples = data_dir,
+                                   type = "HDF5",
+                                   data = "filtered")
+```
+
+
+```{r}
+graphST <-
+  readr::read_csv(file.path(data_dir, "outs", "graphST.csv"), show_col_types = FALSE) 
+
+graphST <-
+  graphST %>%
+  dplyr::mutate(across(c(starts_with("mclust"), "domain"), factor)) %>%
+  dplyr::rename(cluster = mclust)
+
+graphST <-
+  data.frame(graphST, row.names = graphST$cell_id) %>%
+  select(-cell_id) 
+```
+
+
+```{r}
+spe_brain <-
+  spe_brain %>%
+  add_metadata(graphST %>%
+                 select(-in_tissue, -array_row, -array_col), replace = TRUE)
+```
+
+
+```{r}
+# remove genes with no expression in all cells
+counts_rsums <-
+  rowSums(as.matrix(SummarizedExperiment::assay(spe_brain, "counts")))
+
+spe_brain <- spe_brain[counts_rsums > 0, ]
+```
+
+
+
+```{r}
+#spe_brain_org <- spe_brain
+#spe_brain <- spe_brain[spe_brain$array_row < 20, spe_brain$array_col < 40]
+```
+
+
+```{r data-normalization}
+# Log-Normalize
+spe_brain <- scater::logNormCounts(spe_brain)
+
+# Normalize for maximizing LR specificity
+# spe_brain <- normalize_for_LR_specificity(spe_brain)
+```
+
+
+### Cell-cell communication analysis
+
+  * Compute Cell-Cell Communications over ligand-receptor pairs
+```{r compute-spatial-ccc, message=FALSE}
+ccc_graph_list <-
+  compute_spatial_ccc_graph_list(
+    spe = spe_brain,
+    assay_name = "logcounts",
+    LRdb = LRdb,
+    expression_min_prop = 0,
+    LRscore_type = "sqrt.prod",
+    LRscore_cutoff = 0.5,
+    LRpvalue_cutoff = 1,
+    workers = 8
+  )
+```
+
+
+```{r}
+ccc_graph_list <-
+  ccc_graph_list %>%
+  purrr::map(function(cog) {
+    add_spatial_ccc_graph_metrics(cog)
+  })
+```
+
+
+```{r}
+ccc_graph_tbl <-
+  ccc_graph_list %>%
+  purrr::map(function(c) {
+    to_spatial_ccc_tbl(c)
+  }) %>%
+  bind_rows(.id = "LR")
+```
+
+
+```{r}
+spot_dist <-
+  calc_spot_dist(spe_brain)
+```
+
+
+```{r}
+sp_dist_base_by_clus <-
+  spot_dist %>%
+  group_by(cluster_src, cluster_dst) %>%
+  count_interactions_across_clusters_ccc_graph_tbl()
+
+sp_dist_base <-
+  spot_dist %>%
+  count_interactions_across_clusters_ccc_graph_tbl()
+```
+
+
+```{r}
+ccc_graph_across_clusters <- 
+  map_ccc_graph_across_clusters(cog_tbl = ccc_graph_tbl, 
+                                sp_dist = spot_dist)
+
+ccc_graph_across_clusters_LR_pval <-
+  ccc_graph_across_clusters %>%
+  summarize_by_LR_pval_across_clusters()
+```
+
+
+```{r}
+ccc_graph_across_clusters %>% 
+  group_by(cluster_src, cluster_dst)
+```
+
+```{r}
+ccc_graph_across_clusters %>% 
+  group_by(cluster_src, cluster_dst) %>%
+  summarise(n_LRs = length(unique(LR)), 
+            p_val_node = { x <- metap::sumlog(p_val_node); x$p },
+            p_val_edge = { x <- metap::sumlog(p_val_edge); x$p })
+```
+
+
+
+```{r}
+ccc_graph_across_clusters_shortcut <- 
+  map_ccc_graph_across_clusters_shortcut(cog_tbl = ccc_graph_tbl, 
+                                         sp_dist = spot_dist)
+```
+
+
+```{r}
+x <-
+  left_join(
+    ccc_graph_across_clusters_LR_pval %>%
+    select(LR, p_val_node, p_val_edge),
+    ccc_graph_across_clusters_shortcut %>%
+    select(LR, p_val_node, p_val_edge),
+    by = "LR",
+    suffix = c(".LR", ".shortcut")
+  )
+
+x
+```
+
+
+```{r}
+x %>%
+  dplyr::filter(p_val_node.LR < 0.1) %>%
+  ggplot(aes(x = p_val_edge.LR,
+             y = p_val_node.LR)) +
+  geom_point() +
+  coord_fixed()
+```
+
+
+```{r}
+x %>%
+  ggplot(aes(x = p_val_edge.LR,
+             y = p_val_node.shortcut)) +
+  geom_point() +
+  coord_fixed()
+```
+
+
+```{r}
+ccc_graph_across_clusters %>%
+  arrange(p_val_edge)
+```
+
+```{r}
+ccc_graph_across_clusters %>%
+  ggplot(aes(x = p_val_edge, y = p_val_node, color = ccc_type)) +
+  geom_point()
+```
+
+
+
+
+## Visualization
+
+
+```{r}
+ggspavis::plotVisium(spe_brain, fill = "cluster", palette = viridis::viridis(11))
+```
+
+
+
+```{r, fig.width=6, fig.height=4}
+plot_spatial_feature(
+  spe_brain,
+  "cluster",
+  clip = TRUE
+)
+```
+
+
+
+
+
+
+
+```{r}
+ccc_graph_across_clusters %>%
+  arrange(p_val_edge)
+```
+
+
+
+
+```{r}
+LRs_of_interest <-
+  ccc_graph_across_clusters %>% 
+  filter(p_val_edge < 0.05) %>%
+  pull(LR)
+```
+
+
+
+```{r}
+library(circlize)
+
+grid.col <- rand_color(11)
+names(grid.col) <- 1:11
+
+cci_df <-
+  ccc_graph_across_clusters %>%
+  dplyr::filter(LR == LRs_of_interest[1]) %>%
+  dplyr::filter(cluster_src != cluster_dst) %>%
+  dplyr::select(cluster_src, cluster_dst, n_edges_between) %>%
+  rename(from = cluster_src,
+         to = cluster_dst,
+         value = n_edges_between)
+
+p1 <-
+  cci_df %>%
+  chordDiagram(
+    grid.col = grid.col,
+    directional = 1,
+    direction.type = c("diffHeight", "arrows"),
+    link.arr.type = "big.arrow",
+    diffHeight = -mm_h(2)
+  )
+
+```
+
+```{r}
+spot_cci <-
+  spot_dist %>% 
+  select(cluster_src, cluster_dst) %>%
+  table() %>%
+  as_tibble()
+
+p1 <-
+  spot_cci %>%
+  dplyr::filter(cluster_src != cluster_dst) %>%
+  chordDiagram(
+    grid.col = grid.col,
+    directional = 1,
+    direction.type = c("diffHeight", "arrows"),
+    link.arr.type = "big.arrow",
+    diffHeight = -mm_h(2)
+  )
+```
+
+
+```{r, fig.width=16}
+library(CellChat)
+
+groupSize <- 
+  graphST %>% 
+  pull(cluster) %>% 
+  table() %>% 
+  as.numeric()
+
+mat_df <- 
+  cci_df %>% 
+  tidyr::pivot_wider(id_cols = "from", names_from = "to", values_fill = 0) %>%
+  as.data.frame()
+
+rownames(mat_df) <- paste0("C", mat_df$from)
+mat_df <- mat_df[-1]
+colnames(mat_df) <- paste0("C", colnames(mat_df))
+
+mat <- as.matrix(mat_df)
+
+
+par(mfrow = c(3, 4), xpd = TRUE)
+for (i in 1:nrow(mat)) {
+  mat2 <-
+    matrix(
+      0,
+      nrow = nrow(mat),
+      ncol = ncol(mat),
+      dimnames = dimnames(mat)
+    )
+  mat2[i,] <- mat[i,]
+  netVisual_circle(
+    mat2,
+    vertex.weight = groupSize,
+    weight.scale = T,
+    edge.weight.max = max(mat),
+    title.name = rownames(mat)[i]
+  )
+}
+
+```
+
+
+```{r}
+cog_of_interest <-
+  ccc_graph_list[[LRs_of_interest[1]]]
+```
+
+
+
+
+```{r}
+plot_spatial_ccc_graph(
+  cog_of_interest, 
+  tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  
+  # cells_of_interest = colnames(spe_brain)[spe_brain$mclust %in% c(3, 5)],
+  # edges_expanded_to_group = FALSE,
+  
+  # clip = FALSE,
+  
+  graph_layout = "spatial",
+  node_size = 1.5,
+  
+  node_color = "cluster",
+  # node_color = "group_diameter",
+  edge_color = "LRscore",
+  
+  # hide edges
+  edge_alpha = 1,
+  # show_arrow = TRUE,
+
+  which_on_top = "edge"  
+)
+```
+
+
+
+
+```{r}
+# LRdb_shuffled <-
+#   shuffle_LRdb(LRdb, reverse = FALSE) %>%
+#   distinct(LR, .keep_all = TRUE)
+```
+
+
+
+```{r, warning=FALSE, message=FALSE}
+# shuffled_ccc_graph_list <-
+#   compute_spatial_ccc_graph_list(
+#     spe = spe_brain,
+#     assay_name = "logcounts",
+#     LRdb = LRdb_shuffled,
+#     LRscore_type = "sqrt.prod",
+#     LRscore_cutoff = 0,
+#     LRpvalue_cutoff = 1,
+#     workers = 8
+#   )
+# 
+# shuffled_ccc_graph_tbl <-
+#   shuffled_ccc_graph_list %>%
+#   purrr::map(function(c) {
+#     to_spatial_ccc_tbl(c)
+#   }) %>%
+#   bind_rows(.id = "LR")
+```
+
+
+
+  * Summarize spatial CCC graphs by LR
+```{r}
+ccc_graph_summary_tbl <-
+  ccc_graph_list %>%
+  to_LR_summary_tbl() %>%
+  mutate(LRscore_sum = n * LRscore_mean) %>%
+  relocate(LRscore_sum, .before = "LRscore_mean")
+
+ccc_graph_summary_tbl %>%
+  arrange(desc(graph_mean_dist))
+```
+
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  arrange(desc(LRscore_sum))
+```
+
+
+
+```{r}
+ccc_graph_summary_tbl %>%
+  arrange(desc(graph_modularity)) %>%
+  select(-LRscore_50, -LRscore_75, -LRscore_95, -contains("pRank")) %>%
+  relocate("graph_modularity", .before = "graph_n_nodes")
+```
+
+
+```{r}
+gp2_list <-
+  list(
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_diameter"),
+        y = get("graph_mean_dist")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_reciprocity"),
+        y = get("graph_mean_dist")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("LRscore_sum"),
+        y = get("graph_circuit_rank")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("LRscore_sum"),
+        y = get("graph_asym_count")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_clique_count"),
+        y = get("graph_motif_count")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt(),
+    ccc_graph_summary_tbl %>%
+      ggplot(aes(
+        x = get("graph_clique_count"),
+        y = get("graph_modularity")
+      )) +
+      geom_point() +
+      scale_x_sqrt() +
+      scale_y_sqrt()
+  )
+
+wrap_plots(gp2_list, ncol = 3)
+```
+
+```{r}
+ccc_graph_summary_tbl %>%
+  select(graph_diameter, graph_circuit_rank, graph_mean_dist, graph_reciprocity, graph_asym_count, LRscore_sum) %>%
+  cor(use = "pairwise.complete.obs", method = "spearman")
+```
+
+```{r}
+ccc_graph_summary_tbl %>%
+  select(graph_diameter, graph_circuit_rank, graph_mean_dist, graph_reciprocity, graph_asym_count, LRscore_sum) %>%
+  cor(use = "pairwise.complete.obs")
+```
+
+
+
+```{r}
+# shuffled_ccc_graph_summary_tbl <-
+#   shuffled_ccc_graph_list %>%
+#   to_LR_summary_tbl() %>%
+#   arrange(desc(pRank))
+# 
+# shuffled_ccc_graph_summary_tbl
+```
+
+### Cell-cell commuication visualization
+
+  * Spatial CCC graph plot with tissue image
+
+```{r, warning=FALSE}
+LR_of_interest_list <- 
+  ccc_graph_summary_tbl %>% 
+  filter(graph_modularity > 0.9) %>% 
+  arrange(desc(LRscore_sum)) %>%
+  pull(LR) 
+```
+
+
+```{r, warning=FALSE}
+gp_list <-
+  LR_of_interest_list[1:6] %>%
+  purrr::map(function(lr) {
+    plot_spatial_ccc_graph(
+      ccc_graph = ccc_graph_list[[lr]],
+      tissue_img = SpatialExperiment::imgRaster(spe_brain),
+      clip = FALSE,
+      
+      node_size = 1.5,
+      
+      node_color = "LRscore.sum.src",
+      # node_color = "group_diameter",
+      edge_color = "group_diameter",
+      
+      # hide edges
+      node_alpha = 0.5,
+      
+      which_on_top = "edge"
+    ) + ggtitle(lr)
+  })
+```
+
+```{r, fig.width=12, fig.height=15}
+wrap_plots(gp_list, ncol = 2)
+```
+
+
+```{r}
+LR_of_interest <- LR_of_interest_list[1]
+```
+
+
+```{r spatial-ccc-with-tissue-image, warning=FALSE, fig.width=8, fig.height=4}
+wrap_plots(
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    # image_alpha = 0.,
+    node_size = 1,
+    graph_layout = "spatial",
+    node_color = "LRscore.sum.src",
+    edge_color = "group_diameter",
+    edge_alpha = 0.5,
+    which_on_top = "edge"
+  ),
+  plot_spatial_ccc_graph(
+    ccc_graph = ccc_graph_list[[LR_of_interest]],
+    tissue_img = SpatialExperiment::imgRaster(spe_brain),
+    # image_alpha = 0,
+    node_size = 1,
+    graph_layout = "spatial",
+    node_color = "LRscore.sum.dst",
+    edge_color = "group_diameter",
+    edge_alpha = 0.5,
+    which_on_top = "edge"
+  )
+)
+```
+
+
+
+  * Spatial CCC graph plot without tissue image
+  
+In this case, graph layout can be "spatial" which keeps the original spatial locations, 
+or other graph layout algorithm supported by igraph package. 
+
+
+```{r spatial-ccc-with-spatial-layout}
+plot_spatial_ccc_graph(
+  ccc_graph = ccc_graph_list[[LR_of_interest]],
+  graph_layout = "spatial",
+  edge_color = "LRscore",
+  node_color = "LRscore.sum.src",
+  clip = TRUE,
+  which_on_top = "edge"
+)
+```
+
+  * Spatial CCC graph plot with "auto", a.k.a., "kk" spring layout
+  
+In this format and the one below,  one can see the distribution of cell-cell 
+communication clusters
+
+```{r spatial-ccc-with-kk-layout, warning=FALSE}
+plot_spatial_ccc_graph(
+  ccc_graph = ccc_graph_list[[LR_of_interest]],
+  edge_color = "LRscore",
+  node_color = "LRscore.sum.src",
+
+  # node_size = 1,
+  # edge_width = 0.5,
+  which_on_top = "edge"
+)
+```
+
+
+  * Spatial CCC graph plot with "stress" layout
+
+```{r spatial-ccc-with-stress-layout, warning=FALSE}
+plot_spatial_ccc_graph(
+  ccc_graph = ccc_graph_list[[LR_of_interest]],
+  # tissue_img = SpatialExperiment::imgRaster(spe_brain),
+  graph_layout = "stress",
+  edge_color = "LRscore",
+  node_color = "LRscore.sum.src",
+  edge_width = 0.25,
+  which_on_top = "edge"
+)
+```
+

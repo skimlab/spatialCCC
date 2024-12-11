@@ -54,22 +54,6 @@ summarize_ccc_graph_tbl <-
     res
   }
 
-# In this, the means are actually being over-estimated
-#   because we are not including those w/ no results
-#   i.e. n_nodes_* == 0 and/or n_edges == 0
-# To be more precise, it should be sum(.) / # of LRs in LRdb
-# However, this will produce more "conservative" results
-average_ccc_graph_tbl_summary <-
-  function(cog_tbl_summary) {
-    cog_tbl_summary %>%
-      summarize(
-        n_nodes = mean(n_nodes),
-        n_nodes_src = mean(n_nodes_src),
-        n_nodes_dst = mean(n_nodes_dst),
-        n_edges = mean(n_edges),
-        .groups = "drop"
-      )
-  }
 
 # not used in any case
 summarize_ccc_graph_tbl_by_LR <- function(cog_tbl) {
@@ -93,34 +77,7 @@ summarize_ccc_graph_tbl_by_LR <- function(cog_tbl) {
 }
 
 
-# now actually computing p-values
-calc_z_merged_pval <- function(z_m) {
-  z_m %>%
-    mutate(
-      p_val_edges = pbinom(
-        q = n_edges,
-        size = n_edges.base,
-        prob = n_edges.avg / n_edges.base,
-        lower.tail = FALSE
-      ),
-      p_val_nodes = pbinom(
-        q = n_nodes,
-        size = n_nodes.base,
-        prob = n_nodes.avg / n_nodes.base,
-        lower.tail = FALSE
-      )
-    ) %>%
-    mutate(
-      adj_p_val_edges = p.adjust(p_val_edges),
-      adj_p_val_nodes = p.adjust(p_val_nodes)
-    ) %>%
-    relocate(p_val_edges,
-             adj_p_val_edges,
-             .before = "n_edges") %>%
-    relocate(p_val_nodes,
-             adj_p_val_nodes,
-             .before = "n_nodes")
-}
+
 
 calc_ccc_graph_pval_LR <- function(cog_tbl, sp_dist) {
   sp_dist_base_by_clust <-
@@ -235,7 +192,7 @@ calc_ccc_graph_pval_LR <- function(cog_tbl, sp_dist) {
 }
 
 
-calc_ccc_graph_pval <- function(cog_tbl, sp_dist) {
+calc_ccc_graph_pval_LR_shortcut <- function(cog_tbl, sp_dist) {
   sp_dist_base <-
     sp_dist %>%
     summarize_ccc_graph_tbl() %>%
@@ -269,15 +226,12 @@ calc_ccc_graph_pval <- function(cog_tbl, sp_dist) {
   z1_merged_pval
 }
 
-merge_ccc_graph_pval <- function(z_m_pv_LR, z1_m_pv) {
-  pv_m <-
-    left_join(
-      z_m_pv_LR,
-      z1_m_pv %>%
-        select(LR, starts_with("adj_p")),
-      by = "LR"
-    )
-
-  pv_m
+merge_ccc_graph_pval <- function(cog_pval_LR, cog_pval) {
+  left_join(
+    cog_pval_LR,
+    cog_pval %>%
+      select(LR, starts_with("adj_p")),
+    by = "LR"
+  )
 }
 

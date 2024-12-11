@@ -12,5 +12,5 @@ add_spatial_ccc_graph_metrics_to_edges(sp_ccc_graph, from_scratch = TRUE)
 \item{from_scratch}{if TRUE, the existing metrics are wiped clean.}
 }
 \description{
-Internal function
+This is run internally by \code{add_spatial_ccc_graph_metrics()}.
 }

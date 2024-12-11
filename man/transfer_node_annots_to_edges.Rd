@@ -4,12 +4,18 @@
 \alias{transfer_node_annots_to_edges}
 \title{Add node annotations to edges}
 \usage{
-transfer_node_annots_to_edges(ccog, node_annot_colname)
+transfer_node_annots_to_edges(
+  ccog,
+  node_annot_colname,
+  target_name = node_annot_colname
+)
 }
 \arguments{
 \item{ccog}{CCC graph}
 
 \item{node_annot_colname}{column names for annotations to be added to edges}
+
+\item{target_name}{if specified, node_annot_colname will be renamed to target_name}
 }
 \value{
 CCC graph with revised annotations for edges.
